@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Guess, GameState, DailyWord, LeaderboardEntry } from "../types/game";
-import { calculateSimilarity } from "../lib/utils";
+import { isValidHebrewWord } from "../lib/utils";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -122,15 +122,18 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("כבר ניחשת את המילה הזאת");
     }
 
-    const similarity = await calculateSimilarity(word, todayWord);
-    const isCorrect = word === todayWord;
-    
-    // Calculate rank (in real implementation this would come from backend)
-    let rank;
-    if (similarity > 0.3) {
-      rank = Math.floor((1 - similarity) * 1000) + 1;
+    // Call our edge function to calculate similarity
+    const { data, error } = await supabase.functions.invoke("calculate-similarity", {
+      body: { guess: word, target: todayWord }
+    });
+
+    if (error) {
+      console.error("Error calculating similarity:", error);
+      throw new Error("שגיאה בחישוב הדמיון");
     }
 
+    const { similarity, rank, isCorrect } = data;
+    
     const newGuess: Guess = {
       word,
       similarity,

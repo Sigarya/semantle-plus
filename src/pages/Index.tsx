@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-background dark:bg-slate-900">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900">
       <Header />
       <main className="flex-grow p-4 md:p-8">
         <GameBoard />

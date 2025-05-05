@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,7 +143,7 @@ const GameBoard = () => {
       {/* Last Guess */}
       {lastGuess && gameState.guesses.length > 0 && !gameState.isComplete && (
         <div className="border-b border-primary-200 dark:border-slate-700 pb-4">
-          <h3 className="text-lg font-bold mb-2">הניחוש האחרון</h3>
+          <h3 className="text-lg font-bold font-heebo mb-2">הניחוש האחרון</h3>
           <div className="flex justify-between items-center p-2 rounded-md bg-primary-50 dark:bg-slate-700">
             <span className="font-medium">{lastGuess}</span>
             <span className={`${getSimilarityClass(gameState.guesses[0].similarity)}`}>
@@ -152,10 +153,10 @@ const GameBoard = () => {
         </div>
       )}
 
-      {/* Guesses List - No more scrollable container */}
+      {/* Guesses List - No scrollable container as requested */}
       {gameState.guesses.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold">כל הניחושים</h3>
+          <h3 className="text-lg font-bold font-heebo">כל הניחושים</h3>
           <div className="space-y-2">
             {gameState.guesses.map((guess, index) => (
               <div 
