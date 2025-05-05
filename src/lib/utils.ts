@@ -1,16 +1,16 @@
 
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 // Calculate similarity color class based on score
 export function getSimilarityClass(similarity: number): string {
-  if (similarity >= 0.7) return "similarity-hot";
-  if (similarity >= 0.3) return "similarity-warm";
-  return "similarity-cold";
+  if (similarity >= 0.7) return "text-green-600 dark:text-green-400 font-bold";
+  if (similarity >= 0.3) return "text-amber-600 dark:text-amber-400 font-bold";
+  return "text-blue-600 dark:text-blue-400";
 }
 
 // Format date to Hebrew format

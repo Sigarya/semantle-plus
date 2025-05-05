@@ -9,7 +9,234 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          change_time: string
+          changed_by: string | null
+          details: Json | null
+          id: string
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          change_time?: string
+          changed_by?: string | null
+          details?: Json | null
+          id?: string
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          change_time?: string
+          changed_by?: string | null
+          details?: Json | null
+          id?: string
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_scores: {
+        Row: {
+          completion_time: string
+          created_at: string
+          guesses_count: number
+          id: string
+          user_id: string
+          word_date: string
+        }
+        Insert: {
+          completion_time?: string
+          created_at?: string
+          guesses_count: number
+          id?: string
+          user_id: string
+          word_date: string
+        }
+        Update: {
+          completion_time?: string
+          created_at?: string
+          guesses_count?: number
+          id?: string
+          user_id?: string
+          word_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_scores_word_date_fkey"
+            columns: ["word_date"]
+            isOneToOne: false
+            referencedRelation: "daily_words"
+            referencedColumns: ["date"]
+          },
+        ]
+      }
+      daily_words: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date: string
+          hints: string[] | null
+          id: string
+          is_active: boolean | null
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date: string
+          hints?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          word: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          hints?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_words_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_sessions: {
+        Row: {
+          finished_at: string | null
+          guesses_count: number | null
+          id: string
+          is_finished: boolean | null
+          started_at: string
+          user_id: string
+          word_id: string
+        }
+        Insert: {
+          finished_at?: string | null
+          guesses_count?: number | null
+          id?: string
+          is_finished?: boolean | null
+          started_at?: string
+          user_id: string
+          word_id: string
+        }
+        Update: {
+          finished_at?: string | null
+          guesses_count?: number | null
+          id?: string
+          is_finished?: boolean | null
+          started_at?: string
+          user_id?: string
+          word_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_sessions_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "daily_words"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean | null
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_admin?: boolean | null
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean | null
+          username?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          best_guess_count: number | null
+          best_streak: number | null
+          created_at: string
+          games_played: number | null
+          games_won: number | null
+          id: string
+          total_guesses: number | null
+          updated_at: string
+          win_streak: number | null
+        }
+        Insert: {
+          best_guess_count?: number | null
+          best_streak?: number | null
+          created_at?: string
+          games_played?: number | null
+          games_won?: number | null
+          id: string
+          total_guesses?: number | null
+          updated_at?: string
+          win_streak?: number | null
+        }
+        Update: {
+          best_guess_count?: number | null
+          best_streak?: number | null
+          created_at?: string
+          games_played?: number | null
+          games_won?: number | null
+          id?: string
+          total_guesses?: number | null
+          updated_at?: string
+          win_streak?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_stats_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

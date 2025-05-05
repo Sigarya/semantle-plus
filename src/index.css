@@ -7,37 +7,50 @@
 
 @layer base {
   :root {
-    --background: 240 20% 15%;
-    --foreground: 210 40% 98%;
-
-    --card: 240 17% 18%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 240 17% 18%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 255 70% 75%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 255 70% 65%;
+    --primary-foreground: 255 10% 98%;
     --secondary: 270 50% 65%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 255 15% 30%;
-    --muted-foreground: 215 20.2% 80%;
-
-    --accent: 270 60% 85%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 270 60% 95%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 255 15% 25%;
-    --input: 255 15% 25%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
     --ring: 255 50% 70%;
-
     --radius: 0.5rem;
   }
 
+  .dark-theme, .dark {
+    --background: 240 10% 8%;
+    --foreground: 0 0% 95%;
+    --card: 240 10% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 240 10% 8%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 255 70% 75%;
+    --primary-foreground: 240 10% 8%;
+    --secondary: 270 50% 65%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 270 60% 25%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 255 50% 60%;
+  }
+  
   * {
     @apply border-border;
   }
@@ -47,7 +60,7 @@
   }
   
   body {
-    @apply bg-semantle-dark text-foreground font-heebo;
+    @apply bg-background text-foreground font-heebo;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -65,19 +78,15 @@
 
 /* Game-specific styles */
 @layer components {
-  .guess-input {
-    @apply bg-semantle-dark border-2 border-semantle-primary focus-visible:border-semantle-secondary focus-visible:ring-semantle-secondary rounded-md px-4 py-2 text-lg w-full outline-none transition;
-  }
-  
   .similarity-cold {
-    @apply text-semantle-cold;
+    @apply text-blue-600 dark:text-blue-400;
   }
   
   .similarity-warm {
-    @apply text-semantle-warm;
+    @apply text-amber-600 dark:text-amber-400;
   }
   
   .similarity-hot {
-    @apply text-semantle-correct;
+    @apply text-green-600 dark:text-green-400;
   }
 }

@@ -1,128 +1,223 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User } from "../types/game";
+import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AuthContextType {
   currentUser: User | null;
+  session: Session | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
-  register: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
+  setUserAsAdmin: (userId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo
-const mockUsers: Record<string, { password: string, user: User }> = {
-  "admin": {
-    password: "admin123",
-    user: {
-      id: "1",
-      username: "admin",
-      isAdmin: true,
-      stats: {
-        gamesWon: 45,
-        totalGames: 50,
-        bestGuessCount: 3,
-        averageGuessCount: 7.5,
-        winStreak: 12
-      }
-    }
-  },
-  "user": {
-    password: "user123",
-    user: {
-      id: "2",
-      username: "user",
-      isAdmin: false,
-      stats: {
-        gamesWon: 10,
-        totalGames: 20,
-        bestGuessCount: 5,
-        averageGuessCount: 12.3,
-        winStreak: 3
-      }
-    }
-  }
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Check for saved user in localStorage on initial load
-    const savedUser = localStorage.getItem("semantle_user");
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        setSession(newSession);
+        if (newSession) {
+          await fetchUserProfile(newSession.user.id);
+        } else {
+          setCurrentUser(null);
+        }
+        setIsLoading(false);
+      }
+    );
+
+    // Initial session check
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+      if (initialSession) {
+        setSession(initialSession);
+        await fetchUserProfile(initialSession.user.id);
+      }
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string) => {
-    // Mock login implementation
-    setIsLoading(true);
-    
-    return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        const userRecord = mockUsers[username];
-        if (userRecord && userRecord.password === password) {
-          setCurrentUser(userRecord.user);
-          localStorage.setItem("semantle_user", JSON.stringify(userRecord.user));
-          setIsLoading(false);
-          resolve();
-        } else {
-          setIsLoading(false);
-          reject(new Error("שם משתמש או סיסמה שגויים"));
-        }
-      }, 1000);
-    });
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      // Get profile data
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Get stats data
+      const { data: stats, error: statsError } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (statsError && statsError.code !== 'PGRST116') throw statsError;
+
+      const userWithStats: User = {
+        id: profile.id,
+        username: profile.username,
+        isAdmin: profile.is_admin,
+        stats: stats ? {
+          gamesWon: stats.games_won,
+          totalGames: stats.games_played,
+          bestGuessCount: stats.best_guess_count,
+          averageGuessCount: stats.total_guesses > 0 ? stats.total_guesses / stats.games_played : 0,
+          winStreak: stats.win_streak,
+          bestStreak: stats.best_streak
+        } : undefined
+      };
+
+      setCurrentUser(userWithStats);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      setCurrentUser(null);
+    }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem("semantle_user");
-  };
-
-  const register = async (username: string, password: string) => {
-    // Mock registration
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     
-    return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        if (mockUsers[username]) {
-          setIsLoading(false);
-          reject(new Error("שם המשתמש כבר קיים"));
-        } else {
-          const newUser: User = {
-            id: Date.now().toString(),
-            username,
-            isAdmin: false,
-            stats: {
-              gamesWon: 0,
-              totalGames: 0,
-              bestGuessCount: 0,
-              averageGuessCount: 0,
-              winStreak: 0
-            }
-          };
-          
-          mockUsers[username] = {
-            password,
-            user: newUser
-          };
-          
-          setCurrentUser(newUser);
-          localStorage.setItem("semantle_user", JSON.stringify(newUser));
-          setIsLoading(false);
-          resolve();
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast({ title: "התחברות הצליחה", description: "ברוך הבא!" });
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "שגיאת התחברות", 
+        description: error.message 
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`
         }
-      }, 1000);
-    });
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "שגיאת התחברות", 
+        description: error.message 
+      });
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast({ title: "התנתקות הצליחה" });
+    } catch (error: any) {
+      console.error("Logout error:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "שגיאת התנתקות", 
+        description: error.message 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const register = async (username: string, email: string, password: string) => {
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: {
+            preferred_username: username
+          }
+        }
+      });
+      
+      if (error) throw error;
+      toast({ title: "הרשמה הצליחה", description: "ברוך הבא!" });
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "שגיאת הרשמה", 
+        description: error.message 
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const setUserAsAdmin = async (userId: string) => {
+    if (!currentUser?.isAdmin) {
+      toast({ 
+        variant: "destructive", 
+        title: "פעולה נדחתה", 
+        description: "אין לך הרשאה לבצע פעולה זו" 
+      });
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_admin: true })
+        .eq('id', userId);
+      
+      if (error) throw error;
+      
+      toast({ title: "הצלחה", description: "משתמש עודכן כמנהל" });
+    } catch (error: any) {
+      console.error("Set admin error:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "שגיאה", 
+        description: error.message 
+      });
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, isLoading, login, logout, register }}>
+    <AuthContext.Provider value={{ 
+      currentUser, 
+      session,
+      isLoading, 
+      login, 
+      loginWithGoogle,
+      logout, 
+      register,
+      setUserAsAdmin
+    }}>
       {children}
     </AuthContext.Provider>
   );

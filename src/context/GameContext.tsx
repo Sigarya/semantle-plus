@@ -1,40 +1,80 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Guess, GameState, DailyWord } from "../types/game";
-import { calculateSimilarity, getTodayWord } from "../lib/utils";
+import { Guess, GameState, DailyWord, LeaderboardEntry } from "../types/game";
+import { calculateSimilarity } from "../lib/utils";
 import { useAuth } from "./AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface GameContextType {
   gameState: GameState;
   isLoading: boolean;
   todayWord: string | null;
+  leaderboard: LeaderboardEntry[];
   makeGuess: (word: string) => Promise<Guess>;
   resetGame: () => void;
   dailyWords: DailyWord[];
-  setWordForDate: (word: string, date: string) => void;
-  loadHistoricalGame: (date: string) => void;
+  setWordForDate: (word: string, date: string) => Promise<void>;
+  loadHistoricalGame: (date: string) => Promise<void>;
+  fetchLeaderboard: (date?: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-// Mock daily words for demo
-const initialDailyWords: DailyWord[] = [
-  { word: "מחשב", date: "2025-05-04", hints: ["אלקטרוני", "מקלדת"] },
-  { word: "בית", date: "2025-05-05", hints: ["מגורים", "משפחה"] },
-  { word: "ספר", date: "2025-05-06", hints: ["קריאה", "סיפור"] },
-];
-
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useAuth();
+  const { toast } = useToast();
+  
   const [gameState, setGameState] = useState<GameState>({
     guesses: [],
     isComplete: false,
     wordDate: new Date().toISOString().split('T')[0],
   });
+  
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [todayWord, setTodayWord] = useState<string | null>(null);
-  const [dailyWords, setDailyWords] = useState<DailyWord[]>(initialDailyWords);
+  const [dailyWords, setDailyWords] = useState<DailyWord[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
-  // Load or initialize game on mount
+  // Load today's word and all daily words
+  useEffect(() => {
+    const loadDailyWords = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('daily_words')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (data) {
+          setDailyWords(data.map(item => ({
+            id: item.id,
+            word: item.word,
+            date: item.date,
+            hints: item.hints,
+            is_active: item.is_active
+          })));
+          
+          // Get today's date in YYYY-MM-DD format
+          const today = new Date().toISOString().split('T')[0];
+          const todayWordData = data.find(w => w.date === today && w.is_active);
+          
+          if (todayWordData) {
+            setTodayWord(todayWordData.word);
+          } else {
+            console.log("No active word found for today");
+          }
+        }
+      } catch (error) {
+        console.error("Error loading daily words:", error);
+      }
+    };
+    
+    loadDailyWords();
+  }, []);
+
+  // Load or initialize game
   useEffect(() => {
     const loadGame = async () => {
       setIsLoading(true);
@@ -43,14 +83,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const savedState = localStorage.getItem("semantle_game_state");
       const savedStateObj = savedState ? JSON.parse(savedState) : null;
       
-      // Get today's word
-      const word = await getTodayWord();
-      setTodayWord(word);
-      
+      // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
-      // If we have a saved state and it's from today, use it
       if (savedStateObj && savedStateObj.wordDate === today) {
+        // If we have a saved state and it's from today, use it
         setGameState(savedStateObj);
       } else {
         // Otherwise start a new game
@@ -64,8 +101,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     };
 
-    loadGame();
-  }, []);
+    if (todayWord) {
+      loadGame();
+    }
+  }, [todayWord]);
 
   // Save game state when it changes
   useEffect(() => {
@@ -112,8 +151,65 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     // Update user stats if authenticated and game is completed
     if (isCorrect && currentUser) {
-      // In a real app, this would call an API to update user stats
-      console.log(`User ${currentUser.username} won the game in ${newGuesses.length} guesses!`);
+      try {
+        // Update user_stats
+        const { data: stats, error: statsError } = await supabase
+          .from('user_stats')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+          
+        if (statsError) {
+          console.error("Error fetching stats:", statsError);
+        } else if (stats) {
+          const newGamesPlayed = stats.games_played + 1;
+          const newGamesWon = stats.games_won + 1;
+          const newWinStreak = stats.win_streak + 1;
+          const newBestStreak = Math.max(stats.best_streak, newWinStreak);
+          const newGuessCount = newGuesses.length;
+          const newTotalGuesses = stats.total_guesses + newGuessCount;
+          const newBestGuessCount = stats.best_guess_count 
+            ? Math.min(stats.best_guess_count, newGuessCount) 
+            : newGuessCount;
+          
+          const { error: updateError } = await supabase
+            .from('user_stats')
+            .update({
+              games_played: newGamesPlayed,
+              games_won: newGamesWon,
+              win_streak: newWinStreak,
+              best_streak: newBestStreak,
+              best_guess_count: newBestGuessCount,
+              total_guesses: newTotalGuesses,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', currentUser.id);
+            
+          if (updateError) {
+            console.error("Error updating stats:", updateError);
+          }
+        }
+        
+        // Record the score in daily_scores
+        const { error: scoreError } = await supabase
+          .from('daily_scores')
+          .upsert({
+            user_id: currentUser.id,
+            word_date: gameState.wordDate,
+            guesses_count: newGuesses.length,
+            completion_time: new Date().toISOString()
+          });
+          
+        if (scoreError) {
+          console.error("Error recording score:", scoreError);
+        }
+        
+        // Update leaderboard after recording the score
+        fetchLeaderboard(gameState.wordDate);
+        
+      } catch (error) {
+        console.error("Error updating user stats:", error);
+      }
     }
 
     return newGuess;
@@ -131,47 +227,167 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const setWordForDate = (word: string, date: string) => {
-    // This would typically update a database in a real app
-    // Check if we already have a word for this date
-    const existingWordIndex = dailyWords.findIndex(dw => dw.date === date);
-    
-    if (existingWordIndex >= 0) {
-      // Update existing word
-      const updatedWords = [...dailyWords];
-      updatedWords[existingWordIndex] = {
-        ...updatedWords[existingWordIndex],
-        word
-      };
-      setDailyWords(updatedWords);
-    } else {
-      // Add new word
-      setDailyWords([...dailyWords, { word, date }]);
+  const setWordForDate = async (word: string, date: string): Promise<void> => {
+    if (!currentUser?.isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "פעולה נדחתה",
+        description: "אין לך הרשאה לבצע פעולה זו"
+      });
+      throw new Error("אין לך הרשאה לבצע פעולה זו");
     }
     
-    // If this is today's word, update it
-    const today = new Date().toISOString().split('T')[0];
-    if (date === today) {
-      setTodayWord(word);
+    try {
+      // Check if we already have a word for this date
+      const { data, error: findError } = await supabase
+        .from('daily_words')
+        .select('*')
+        .eq('date', date);
+        
+      if (findError) throw findError;
+      
+      let result;
+      
+      if (data && data.length > 0) {
+        // Update existing word
+        result = await supabase
+          .from('daily_words')
+          .update({
+            word,
+            created_by: currentUser.id
+          })
+          .eq('date', date);
+      } else {
+        // Add new word
+        result = await supabase
+          .from('daily_words')
+          .insert({
+            word,
+            date,
+            created_by: currentUser.id
+          });
+      }
+      
+      if (result.error) throw result.error;
+      
+      // Refresh daily words list
+      const { data: updatedWords, error: refreshError } = await supabase
+        .from('daily_words')
+        .select('*')
+        .order('date', { ascending: false });
+        
+      if (refreshError) throw refreshError;
+      
+      if (updatedWords) {
+        setDailyWords(updatedWords.map(item => ({
+          id: item.id,
+          word: item.word,
+          date: item.date,
+          hints: item.hints,
+          is_active: item.is_active
+        })));
+      }
+      
+      // If this is today's word, update it
+      const today = new Date().toISOString().split('T')[0];
+      if (date === today) {
+        setTodayWord(word);
+      }
+      
+      toast({
+        title: "מילה נשמרה",
+        description: `המילה "${word}" נקבעה לתאריך ${date}`
+      });
+    } catch (error: any) {
+      console.error("Error setting word for date:", error);
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: error.message
+      });
+      throw error;
     }
   };
 
-  const loadHistoricalGame = (date: string) => {
-    // Find the word for the given date
-    const wordForDate = dailyWords.find(dw => dw.date === date);
-    
-    if (!wordForDate) {
-      throw new Error("לא נמצאה מילה לתאריך זה");
+  const loadHistoricalGame = async (date: string): Promise<void> => {
+    try {
+      // Find the word for the given date
+      const { data, error } = await supabase
+        .from('daily_words')
+        .select('*')
+        .eq('date', date)
+        .single();
+      
+      if (error) throw error;
+      
+      if (!data) {
+        throw new Error("לא נמצאה מילה לתאריך זה");
+      }
+      
+      // Set the game state to a new game with the historical date
+      setTodayWord(data.word);
+      setGameState({
+        guesses: [],
+        isComplete: false,
+        wordDate: date
+      });
+      
+      toast({
+        title: "משחק היסטורי נטען",
+        description: `המשחק מתאריך ${date} נטען בהצלחה`
+      });
+    } catch (error: any) {
+      console.error("Error loading historical game:", error);
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: error.message
+      });
+      throw error;
     }
-    
-    // Set the game state to a new game with the historical date
-    setTodayWord(wordForDate.word);
-    setGameState({
-      guesses: [],
-      isComplete: false,
-      wordDate: date
-    });
   };
+
+  const fetchLeaderboard = async (date?: string): Promise<void> => {
+    const targetDate = date || gameState.wordDate;
+    
+    try {
+      // Join daily_scores with profiles to get usernames
+      const { data, error } = await supabase
+        .from('daily_scores')
+        .select(`
+          guesses_count,
+          completion_time,
+          user_id,
+          profiles (username)
+        `)
+        .eq('word_date', targetDate)
+        .order('guesses_count', { ascending: true })
+        .order('completion_time', { ascending: true });
+        
+      if (error) throw error;
+      
+      if (data) {
+        const formattedLeaderboard: LeaderboardEntry[] = data.map((entry, index) => ({
+          username: entry.profiles.username,
+          userId: entry.user_id,
+          guessesCount: entry.guesses_count,
+          completionTime: entry.completion_time,
+          rank: index + 1
+        }));
+        
+        setLeaderboard(formattedLeaderboard);
+      }
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+    }
+  };
+
+  // Load leaderboard when component mounts or game state changes
+  useEffect(() => {
+    if (gameState.wordDate && !isLoading) {
+      fetchLeaderboard();
+    }
+  }, [gameState.wordDate, isLoading]);
 
   return (
     <GameContext.Provider 
@@ -179,11 +395,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         gameState, 
         isLoading, 
         todayWord, 
+        leaderboard,
         makeGuess, 
         resetGame,
         dailyWords,
         setWordForDate,
-        loadHistoricalGame
+        loadHistoricalGame,
+        fetchLeaderboard
       }}
     >
       {children}
