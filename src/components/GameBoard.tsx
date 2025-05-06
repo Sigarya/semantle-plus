@@ -60,6 +60,7 @@ const GameBoard = () => {
       setGuessInput("");
     } catch (error) {
       setError(error instanceof Error ? error.message : "שגיאה בניחוש המילה");
+      console.error("Guess error:", error);
     } finally {
       setIsSubmitting(false);
     }

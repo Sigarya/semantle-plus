@@ -37,9 +37,9 @@ const HistoryPanel = () => {
   );
 
   return (
-    <Card className="bg-semantle-dark border-semantle-primary">
+    <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
       <CardHeader>
-        <CardTitle className="text-xl">היסטורית משחקים</CardTitle>
+        <CardTitle className="text-xl font-heebo">היסטורית משחקים</CardTitle>
       </CardHeader>
       <CardContent>
         {sortedDailyWords.length === 0 ? (
@@ -76,7 +76,7 @@ const HistoryPanel = () => {
                         </Button>
                       )}
                       {!isPast && dailyWord.date === today.toISOString().split("T")[0] && (
-                        <span className="text-semantle-secondary">משחק נוכחי</span>
+                        <span className="text-primary-600 dark:text-primary-400">משחק נוכחי</span>
                       )}
                       {!isPast && dailyWord.date !== today.toISOString().split("T")[0] && (
                         <span className="text-muted-foreground">טרם זמין</span>

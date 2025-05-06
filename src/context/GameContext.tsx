@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Guess, GameState, DailyWord, LeaderboardEntry } from "../types/game";
 import { isValidHebrewWord } from "../lib/utils";
@@ -63,16 +62,41 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (todayWordData) {
             setTodayWord(todayWordData.word);
           } else {
-            console.log("No active word found for today");
+            // Fallback to a default word if no word is set for today
+            setTodayWord("בית");
+            console.log("No active word found for today, using default word: בית");
+            
+            // Insert default word for today if admin
+            if (currentUser?.isAdmin) {
+              try {
+                await supabase
+                  .from('daily_words')
+                  .upsert({
+                    word: "בית",
+                    date: today,
+                    is_active: true,
+                    created_by: currentUser.id
+                  });
+                console.log("Default word inserted for today");
+              } catch (insertError) {
+                console.error("Error inserting default word:", insertError);
+              }
+            }
           }
+          
+          // Set loading to false now that we have a word
+          setIsLoading(false);
         }
       } catch (error) {
         console.error("Error loading daily words:", error);
+        // Fallback in case of error
+        setTodayWord("בית");
+        setIsLoading(false);
       }
     };
     
     loadDailyWords();
-  }, []);
+  }, [currentUser]);
 
   // Load or initialize game
   useEffect(() => {
@@ -235,7 +259,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       toast({
         variant: "destructive",
         title: "פעולה נדחתה",
-        description: "אין לך הרשאה לבצע פעולה זו"
+        description: "אין לך הרשאה לבצע ��עולה זו"
       });
       throw new Error("אין לך הרשאה לבצע פעולה זו");
     }

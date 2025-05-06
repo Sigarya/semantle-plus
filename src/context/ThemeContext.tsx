@@ -18,18 +18,39 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<Theme>(themes[0]);
 
   useEffect(() => {
+    // Check if theme was saved in localStorage
     const savedTheme = localStorage.getItem("semantle_theme");
+    
     if (savedTheme) {
       const parsedTheme = JSON.parse(savedTheme);
       setTheme(parsedTheme);
-      document.documentElement.classList.toggle('dark-theme', parsedTheme.name === 'dark');
+      
+      // Apply the theme
+      if (parsedTheme.name === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } else {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        setTheme(themes[1]); // Dark theme
+        document.documentElement.classList.add('dark');
+      }
     }
   }, []);
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
     localStorage.setItem("semantle_theme", JSON.stringify(newTheme));
-    document.documentElement.classList.toggle('dark-theme', newTheme.name === 'dark');
+    
+    // Apply the theme
+    if (newTheme.name === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
 
   return (

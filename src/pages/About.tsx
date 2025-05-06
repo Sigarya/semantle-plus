@@ -4,15 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const About = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-semantle-dark">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900">
       <Header />
       <main className="flex-grow p-4 md:p-8">
         <div className="max-w-3xl mx-auto space-y-6">
-          <h2 className="text-3xl font-bold text-center text-semantle-accent mb-8">אודות סמנטל עברית יומי</h2>
+          <h2 className="text-3xl font-bold text-center text-primary-600 dark:text-primary-400 mb-8 font-heebo">אודות סמנטעל +</h2>
           
-          <Card className="bg-semantle-dark border-semantle-primary">
+          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle className="text-xl">מה זה סמנטל?</CardTitle>
+              <CardTitle className="text-xl font-heebo">מה זה סמנטל?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p>
@@ -26,9 +26,9 @@ const About = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-semantle-dark border-semantle-primary">
+          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle className="text-xl">איך משחקים?</CardTitle>
+              <CardTitle className="text-xl font-heebo">איך משחקים?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <ol className="list-decimal list-inside space-y-2">
@@ -38,18 +38,18 @@ const About = () => {
                 <li>מטרת המשחק היא לנחש את המילה המדויקת בכמה שפחות ניחושים.</li>
                 <li>צבע הניקוד מרמז על כמה קרוב אתה לפתרון:
                   <ul className="list-disc list-inside pr-5 mt-1">
-                    <li className="text-semantle-cold">כחול - רחוק מאוד</li>
-                    <li className="text-semantle-warm">כתום - מתקרב</li>
-                    <li className="text-semantle-correct">ירוק - קרוב מאוד</li>
+                    <li className="similarity-cold">כחול - רחוק מאוד</li>
+                    <li className="similarity-warm">כתום - מתקרב</li>
+                    <li className="similarity-hot">ירוק - קרוב מאוד</li>
                   </ul>
                 </li>
               </ol>
             </CardContent>
           </Card>
           
-          <Card className="bg-semantle-dark border-semantle-primary">
+          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle className="text-xl">טיפים והמלצות</CardTitle>
+              <CardTitle className="text-xl font-heebo">טיפים והמלצות</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <ul className="list-disc list-inside space-y-2">
@@ -61,13 +61,13 @@ const About = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-semantle-dark border-semantle-primary">
+          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle className="text-xl">קרדיטים והשראה</CardTitle>
+              <CardTitle className="text-xl font-heebo">קרדיטים והשראה</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p>
-                סמנטל עברית יומי מבוסס על רעיון המשחק המקורי Semantle שנוצר על ידי David Turner, 
+                סמנטעל + מבוסס על רעיון המשחק המקורי Semantle שנוצר על ידי David Turner, 
                 עם התאמות לעברית והרחבות ייחודיות.
               </p>
               <p>
@@ -80,8 +80,8 @@ const About = () => {
           </Card>
         </div>
       </main>
-      <footer className="p-4 border-t border-semantle-primary text-center text-sm text-muted-foreground">
-        סמנטל עברית יומי &copy; {new Date().getFullYear()}
+      <footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
+        סמנטעל + &copy; {new Date().getFullYear()}
       </footer>
     </div>
   );

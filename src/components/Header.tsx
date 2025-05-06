@@ -71,7 +71,7 @@ const Header = () => {
           </div>
           
           <div className="flex items-center space-x-4 space-x-reverse">
-            <div className="flex items-center space-x-2 space-x-reverse">
+            <div className="flex items-center space-x-2 space-x-reverse rtl">
               <Sun className="h-4 w-4 text-primary-700 dark:text-primary-300" />
               <Switch 
                 checked={theme.name === 'dark'}
@@ -108,7 +108,7 @@ const Header = () => {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle className="text-center text-2xl">
+                    <DialogTitle className="text-center text-2xl font-heebo">
                       {authMode === "login" ? "התחברות" : "הרשמה"}
                     </DialogTitle>
                   </DialogHeader>
