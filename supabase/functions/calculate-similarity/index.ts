@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // CORS Headers
@@ -7,8 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// More extensive collection of Hebrew stopwords
+const hebrewStopwords = new Set([
+  "של", "את", "עם", "על", "אל", "מן", "מ", "ל", "ב", "כ",
+  "אני", "אתה", "הוא", "היא", "אנחנו", "אתם", "הם", "הן",
+  "זה", "זו", "אלה", "אלו", "לא", "כן", "אם", "או", "גם",
+  "רק", "אך", "אבל", "כי", "כאשר", "אשר", "מה", "מי", "איך",
+  "מתי", "איפה", "למה", "כמה", "יש", "אין", "היה", "יהיה",
+  "להיות", "עוד", "כל", "כבר", "אז", "כך", "לכן", "אחר",
+  "אחרי", "לפני", "תחת", "בין", "מעל", "מתחת", "דרך", "בגלל",
+  "אצל", "ליד", "מאז", "בשביל"
+]);
+
 // Define word similarities based on data from Hebrew Word2Vec model
-// This should be replaced with actual Hebrew Word2Vec integration in production
+// This should be replaced with actual Hebrew Word2Vec API integration in production
 // Based on actual Hebrew Word2Vec model patterns
 const hebrewWordMap: Record<string, Record<string, number>> = {
   "בית": {
@@ -221,18 +232,6 @@ const hebrewWordMap: Record<string, Record<string, number>> = {
   },
 };
 
-// More extensive collection of Hebrew stopwords
-const hebrewStopwords = new Set([
-  "של", "את", "עם", "על", "אל", "מן", "מ", "ל", "ב", "כ",
-  "אני", "אתה", "הוא", "היא", "אנחנו", "אתם", "הם", "הן",
-  "זה", "זו", "אלה", "אלו", "לא", "כן", "אם", "או", "גם",
-  "רק", "אך", "אבל", "כי", "כאשר", "אשר", "מה", "מי", "איך",
-  "מתי", "איפה", "למה", "כמה", "יש", "אין", "היה", "יהיה",
-  "להיות", "עוד", "כל", "כבר", "אז", "כך", "לכן", "אחר",
-  "אחרי", "לפני", "תחת", "בין", "מעל", "מתחת", "דרך", "בגלל",
-  "אצל", "ליד", "מאז", "בשביל"
-]);
-
 // Function to check if a word is valid Hebrew
 function isValidHebrewWord(word: string): boolean {
   // Remove any punctuation and whitespace
@@ -248,7 +247,10 @@ function isValidHebrewWord(word: string): boolean {
 }
 
 // Function to calculate similarity between two words
-function calculateSimilarity(word1: string, word2: string): number {
+async function calculateSimilarity(word1: string, word2: string): Promise<number> {
+  // Log for debugging
+  console.log(`Calculating similarity between "${word1}" and "${word2}"`);
+  
   // If words are identical, similarity is 1
   if (word1 === word2) return 1;
   
@@ -261,6 +263,33 @@ function calculateSimilarity(word1: string, word2: string): number {
   if (hebrewWordMap[word1] && word2 in hebrewWordMap[word1]) {
     return hebrewWordMap[word1][word2];
   }
+  
+  // PRODUCTION INTEGRATION POINT:
+  // In production, uncomment the following code and replace the URL with your actual Hebrew Word2Vec API endpoint
+  /*
+  try {
+    // Call the external Hebrew Word2Vec API
+    const response = await fetch('https://your-hebrew-w2v-api.com/similarity', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('HEBREW_W2V_API_KEY')}`
+      },
+      body: JSON.stringify({ word1, word2 })
+    });
+    
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      throw new Error(`API returned ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.similarity;
+  } catch (error) {
+    console.error('Error calling Hebrew W2V API:', error);
+    // Fall back to our heuristic method
+  }
+  */
   
   // Generate a more sophisticated fallback similarity
   // This approach creates more realistic similarity scores that would be found in a word embedding model
@@ -342,7 +371,7 @@ serve(async (req) => {
     }
 
     // Calculate similarity
-    const similarity = calculateSimilarity(guess.trim(), target.trim());
+    const similarity = await calculateSimilarity(guess.trim(), target.trim());
     
     // Calculate rank
     const rank = determineRank(similarity);
