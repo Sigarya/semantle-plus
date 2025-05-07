@@ -148,7 +148,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     // Call our edge function to calculate similarity using the real API
     const { data, error } = await supabase.functions.invoke("calculate-similarity", {
-      body: { guess: word, target: todayWord }
+      body: { guess: word }
     });
 
     if (error) {
@@ -265,7 +265,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       toast({
         variant: "destructive",
         title: "פעולה נדחתה",
-        description: "אין לך הרשאה לבצע ��עולה זו"
+        description: "אין לך הרשאה לבצע פעולה זו"
       });
       throw new Error("אין לך הרשאה לבצע פעולה זו");
     }

@@ -1,13 +1,18 @@
+
 // Follow this setup guide to integrate the Deno runtime into your project:
 // https://deno.com/manual/getting_started/setup_your_environment
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0"
 
 const SIMILARITY_API_URL = "https://heb-w2v-api.onrender.com/similarity";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 interface RequestBody {
   guess: string;
-  target: string;
 }
 
 interface ApiResponse {
@@ -18,17 +23,42 @@ interface ApiResponse {
 
 serve(async (req) => {
   try {
-    // Parse request body
+    // Parse request body - now only expecting 'guess'
     const body: RequestBody = await req.json();
-    const { guess, target } = body;
+    const { guess } = body;
 
-    if (!guess || !target) {
+    if (!guess) {
       return new Response(
-        JSON.stringify({ error: "Missing required parameters: guess and target" }),
+        JSON.stringify({ error: "Missing required parameter: guess" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Query Supabase for today's word
+    const { data: wordData, error: wordError } = await supabase
+      .from('daily_words')
+      .select('word')
+      .eq('date', today)
+      .eq('is_active', true)
+      .single();
+    
+    if (wordError || !wordData) {
+      console.error("Error fetching today's word:", wordError);
+      return new Response(
+        JSON.stringify({ 
+          error: "לא הוגדרה מילת יום לתאריך הנוכחי",
+          similarity: 0,
+          isCorrect: false
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    
+    const target = wordData.word;
+    
     // Construct API URL with query parameters
     const queryParams = new URLSearchParams({
       word1: target.trim(),
