@@ -9,12 +9,14 @@ const SIMILARITY_API_URL = "https://heb-w2v-api.onrender.com/similarity";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
+// Initialize Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Define CORS headers for preflight requests
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
 interface RequestBody {
@@ -28,8 +30,11 @@ interface ApiResponse {
 }
 
 serve(async (req) => {
+  console.log("Received request:", req.method);
+  
   // Handle OPTIONS request for CORS preflight
   if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS request");
     return new Response(null, {
       status: 204,
       headers: corsHeaders
@@ -42,6 +47,7 @@ serve(async (req) => {
     
     try {
       body = await req.json();
+      console.log("Request body:", JSON.stringify(body));
     } catch (parseError) {
       console.error("Error parsing request JSON:", parseError);
       return new Response(
@@ -63,6 +69,7 @@ serve(async (req) => {
     const { guess } = body;
 
     if (!guess) {
+      console.error("Missing guess parameter");
       return new Response(
         JSON.stringify({ error: "Missing required parameter: guess" }),
         { 
@@ -88,8 +95,26 @@ serve(async (req) => {
       .eq('is_active', true)
       .single();
     
-    if (wordError || !wordData) {
+    if (wordError) {
       console.error("Error fetching today's word:", wordError);
+      return new Response(
+        JSON.stringify({ 
+          error: "לא הוגדרה מילת יום לתאריך הנוכחי",
+          similarity: 0,
+          isCorrect: false
+        }),
+        { 
+          status: 200, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+    
+    if (!wordData || !wordData.word) {
+      console.error("No word found for today");
       return new Response(
         JSON.stringify({ 
           error: "לא הוגדרה מילת יום לתאריך הנוכחי",
@@ -124,11 +149,24 @@ serve(async (req) => {
     let apiData;
     
     try {
-      apiResponse = await fetch(apiUrl);
-      apiData = await apiResponse.json();
+      apiResponse = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        }
+      });
       
       console.log("API response status:", apiResponse.status);
-      console.log("API response data:", JSON.stringify(apiData));
+      const responseText = await apiResponse.text();
+      console.log("API raw response:", responseText);
+      
+      try {
+        apiData = JSON.parse(responseText);
+        console.log("API response data:", JSON.stringify(apiData));
+      } catch (jsonError) {
+        console.error("Failed to parse API response as JSON:", jsonError);
+        throw new Error(`Invalid JSON response from API: ${responseText}`);
+      }
     } catch (fetchError) {
       console.error("Error fetching from similarity API:", fetchError);
       return new Response(
@@ -218,7 +256,12 @@ serve(async (req) => {
     console.error("Error processing request:", error);
     
     return new Response(
-      JSON.stringify({ error: "שגיאה בעיבוד הבקשה", similarity: 0, isCorrect: false }),
+      JSON.stringify({ 
+        error: "שגיאה בעיבוד הבקשה", 
+        similarity: 0, 
+        isCorrect: false,
+        details: error.message
+      }),
       { 
         status: 500, 
         headers: { 
