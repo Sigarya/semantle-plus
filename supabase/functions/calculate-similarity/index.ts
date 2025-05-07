@@ -11,6 +11,12 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Define CORS headers for preflight requests
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 interface RequestBody {
   guess: string;
 }
@@ -22,15 +28,50 @@ interface ApiResponse {
 }
 
 serve(async (req) => {
+  // Handle OPTIONS request for CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
+  }
+
   try {
     // Parse request body - now only expecting 'guess'
-    const body: RequestBody = await req.json();
+    let body: RequestBody;
+    
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error("Error parsing request JSON:", parseError);
+      return new Response(
+        JSON.stringify({ 
+          error: "בקשה לא תקינה, לא ניתן לנתח את ה-JSON",
+          similarity: 0,
+          isCorrect: false 
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+    
     const { guess } = body;
 
     if (!guess) {
       return new Response(
         JSON.stringify({ error: "Missing required parameter: guess" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
       );
     }
 
@@ -38,6 +79,8 @@ serve(async (req) => {
     const today = new Date().toISOString().split('T')[0];
     
     // Query Supabase for today's word
+    console.log("Fetching today's word for date:", today);
+    
     const { data: wordData, error: wordError } = await supabase
       .from('daily_words')
       .select('word')
@@ -53,11 +96,18 @@ serve(async (req) => {
           similarity: 0,
           isCorrect: false
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { 
+          status: 200, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
       );
     }
     
     const target = wordData.word;
+    console.log("Found today's word:", target);
     
     // Construct API URL with query parameters
     const queryParams = new URLSearchParams({
@@ -70,8 +120,32 @@ serve(async (req) => {
     console.log(`Calling external API: ${apiUrl}`);
     
     // Call the external similarity API
-    const apiResponse = await fetch(apiUrl);
-    const apiData = await apiResponse.json();
+    let apiResponse;
+    let apiData;
+    
+    try {
+      apiResponse = await fetch(apiUrl);
+      apiData = await apiResponse.json();
+      
+      console.log("API response status:", apiResponse.status);
+      console.log("API response data:", JSON.stringify(apiData));
+    } catch (fetchError) {
+      console.error("Error fetching from similarity API:", fetchError);
+      return new Response(
+        JSON.stringify({ 
+          error: "שגיאה בחישוב הדמיון - בעיה בגישה ל-API",
+          similarity: 0,
+          isCorrect: false
+        }),
+        { 
+          status: 200, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
     
     if (!apiResponse.ok) {
       console.error("External API error:", apiData);
@@ -85,7 +159,13 @@ serve(async (req) => {
             similarity: 0,
             isCorrect: false
           }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
+          { 
+            status: 200, 
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            } 
+          }
         );
       }
       
@@ -96,7 +176,13 @@ serve(async (req) => {
           similarity: 0,
           isCorrect: false
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { 
+          status: 200, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
       );
     }
     
@@ -120,7 +206,12 @@ serve(async (req) => {
         rank,
         isCorrect
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { 
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        } 
+      }
     );
     
   } catch (error) {
@@ -128,7 +219,13 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ error: "שגיאה בעיבוד הבקשה", similarity: 0, isCorrect: false }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { 
+        status: 500, 
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        } 
+      }
     );
   }
 })
