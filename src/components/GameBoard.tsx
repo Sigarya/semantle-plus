@@ -61,6 +61,13 @@ const GameBoard = () => {
     } catch (error) {
       setError(error instanceof Error ? error.message : "שגיאה בניחוש המילה");
       console.error("Guess error:", error);
+      
+      // Add a toast for API errors for better visibility
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: error instanceof Error ? error.message : "שגיאה בניחוש המילה",
+      });
     } finally {
       setIsSubmitting(false);
     }

@@ -146,7 +146,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("כבר ניחשת את המילה הזאת");
     }
 
-    // Call our edge function to calculate similarity
+    // Call our edge function to calculate similarity using the real API
     const { data, error } = await supabase.functions.invoke("calculate-similarity", {
       body: { guess: word, target: todayWord }
     });
@@ -154,6 +154,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       console.error("Error calculating similarity:", error);
       throw new Error("שגיאה בחישוב הדמיון");
+    }
+
+    // Handle API errors returned in the response
+    if (data.error) {
+      console.error("API response error:", data.error);
+      throw new Error(data.error);
     }
 
     const { similarity, rank, isCorrect } = data;
