@@ -13,9 +13,9 @@ const HistoryPanel = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handlePlayHistoricalGame = (date: string) => {
+  const handlePlayHistoricalGame = async (date: string) => {
     try {
-      loadHistoricalGame(date);
+      await loadHistoricalGame(date);
       navigate("/");
       
       toast({
