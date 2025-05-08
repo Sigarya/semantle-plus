@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,8 +136,8 @@ const GameBoard = () => {
   const mostRecentGuess = gameState.guesses.length > 0 ? 
     gameState.guesses[gameState.guesses.length - 1] : null;
 
-  // Create a chronologically reversed list for display (newest first)
-  const displayGuesses = [...gameState.guesses].reverse();
+  // Sort guesses by similarity (highest to lowest)
+  const sortedGuesses = [...gameState.guesses].sort((a, b) => b.similarity - a.similarity);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -287,39 +286,44 @@ const GameBoard = () => {
         </div>
       )}
 
-      {/* Guesses List - Ordered chronologically (newest first) */}
-      {displayGuesses.length > 0 && (
+      {/* Guesses List - Sorted by similarity (highest to lowest) */}
+      {sortedGuesses.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-bold font-heebo">כל הניחושים</h3>
           <div className="space-y-2">
-            {displayGuesses.map((guess, index) => (
-              <div 
-                key={index}
-                className={`flex flex-col gap-2 p-3 rounded-md ${
-                  guess.isCorrect 
-                    ? "bg-green-100 dark:bg-green-900/30" 
-                    : "bg-background dark:bg-slate-700"
-                }`}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground">{displayGuesses.length - index}</span>
-                    <span className="font-medium">{guess.word}</span>
+            {sortedGuesses.map((guess) => {
+              // Find the original guess index (adding 1 for human-readable number)
+              const guessNumber = gameState.guesses.findIndex(g => g.word === guess.word && g.similarity === guess.similarity) + 1;
+              
+              return (
+                <div 
+                  key={`${guess.word}-${guessNumber}`}
+                  className={`flex flex-col gap-2 p-3 rounded-md ${
+                    guess.isCorrect 
+                      ? "bg-green-100 dark:bg-green-900/30" 
+                      : "bg-background dark:bg-slate-700"
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-muted-foreground">{guessNumber}</span>
+                      <span className="font-medium">{guess.word}</span>
+                    </div>
+                    <span className={`${getSimilarityClass(guess.similarity)}`}>
+                      {(guess.similarity * 100).toFixed(2)}%
+                    </span>
                   </div>
-                  <span className={`${getSimilarityClass(guess.similarity)}`}>
-                    {(guess.similarity * 100).toFixed(2)}%
-                  </span>
+                  
+                  {/* Progress bar for top 1000 rankings */}
+                  {guess.rank && guess.rank <= 1000 && (
+                    <Progress 
+                      value={((1000 - guess.rank + 1) / 1000) * 100} 
+                      className="h-2 bg-gray-200 dark:bg-slate-600"
+                    />
+                  )}
                 </div>
-                
-                {/* Progress bar for top 1000 rankings */}
-                {guess.rank && guess.rank <= 1000 && (
-                  <Progress 
-                    value={((1000 - guess.rank + 1) / 1000) * 100} 
-                    className="h-2 bg-gray-200 dark:bg-slate-600"
-                  />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

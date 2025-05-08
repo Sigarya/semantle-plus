@@ -25,31 +25,67 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("Setting up auth state change listener");
+    
+    // FIRST: Set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        console.log("Auth state changed:", event, !!newSession);
         setSession(newSession);
+        
         if (newSession) {
-          await fetchUserProfile(newSession.user.id);
+          // Don't fetch user profile immediately to prevent potential deadlocks
+          // Use setTimeout to defer the profile fetch after the auth state change is processed
+          setTimeout(async () => {
+            try {
+              await fetchUserProfile(newSession.user.id);
+            } catch (error) {
+              console.error("Error in deferred fetchUserProfile:", error);
+            }
+          }, 0);
         } else {
           setCurrentUser(null);
         }
+        
         setIsLoading(false);
       }
     );
 
-    // Initial session check
-    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
-      if (initialSession) {
+    // THEN: Check for existing session
+    const initAuth = async () => {
+      try {
+        console.log("Checking for existing session");
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        console.log("Initial session check result:", !!initialSession);
         setSession(initialSession);
-        await fetchUserProfile(initialSession.user.id);
+        
+        if (initialSession) {
+          try {
+            await fetchUserProfile(initialSession.user.id);
+          } catch (profileError) {
+            console.error("Error fetching initial user profile:", profileError);
+          }
+        }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error during initial auth setup:", error);
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    initAuth();
+
+    // Cleanup subscription on component unmount
+    return () => {
+      console.log("Cleaning up auth subscription");
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
+    console.log("Fetching user profile for:", userId);
     try {
       // Get profile data
       const { data: profile, error: profileError } = await supabase
@@ -58,7 +94,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', userId)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        throw profileError;
+      }
 
       // Get stats data
       const { data: stats, error: statsError } = await supabase
@@ -67,7 +106,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', userId)
         .single();
 
-      if (statsError && statsError.code !== 'PGRST116') throw statsError;
+      if (statsError && statsError.code !== 'PGRST116') {
+        console.error("Stats fetch error:", statsError);
+        throw statsError;
+      }
 
       const userWithStats: User = {
         id: profile.id,
@@ -83,10 +125,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } : undefined
       };
 
+      console.log("User profile loaded:", userWithStats.username);
       setCurrentUser(userWithStats);
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.error("Error in fetchUserProfile:", error);
       setCurrentUser(null);
+      throw error;
     }
   };
 
@@ -112,13 +156,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loginWithGoogle = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log("Initiating Google login");
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: window.location.origin
         }
       });
+      
       if (error) throw error;
+      
+      console.log("Google login initiated:", data);
     } catch (error: any) {
       console.error("Google login error:", error);
       toast({ 
