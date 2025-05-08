@@ -12,8 +12,23 @@ const Index = () => {
     // Ensure game is properly initialized when component mounts
     // This helps with external window loading
     const init = async () => {
-      await initializeGame();
-      setMounted(true);
+      try {
+        await initializeGame();
+        setMounted(true);
+      } catch (error) {
+        console.error("Failed to initialize game:", error);
+        // Try once more after a short delay
+        setTimeout(async () => {
+          try {
+            await initializeGame();
+            setMounted(true);
+          } catch (retryError) {
+            console.error("Failed to initialize game after retry:", retryError);
+            // Set mounted anyway to prevent eternal loading
+            setMounted(true);
+          }
+        }, 1500);
+      }
     };
     
     init();

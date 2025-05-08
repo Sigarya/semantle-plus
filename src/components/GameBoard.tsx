@@ -12,7 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
 
 const GameBoard = () => {
-  const { gameState, todayWord, makeGuess, resetGame, isLoading, isHistoricalGame } = useGame();
+  const { gameState, todayWord, makeGuess, resetGame, isLoading, isHistoricalGame, returnToTodayGame } = useGame();
   const { currentUser } = useAuth();
   const [guessInput, setGuessInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +135,10 @@ const GameBoard = () => {
 
   // Find the most recent guess
   const mostRecentGuess = gameState.guesses.length > 0 ? 
-    gameState.guesses[0] : null;
+    gameState.guesses[gameState.guesses.length - 1] : null;
+
+  // Create a chronologically reversed list for display (newest first)
+  const displayGuesses = [...gameState.guesses].reverse();
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -173,11 +176,9 @@ const GameBoard = () => {
               </Link>
               
               {isHistoricalGame && (
-                <Link to="/" className="block">
-                  <Button variant="outline">
-                    חזור למשחק היום
-                  </Button>
-                </Link>
+                <Button variant="outline" onClick={returnToTodayGame}>
+                  חזור למשחק היום
+                </Button>
               )}
             </div>
             
@@ -286,12 +287,12 @@ const GameBoard = () => {
         </div>
       )}
 
-      {/* Guesses List - No scrollable container as requested */}
-      {gameState.guesses.length > 0 && (
+      {/* Guesses List - Ordered chronologically (newest first) */}
+      {displayGuesses.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-bold font-heebo">כל הניחושים</h3>
           <div className="space-y-2">
-            {gameState.guesses.map((guess, index) => (
+            {displayGuesses.map((guess, index) => (
               <div 
                 key={index}
                 className={`flex flex-col gap-2 p-3 rounded-md ${
@@ -302,7 +303,7 @@ const GameBoard = () => {
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground">{index + 1}</span>
+                    <span className="text-sm text-muted-foreground">{displayGuesses.length - index}</span>
                     <span className="font-medium">{guess.word}</span>
                   </div>
                   <span className={`${getSimilarityClass(guess.similarity)}`}>
