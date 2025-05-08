@@ -12,8 +12,11 @@ const HistoryPanel = () => {
   const { dailyWords, loadHistoricalGame } = useGame();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handlePlayHistoricalGame = async (date: string) => {
+    setIsLoading(true);
+    
     try {
       await loadHistoricalGame(date);
       navigate("/");
@@ -28,6 +31,8 @@ const HistoryPanel = () => {
         title: "שגיאה",
         description: error instanceof Error ? error.message : "אירעה שגיאה בטעינת המשחק",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -71,8 +76,9 @@ const HistoryPanel = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handlePlayHistoricalGame(dailyWord.date)}
+                          disabled={isLoading}
                         >
-                          שחק
+                          {isLoading ? "טוען..." : "שחק"}
                         </Button>
                       )}
                       {!isPast && dailyWord.date === today.toISOString().split("T")[0] && (

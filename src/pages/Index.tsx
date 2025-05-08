@@ -5,14 +5,21 @@ import PageLayout from "@/components/PageLayout";
 import { useGame } from "@/context/GameContext";
 
 const Index = () => {
-  const { isLoading } = useGame();
+  const { isLoading, gameState, initializeGame } = useGame();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    // Ensure game is properly initialized when component mounts
+    // This helps with external window loading
+    const init = async () => {
+      await initializeGame();
+      setMounted(true);
+    };
+    
+    init();
+  }, [initializeGame]);
 
-  if (!mounted) {
+  if (!mounted || isLoading) {
     return (
       <PageLayout>
         <div className="flex justify-center items-center h-64">

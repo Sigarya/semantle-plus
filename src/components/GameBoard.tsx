@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,14 +9,21 @@ import { useToast } from "@/components/ui/use-toast";
 import { useGame } from "@/context/GameContext";
 import { getSimilarityClass, isValidHebrewWord } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { Link } from "react-router-dom";
 
 const GameBoard = () => {
-  const { gameState, todayWord, makeGuess, resetGame, isLoading } = useGame();
+  const { gameState, todayWord, makeGuess, resetGame, isLoading, isHistoricalGame } = useGame();
   const { currentUser } = useAuth();
   const [guessInput, setGuessInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastGuess, setLastGuess] = useState<string | null>(null);
+  const [explorationMode, setExplorationMode] = useState(false);
+  const [explorationInput, setExplorationInput] = useState("");
+  const [explorationResult, setExplorationResult] = useState<{
+    word: string;
+    similarity: number;
+    rank?: number;
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -42,13 +50,13 @@ const GameBoard = () => {
     
     try {
       const result = await makeGuess(guessInput);
-      setLastGuess(guessInput);
       
       if (result.isCorrect) {
         toast({
           title: "כל הכבוד!",
           description: `מצאת את המילה הנכונה: ${result.word}`,
         });
+        setExplorationMode(true);
       } else if (result.similarity > 0.7) {
         toast({
           title: "מתקרב!",
@@ -72,6 +80,51 @@ const GameBoard = () => {
     }
   };
 
+  const handleExplorationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!explorationInput.trim()) return;
+    
+    // Validate Hebrew word
+    if (!isValidHebrewWord(explorationInput)) {
+      setError("אנא הזן מילה בעברית בלבד");
+      return;
+    }
+    
+    setError(null);
+    setIsSubmitting(true);
+    
+    try {
+      const { data, error } = await fetch(`/api/calculate-similarity`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          guess: explorationInput,
+          date: gameState.wordDate,
+        }),
+      }).then(res => res.json());
+      
+      if (error) {
+        throw new Error(error);
+      }
+      
+      setExplorationResult({
+        word: explorationInput,
+        similarity: data.similarity,
+        rank: data.rank,
+      });
+      
+      setExplorationInput("");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "שגיאה בבדיקת דמיון");
+      console.error("Exploration error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -82,7 +135,7 @@ const GameBoard = () => {
 
   // Find the most recent guess
   const mostRecentGuess = gameState.guesses.length > 0 ? 
-    gameState.guesses[gameState.guesses.length - 1] : null;
+    gameState.guesses[0] : null;
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -102,12 +155,77 @@ const GameBoard = () => {
             <div className="text-muted-foreground mb-6">
               מספר ניחושים: {gameState.guesses.length}
             </div>
-            <Button 
-              onClick={resetGame}
-              className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600"
-            >
-              שחק שוב
-            </Button>
+            
+            <div className="flex flex-col gap-4 items-center">
+              {!isHistoricalGame && (
+                <Button 
+                  onClick={resetGame}
+                  className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600"
+                >
+                  שחק שוב
+                </Button>
+              )}
+              
+              <Link to="/history" className="block">
+                <Button variant="outline">
+                  משחק מיום אחר
+                </Button>
+              </Link>
+              
+              {isHistoricalGame && (
+                <Link to="/" className="block">
+                  <Button variant="outline">
+                    חזור למשחק היום
+                  </Button>
+                </Link>
+              )}
+            </div>
+            
+            {/* Exploration mode for completed games */}
+            <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-lg font-medium mb-4">נסה מילים נוספות</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                נסה מילים אחרות לראות כמה הן קרובות למילת היום
+              </p>
+              <form onSubmit={handleExplorationSubmit} className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={explorationInput}
+                    onChange={(e) => setExplorationInput(e.target.value)}
+                    className="text-lg"
+                    placeholder="נסה מילה..."
+                    disabled={isSubmitting}
+                    dir="rtl"
+                  />
+                  <Button
+                    type="submit"
+                    className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
+                    disabled={isSubmitting || !explorationInput.trim()}
+                  >
+                    בדוק
+                  </Button>
+                </div>
+              </form>
+              
+              {explorationResult && (
+                <div className="mt-4 p-3 rounded-md bg-primary-50 dark:bg-slate-700">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{explorationResult.word}</span>
+                    <span className={`${getSimilarityClass(explorationResult.similarity)}`}>
+                      {(explorationResult.similarity * 100).toFixed(2)}%
+                    </span>
+                  </div>
+                  
+                  {explorationResult.rank && explorationResult.rank <= 1000 && (
+                    <Progress 
+                      value={((1000 - explorationResult.rank + 1) / 1000) * 100} 
+                      className="h-2 mt-2 bg-gray-200 dark:bg-slate-600"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -146,7 +264,7 @@ const GameBoard = () => {
         </form>
       )}
 
-      {/* Last Guess - Updated to show the most recent guess */}
+      {/* Last Guess - Show the most recent guess */}
       {mostRecentGuess && !gameState.isComplete && (
         <div className="border-b border-primary-200 dark:border-slate-700 pb-4">
           <h3 className="text-lg font-bold font-heebo mb-2">הניחוש האחרון</h3>
@@ -184,7 +302,7 @@ const GameBoard = () => {
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground">{gameState.guesses.length - index}</span>
+                    <span className="text-sm text-muted-foreground">{index + 1}</span>
                     <span className="font-medium">{guess.word}</span>
                   </div>
                   <span className={`${getSimilarityClass(guess.similarity)}`}>
