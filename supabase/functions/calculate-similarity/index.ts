@@ -21,6 +21,7 @@ const corsHeaders = {
 
 interface RequestBody {
   guess: string;
+  date?: string; // Optional date parameter for historical games
 }
 
 interface ApiResponse {
@@ -42,7 +43,7 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body - now only expecting 'guess'
+    // Parse request body - expecting 'guess' and optional 'date'
     let body: RequestBody;
     
     try {
@@ -66,7 +67,7 @@ serve(async (req) => {
       );
     }
     
-    const { guess } = body;
+    const { guess, date } = body;
 
     if (!guess) {
       console.error("Missing guess parameter");
@@ -82,24 +83,25 @@ serve(async (req) => {
       );
     }
 
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    // Get the target date - use provided date for historical games, or today's date
+    const targetDate = date ? date : new Date().toISOString().split('T')[0];
+    console.log("Target date for word lookup:", targetDate);
     
-    // Query Supabase for today's word
-    console.log("Fetching today's word for date:", today);
+    // Query Supabase for the word matching the target date
+    console.log("Fetching word for date:", targetDate);
     
     const { data: wordData, error: wordError } = await supabase
       .from('daily_words')
       .select('word')
-      .eq('date', today)
+      .eq('date', targetDate)
       .eq('is_active', true)
       .single();
     
     if (wordError) {
-      console.error("Error fetching today's word:", wordError);
+      console.error("Error fetching word for date:", targetDate, wordError);
       return new Response(
         JSON.stringify({ 
-          error: "לא הוגדרה מילת יום לתאריך הנוכחי",
+          error: `לא הוגדרה מילת יום לתאריך ${targetDate}`,
           similarity: 0,
           isCorrect: false
         }),
@@ -114,10 +116,10 @@ serve(async (req) => {
     }
     
     if (!wordData || !wordData.word) {
-      console.error("No word found for today");
+      console.error("No word found for date:", targetDate);
       return new Response(
         JSON.stringify({ 
-          error: "לא הוגדרה מילת יום לתאריך הנוכחי",
+          error: `לא הוגדרה מילת יום לתאריך ${targetDate}`,
           similarity: 0,
           isCorrect: false
         }),
@@ -132,7 +134,7 @@ serve(async (req) => {
     }
     
     const target = wordData.word;
-    console.log("Found today's word:", target);
+    console.log(`Found word for date ${targetDate}:`, target);
     
     // Construct API URL with query parameters
     const queryParams = new URLSearchParams({
@@ -242,7 +244,8 @@ serve(async (req) => {
         word: guess,
         similarity,
         rank,
-        isCorrect
+        isCorrect,
+        date: targetDate // Return the date used for this guess
       }),
       { 
         headers: { 

@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Guess, GameState, DailyWord, LeaderboardEntry } from "../types/game";
 import { isValidHebrewWord } from "../lib/utils";
@@ -147,8 +148,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Call our edge function to calculate similarity using the real API
+    // Pass the target date for historical games
     const { data, error } = await supabase.functions.invoke("calculate-similarity", {
-      body: { guess: word }
+      body: { 
+        guess: word,
+        date: gameState.wordDate // Pass the target date
+      }
     });
 
     if (error) {
@@ -357,8 +362,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("לא נמצאה מילה לתאריך זה");
       }
       
-      // Set the game state to a new game with the historical date
+      // Update todayWord to be the word for the selected date
       setTodayWord(data.word);
+      
+      // Set the game state to a new game with the historical date
       setGameState({
         guesses: [],
         isComplete: false,

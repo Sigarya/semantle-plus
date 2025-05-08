@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
-import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/context/ThemeContext";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
@@ -71,14 +70,24 @@ const Header = () => {
           </div>
           
           <div className="flex items-center space-x-4 space-x-reverse">
-            <div className="flex items-center space-x-2 space-x-reverse rtl">
-              <Sun className="h-4 w-4 text-primary-700 dark:text-primary-300" />
-              <Switch 
-                checked={theme.name === 'dark'}
-                onCheckedChange={toggleDarkMode}
-              />
-              <Moon className="h-4 w-4 text-primary-700 dark:text-primary-300" />
-            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={toggleDarkMode}
+            >
+              {theme.name === 'light' ? (
+                <>
+                  <Moon className="h-4 w-4" />
+                  <span>מצב כהה</span>
+                </>
+              ) : (
+                <>
+                  <Sun className="h-4 w-4" />
+                  <span>מצב בהיר</span>
+                </>
+              )}
+            </Button>
 
             {currentUser ? (
               <div className="flex items-center space-x-4 space-x-reverse">

@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress"; 
 import { useToast } from "@/components/ui/use-toast";
 import { useGame } from "@/context/GameContext";
 import { getSimilarityClass, isValidHebrewWord } from "@/lib/utils";
-import { formatHebrewDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
 const GameBoard = () => {
@@ -73,9 +73,16 @@ const GameBoard = () => {
     }
   };
 
-  const getGameDate = () => {
-    if (!gameState.wordDate) return "";
-    return formatHebrewDate(new Date(gameState.wordDate));
+  // Calculate display rank out of 1000
+  const getDisplayRank = (rank?: number) => {
+    if (!rank || rank > 1000) return null;
+    return `${1000 - rank + 1}/1000`;
+  };
+
+  // Calculate progress percentage for the progress bar
+  const getProgressValue = (rank?: number) => {
+    if (!rank || rank > 1000) return 0;
+    return ((1000 - rank + 1) / 1000) * 100; // Convert to percentage
   };
 
   if (isLoading) {
@@ -86,10 +93,14 @@ const GameBoard = () => {
     );
   }
 
+  // Find the most recent guess
+  const mostRecentGuess = gameState.guesses.length > 0 ? 
+    gameState.guesses[gameState.guesses.length - 1] : null;
+
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <h2 className="text-2xl font-bold text-center font-heebo">
-        סמנטעל + - {getGameDate()}
+        סמנטעל +
       </h2>
       
       {gameState.isComplete ? (
@@ -148,15 +159,31 @@ const GameBoard = () => {
         </form>
       )}
 
-      {/* Last Guess */}
-      {lastGuess && gameState.guesses.length > 0 && !gameState.isComplete && (
+      {/* Last Guess - Updated to show the most recent guess */}
+      {mostRecentGuess && !gameState.isComplete && (
         <div className="border-b border-primary-200 dark:border-slate-700 pb-4">
           <h3 className="text-lg font-bold font-heebo mb-2">הניחוש האחרון</h3>
-          <div className="flex justify-between items-center p-2 rounded-md bg-primary-50 dark:bg-slate-700">
-            <span className="font-medium">{lastGuess}</span>
-            <span className={`${getSimilarityClass(gameState.guesses[0].similarity)}`}>
-              {(gameState.guesses[0].similarity * 100).toFixed(2)}%
-            </span>
+          <div className="flex flex-col gap-2 p-3 rounded-md bg-primary-50 dark:bg-slate-700">
+            <div className="flex justify-between items-center">
+              <span className="font-medium">{mostRecentGuess.word}</span>
+              <div className="flex items-center gap-2">
+                <span className={`${getSimilarityClass(mostRecentGuess.similarity)}`}>
+                  {(mostRecentGuess.similarity * 100).toFixed(2)}%
+                </span>
+                {getDisplayRank(mostRecentGuess.rank) && (
+                  <span className="text-green-600 dark:text-green-400 font-medium">
+                    {getDisplayRank(mostRecentGuess.rank)}
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            {mostRecentGuess.rank && mostRecentGuess.rank <= 1000 && (
+              <Progress 
+                value={getProgressValue(mostRecentGuess.rank)} 
+                className="h-2 bg-gray-200 dark:bg-slate-600"
+              />
+            )}
           </div>
         </div>
       )}
@@ -169,24 +196,40 @@ const GameBoard = () => {
             {gameState.guesses.map((guess, index) => (
               <div 
                 key={index}
-                className={`flex justify-between items-center p-2 rounded-md ${
+                className={`flex flex-col gap-2 p-3 rounded-md ${
                   guess.isCorrect 
                     ? "bg-green-100 dark:bg-green-900/30" 
                     : "bg-background dark:bg-slate-700"
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground">{gameState.guesses.length - index}</span>
-                  <span className="font-medium">{guess.word}</span>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-muted-foreground">{gameState.guesses.length - index}</span>
+                    <span className="font-medium">{guess.word}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className={`${getSimilarityClass(guess.similarity)}`}>
+                      {(guess.similarity * 100).toFixed(2)}%
+                    </span>
+                    {getDisplayRank(guess.rank) ? (
+                      <span className="text-green-600 dark:text-green-400 font-medium">
+                        {getDisplayRank(guess.rank)}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        {guess.rank ? `דירוג: ${guess.rank}` : "-"}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className={`${getSimilarityClass(guess.similarity)}`}>
-                    {(guess.similarity * 100).toFixed(2)}%
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {guess.rank ? `דירוג: ${guess.rank}` : "-"}
-                  </span>
-                </div>
+                
+                {/* Progress bar for top 1000 rankings */}
+                {guess.rank && guess.rank <= 1000 && (
+                  <Progress 
+                    value={getProgressValue(guess.rank)} 
+                    className="h-2 bg-gray-200 dark:bg-slate-600"
+                  />
+                )}
               </div>
             ))}
           </div>
