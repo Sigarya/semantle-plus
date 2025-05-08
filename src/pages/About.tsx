@@ -12,11 +12,11 @@ const About = () => {
           
           <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle className="text-xl font-heebo">מה זה סמנטל?</CardTitle>
+              <CardTitle className="text-xl font-heebo">מה זה סמנטעל?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p>
-                סמנטל הוא משחק ניחושים המבוסס על הקרבה הסמנטית בין מילים. המטרה היא לנחש את המילה היומית
+                סמנטעל הוא משחק ניחושים המבוסס על הקרבה הסמנטית בין מילים. המטרה היא לנחש את המילה היומית
                 כאשר לכל ניחוש תקבל ציון המבטא עד כמה המילה שניחשת קרובה למילה המבוקשת מבחינת המשמעות.
               </p>
               <p>
@@ -74,7 +74,7 @@ const About = () => {
                 המשחק משתמש במודלים של עיבוד שפה טבעית בעברית לחישוב הקרבה הסמנטית בין מילים.
               </p>
               <p>
-                תודה מיוחדת לישי שפי על הפיתוח המקורי של סמנטל בעברית.
+                תודה מיוחדת לישי שפי על הפיתוח המקורי של סמנטעל בעברית.
               </p>
             </CardContent>
           </Card>
