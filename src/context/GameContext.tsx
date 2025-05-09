@@ -313,13 +313,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       throw new Error(data.error);
     }
 
-    const { similarity, rank, isCorrect } = data;
+    const { similarity, rank, isCorrect, is_in_top_1000, rank_in_top_1000 } = data;
     
     const newGuess: Guess = {
       word,
       similarity,
       rank,
-      isCorrect
+      isCorrect,
+      is_in_top_1000,
+      rank_in_top_1000
     };
 
     // Add the new guess to the *end* of the array (chronological order)

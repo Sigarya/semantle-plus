@@ -23,6 +23,8 @@ const GameBoard = () => {
     word: string;
     similarity: number;
     rank?: number;
+    is_in_top_1000?: boolean;
+    rank_in_top_1000?: number | null;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
@@ -42,6 +44,8 @@ const GameBoard = () => {
             behavior: 'smooth', 
             block: 'nearest'
           });
+          // Keep the input focused after scrolling
+          inputRef.current?.focus();
         }, 100);
       }
     }
@@ -108,7 +112,7 @@ const GameBoard = () => {
     setIsSubmitting(true);
     
     try {
-      const { data, error } = await fetch(`/api/calculate-similarity`, {
+      const response = await fetch(`/api/calculate-similarity`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -117,16 +121,20 @@ const GameBoard = () => {
           guess: explorationInput,
           date: gameState.wordDate,
         }),
-      }).then(res => res.json());
+      });
       
-      if (error) {
-        throw new Error(error);
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
       }
       
       setExplorationResult({
         word: explorationInput,
         similarity: data.similarity,
         rank: data.rank,
+        is_in_top_1000: data.is_in_top_1000,
+        rank_in_top_1000: data.rank_in_top_1000,
       });
       
       setExplorationInput("");
@@ -136,6 +144,22 @@ const GameBoard = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Function to calculate display rank (N/1000)
+  const calculateDisplayRank = (rankInTop1000: number | null | undefined): string | null => {
+    if (rankInTop1000 === null || rankInTop1000 === undefined) return null;
+    
+    const displayRank = Math.max(1, 1000 - rankInTop1000);
+    return `${displayRank}/1000`;
+  };
+  
+  // Function to calculate progress percentage for the progress bar
+  const calculateProgressPercentage = (rankInTop1000: number | null | undefined): number => {
+    if (rankInTop1000 === null || rankInTop1000 === undefined) return 0;
+    
+    const displayRank = Math.max(1, 1000 - rankInTop1000);
+    return (displayRank / 1000) * 100;
   };
 
   if (isLoading) {
@@ -226,14 +250,21 @@ const GameBoard = () => {
                 <div className="mt-4 p-3 rounded-md bg-primary-50 dark:bg-slate-700">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{explorationResult.word}</span>
-                    <span className={`${getSimilarityClass(explorationResult.similarity)}`}>
-                      {(explorationResult.similarity * 100).toFixed(2)}%
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className={`${getSimilarityClass(explorationResult.similarity)}`}>
+                        {(explorationResult.similarity * 100).toFixed(2)}%
+                      </span>
+                      {explorationResult.is_in_top_1000 && explorationResult.rank_in_top_1000 !== null && (
+                        <span className="text-sm text-green-600 dark:text-green-400">
+                          {calculateDisplayRank(explorationResult.rank_in_top_1000)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
-                  {explorationResult.rank && explorationResult.rank <= 1000 && (
+                  {explorationResult.is_in_top_1000 && explorationResult.rank_in_top_1000 !== null && (
                     <Progress 
-                      value={((1000 - explorationResult.rank + 1) / 1000) * 100} 
+                      value={calculateProgressPercentage(explorationResult.rank_in_top_1000)} 
                       className="h-2 mt-2 bg-gray-200 dark:bg-slate-600"
                     />
                   )}
@@ -288,12 +319,24 @@ const GameBoard = () => {
                 <span className="text-sm text-muted-foreground">{gameState.guesses.length}</span>
                 <span className="font-medium">{mostRecentGuess.word}</span>
               </div>
-              <span className={`${getSimilarityClass(mostRecentGuess.similarity)}`}>
-                {(mostRecentGuess.similarity * 100).toFixed(2)}%
-              </span>
+              <div className="flex flex-col items-end">
+                <span className={`${getSimilarityClass(mostRecentGuess.similarity)}`}>
+                  {(mostRecentGuess.similarity * 100).toFixed(2)}%
+                </span>
+                {mostRecentGuess.is_in_top_1000 && mostRecentGuess.rank_in_top_1000 !== null && (
+                  <span className="text-sm text-green-600 dark:text-green-400">
+                    {calculateDisplayRank(mostRecentGuess.rank_in_top_1000)}
+                  </span>
+                )}
+              </div>
             </div>
             
-            {mostRecentGuess.rank && mostRecentGuess.rank <= 1000 && (
+            {mostRecentGuess.is_in_top_1000 && mostRecentGuess.rank_in_top_1000 !== null ? (
+              <Progress 
+                value={calculateProgressPercentage(mostRecentGuess.rank_in_top_1000)} 
+                className="h-2 bg-gray-200 dark:bg-slate-600"
+              />
+            ) : mostRecentGuess.rank && mostRecentGuess.rank <= 1000 && (
               <Progress 
                 value={((1000 - mostRecentGuess.rank + 1) / 1000) * 100} 
                 className="h-2 bg-gray-200 dark:bg-slate-600"
@@ -310,7 +353,8 @@ const GameBoard = () => {
           <div className="space-y-2">
             {sortedGuesses.map((guess, index) => {
               // Find the original guess index
-              const guessNumber = gameState.guesses.findIndex(g => g.word === guess.word && g.similarity === guess.similarity) + 1;
+              const originalIndex = gameState.guesses.findIndex(g => g.word === guess.word && g.similarity === guess.similarity);
+              const guessNumber = originalIndex + 1;
               
               return (
                 <div 
@@ -326,13 +370,25 @@ const GameBoard = () => {
                       <span className="text-sm text-muted-foreground">{guessNumber}</span>
                       <span className="font-medium">{guess.word}</span>
                     </div>
-                    <span className={`${getSimilarityClass(guess.similarity)}`}>
-                      {(guess.similarity * 100).toFixed(2)}%
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className={`${getSimilarityClass(guess.similarity)}`}>
+                        {(guess.similarity * 100).toFixed(2)}%
+                      </span>
+                      {guess.is_in_top_1000 && guess.rank_in_top_1000 !== null && (
+                        <span className="text-sm text-green-600 dark:text-green-400">
+                          {calculateDisplayRank(guess.rank_in_top_1000)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Progress bar for top 1000 rankings */}
-                  {guess.rank && guess.rank <= 1000 && (
+                  {guess.is_in_top_1000 && guess.rank_in_top_1000 !== null ? (
+                    <Progress 
+                      value={calculateProgressPercentage(guess.rank_in_top_1000)} 
+                      className="h-2 bg-gray-200 dark:bg-slate-600"
+                    />
+                  ) : guess.rank && guess.rank <= 1000 && (
                     <Progress 
                       value={((1000 - guess.rank + 1) / 1000) * 100} 
                       className="h-2 bg-gray-200 dark:bg-slate-600"

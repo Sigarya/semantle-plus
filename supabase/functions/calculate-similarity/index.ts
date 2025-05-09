@@ -5,7 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0"
 
-const SIMILARITY_API_URL = "https://heb-w2v-api.onrender.com/similarity";
+const SIMILARITY_API_URL = "https://heb-w2v-api.onrender.com/similarity_with_rank";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
@@ -28,6 +28,8 @@ interface ApiResponse {
   word1: string;
   word2: string;
   similarity: number;
+  is_in_top_1000?: boolean; // New field from updated API
+  rank_in_top_1000?: number | null; // New field from updated API
 }
 
 serve(async (req) => {
@@ -229,15 +231,25 @@ serve(async (req) => {
     // Process successful response
     const similarity = apiData.similarity;
     
+    // Extract the new top 1000 ranking fields
+    const isInTop1000 = apiData.is_in_top_1000 || false;
+    const rankInTop1000 = apiData.rank_in_top_1000 || null;
+    
     // Determine if this is the correct word (exact match or very high similarity)
     const isCorrect = guess === target || similarity > 0.99;
     
-    // Calculate rank (this is a placeholder - you may want to implement a more sophisticated ranking)
+    // Calculate rank (use the new rank_in_top_1000 value if available)
     let rank = null;
-    if (similarity >= 0.7) rank = 10;
-    else if (similarity >= 0.5) rank = 100;
-    else if (similarity >= 0.3) rank = 1000;
-    else if (similarity >= 0.1) rank = 5000;
+    if (isInTop1000 && rankInTop1000 !== null) {
+      // If we have the precise rank, use it directly
+      rank = rankInTop1000;
+    } else {
+      // Fall back to older ranking logic if needed
+      if (similarity >= 0.7) rank = 10;
+      else if (similarity >= 0.5) rank = 100;
+      else if (similarity >= 0.3) rank = 1000;
+      else if (similarity >= 0.1) rank = 5000;
+    }
     
     return new Response(
       JSON.stringify({
@@ -245,6 +257,8 @@ serve(async (req) => {
         similarity,
         rank,
         isCorrect,
+        is_in_top_1000: isInTop1000,
+        rank_in_top_1000: rankInTop1000,
         date: targetDate // Return the date used for this guess
       }),
       { 
