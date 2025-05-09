@@ -1,10 +1,9 @@
+
 export interface Guess {
   word: string;
   similarity: number;
   rank?: number;
   isCorrect: boolean;
-  is_in_top_1000?: boolean;
-  rank_in_top_1000?: number | null;
 }
 
 export interface DailyWord {
