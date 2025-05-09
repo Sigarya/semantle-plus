@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { login, loginWithGoogle } = useAuth();
+  const { signIn, loginWithGoogle } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +23,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      await signIn(email, password);
     } catch (error: any) {
       setError(error.message || "שגיאה בהתחברות. אנא נסה שוב.");
     } finally {

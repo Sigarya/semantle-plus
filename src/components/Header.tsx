@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import RegisterForm from "./RegisterForm";
 import { Sun, Moon } from "lucide-react";
 
 const Header = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
@@ -98,7 +97,7 @@ const Header = () => {
                   variant="outline" 
                   className="border-primary-300 text-primary-700 dark:border-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900"
                   onClick={() => {
-                    logout();
+                    signOut();
                     setIsNavMenuOpen(false);
                   }}
                 >

@@ -17,7 +17,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { register } = useAuth();
+  const { signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +31,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
     setIsLoading(true);
     
     try {
-      await register(username, email, password);
+      await signUp(username, email, password);
     } catch (error: any) {
       setError(error.message || "שגיאה בהרשמה. אנא נסה שוב.");
     } finally {
