@@ -9,6 +9,7 @@ import { useGame } from "@/context/GameContext";
 import { getSimilarityClass, isValidHebrewWord } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const GameBoard = () => {
   const { gameState, todayWord, makeGuess, resetGame, isLoading, isHistoricalGame, returnToTodayGame } = useGame();
@@ -24,14 +25,27 @@ const GameBoard = () => {
     rank?: number;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const lastGuessRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
-  // Keep focus on input field
+  // Keep focus on input field and ensure visibility of last guess on mobile
   useEffect(() => {
     if (!isLoading && !gameState.isComplete) {
       inputRef.current?.focus();
+      
+      // For mobile devices, make sure the last guess is visible
+      if (isMobile && lastGuessRef.current && gameState.guesses.length > 0) {
+        // Use a short timeout to ensure DOM is updated
+        setTimeout(() => {
+          lastGuessRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'nearest'
+          });
+        }, 100);
+      }
     }
-  }, [isLoading, gameState.isComplete, gameState.guesses.length]);
+  }, [isLoading, gameState.isComplete, gameState.guesses.length, isMobile]);
 
   const handleGuessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,13 +78,11 @@ const GameBoard = () => {
       }
       
       setGuessInput("");
-      // Focus will be maintained by the useEffect
       
     } catch (error) {
       setError(error instanceof Error ? error.message : "שגיאה בניחוש המילה");
       console.error("Guess error:", error);
       
-      // Add a toast for API errors for better visibility
       toast({
         variant: "destructive",
         title: "שגיאה",
@@ -268,15 +280,13 @@ const GameBoard = () => {
 
       {/* Last Guess - Show the most recent guess */}
       {mostRecentGuess && !gameState.isComplete && (
-        <div className="border-b border-primary-200 dark:border-slate-700 pb-4">
+        <div className="border-b border-primary-200 dark:border-slate-700 pb-4" ref={lastGuessRef}>
           <h3 className="text-lg font-bold font-heebo mb-2">הניחוש האחרון</h3>
           <div className="flex flex-col gap-2 p-3 rounded-md bg-primary-50 dark:bg-slate-700">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{gameState.guesses.length}</span>
                 <span className="font-medium">{mostRecentGuess.word}</span>
-                <span className="text-sm text-muted-foreground">
-                  (ניחוש מס׳ {gameState.guesses.length})
-                </span>
               </div>
               <span className={`${getSimilarityClass(mostRecentGuess.similarity)}`}>
                 {(mostRecentGuess.similarity * 100).toFixed(2)}%
@@ -298,8 +308,8 @@ const GameBoard = () => {
         <div className="space-y-4">
           <h3 className="text-lg font-bold font-heebo">כל הניחושים</h3>
           <div className="space-y-2">
-            {sortedGuesses.map((guess) => {
-              // Find the original guess index (adding 1 for human-readable number)
+            {sortedGuesses.map((guess, index) => {
+              // Find the original guess index
               const guessNumber = gameState.guesses.findIndex(g => g.word === guess.word && g.similarity === guess.similarity) + 1;
               
               return (

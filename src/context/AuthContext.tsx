@@ -1,7 +1,6 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Session, User } from "@supabase/supabase-js";
+import { Session, User, Provider } from "@supabase/supabase-js";
 import { useToast } from "@/components/ui/use-toast";
 
 interface UserStats {
@@ -25,6 +24,7 @@ interface AuthContextType {
   currentUser: UserProfile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -166,6 +166,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
+  // Sign in with Google
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) throw error;
+      
+    } catch (error: any) {
+      console.error("Google sign in error:", error);
+      
+      toast({
+        variant: "destructive",
+        title: "שגיאה בהתחברות עם Google",
+        description: error.message
+      });
+      
+      throw error;
+    }
+  };
+  
   // Sign up with email and password
   const signUp = async (email: string, password: string, username: string) => {
     try {
@@ -250,6 +275,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       currentUser, 
       isLoading,
       signIn,
+      signInWithGoogle,
       signUp,
       signOut,
       refreshUser
