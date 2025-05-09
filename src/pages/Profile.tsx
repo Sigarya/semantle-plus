@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import UserProfileForm from "@/components/UserProfileForm";
 
 const Profile = () => {
   const { currentUser } = useAuth();
@@ -43,7 +44,9 @@ const Profile = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+          <UserProfileForm />
+          
+          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700 mt-6">
             <CardHeader>
               <CardTitle className="text-xl">סטטיסטיקות</CardTitle>
             </CardHeader>

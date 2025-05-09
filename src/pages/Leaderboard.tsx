@@ -1,6 +1,5 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,15 +7,11 @@ import { useGame } from "@/context/GameContext";
 import { formatHebrewDate } from "@/lib/utils";
 
 const Leaderboard = () => {
-  const { leaderboard, gameState, dailyWords, fetchLeaderboard } = useGame();
-  const [selectedDate, setSelectedDate] = useState<string>(gameState.wordDate);
-  const navigate = useNavigate();
+  const { leaderboard, gameState, fetchLeaderboard } = useGame();
   
   useEffect(() => {
-    if (selectedDate) {
-      fetchLeaderboard(selectedDate);
-    }
-  }, [selectedDate, fetchLeaderboard]);
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -33,51 +28,17 @@ const Leaderboard = () => {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-primary-600 dark:text-primary-400 mb-8 font-heebo">טבלת המובילים</h2>
           
-          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700 mb-6">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-xl">בחר תאריך</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {dailyWords
-                  .filter(word => {
-                    // Show only past dates and today
-                    const wordDate = new Date(word.date);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    return wordDate <= today;
-                  })
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .slice(0, 7) // Show only the last 7 days
-                  .map(word => (
-                    <Button
-                      key={word.date}
-                      variant={selectedDate === word.date ? "default" : "outline"}
-                      className={selectedDate === word.date 
-                        ? "bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600" 
-                        : ""}
-                      onClick={() => setSelectedDate(word.date)}
-                    >
-                      {formatHebrewDate(new Date(word.date))}
-                    </Button>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-          
           <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-xl">
-                  {selectedDate && `תוצאות ל-${formatHebrewDate(new Date(selectedDate))}`}
+                  {`תוצאות ל-${formatHebrewDate(new Date(gameState.wordDate))}`}
                 </CardTitle>
                 <div className="flex gap-2">
                   <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => fetchLeaderboard(selectedDate)}
+                    onClick={() => fetchLeaderboard()}
                   >
                     רענן
                   </Button>
@@ -87,7 +48,7 @@ const Leaderboard = () => {
             <CardContent>
               {leaderboard.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
-                  אין תוצאות זמינות לתאריך זה
+                  אין תוצאות זמינות להיום
                 </div>
               ) : (
                 <div className="overflow-x-auto">

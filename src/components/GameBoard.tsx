@@ -31,7 +31,7 @@ const GameBoard = () => {
     if (!isLoading && !gameState.isComplete) {
       inputRef.current?.focus();
     }
-  }, [isLoading, gameState.isComplete]);
+  }, [isLoading, gameState.isComplete, gameState.guesses.length]);
 
   const handleGuessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +64,8 @@ const GameBoard = () => {
       }
       
       setGuessInput("");
+      // Focus will be maintained by the useEffect
+      
     } catch (error) {
       setError(error instanceof Error ? error.message : "שגיאה בניחוש המילה");
       console.error("Guess error:", error);
@@ -270,7 +272,12 @@ const GameBoard = () => {
           <h3 className="text-lg font-bold font-heebo mb-2">הניחוש האחרון</h3>
           <div className="flex flex-col gap-2 p-3 rounded-md bg-primary-50 dark:bg-slate-700">
             <div className="flex justify-between items-center">
-              <span className="font-medium">{mostRecentGuess.word}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{mostRecentGuess.word}</span>
+                <span className="text-sm text-muted-foreground">
+                  (ניחוש מס׳ {gameState.guesses.length})
+                </span>
+              </div>
               <span className={`${getSimilarityClass(mostRecentGuess.similarity)}`}>
                 {(mostRecentGuess.similarity * 100).toFixed(2)}%
               </span>

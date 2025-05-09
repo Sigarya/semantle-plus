@@ -1,270 +1,258 @@
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User } from "../types/game";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Session } from "@supabase/supabase-js";
+import { Session, User } from "@supabase/supabase-js";
 import { useToast } from "@/components/ui/use-toast";
 
+interface UserStats {
+  gamesWon: number;
+  totalGames: number;
+  bestGuessCount: number | null;
+  averageGuessCount: number;
+  winStreak: number;
+  bestStreak: number;
+}
+
+interface UserProfile {
+  id: string;
+  username: string;
+  isAdmin: boolean;
+  stats?: UserStats;
+}
+
 interface AuthContextType {
-  currentUser: User | null;
   session: Session | null;
+  currentUser: UserProfile | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
-  setUserAsAdmin: (userId: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    console.log("Setting up auth state change listener");
-    
-    // FIRST: Set up the auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log("Auth state changed:", event, !!newSession);
-        setSession(newSession);
-        
-        if (newSession) {
-          // Don't fetch user profile immediately to prevent potential deadlocks
-          // Use setTimeout to defer the profile fetch after the auth state change is processed
-          setTimeout(async () => {
-            try {
-              await fetchUserProfile(newSession.user.id);
-            } catch (error) {
-              console.error("Error in deferred fetchUserProfile:", error);
-            }
-          }, 0);
-        } else {
-          setCurrentUser(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
-
-    // THEN: Check for existing session
-    const initAuth = async () => {
-      try {
-        console.log("Checking for existing session");
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        
-        console.log("Initial session check result:", !!initialSession);
-        setSession(initialSession);
-        
-        if (initialSession) {
-          try {
-            await fetchUserProfile(initialSession.user.id);
-          } catch (profileError) {
-            console.error("Error fetching initial user profile:", profileError);
-          }
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error during initial auth setup:", error);
-        setIsLoading(false);
-      }
-    };
-
-    initAuth();
-
-    // Cleanup subscription on component unmount
-    return () => {
-      console.log("Cleaning up auth subscription");
-      subscription.unsubscribe();
-    };
-  }, []);
-
+  // Fetch user profile data from the database
   const fetchUserProfile = async (userId: string) => {
-    console.log("Fetching user profile for:", userId);
     try {
-      // Get profile data
-      const { data: profile, error: profileError } = await supabase
+      // Get the profile data
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('username, is_admin')
         .eq('id', userId)
         .single();
-
-      if (profileError) {
-        console.error("Profile fetch error:", profileError);
-        throw profileError;
-      }
-
-      // Get stats data
-      const { data: stats, error: statsError } = await supabase
+        
+      if (profileError) throw profileError;
+      
+      // Get user stats if they exist
+      const { data: statsData, error: statsError } = await supabase
         .from('user_stats')
         .select('*')
         .eq('id', userId)
         .single();
-
-      if (statsError && statsError.code !== 'PGRST116') {
-        console.error("Stats fetch error:", statsError);
-        throw statsError;
-      }
-
-      const userWithStats: User = {
-        id: profile.id,
-        username: profile.username,
-        isAdmin: profile.is_admin,
-        stats: stats ? {
-          gamesWon: stats.games_won,
-          totalGames: stats.games_played,
-          bestGuessCount: stats.best_guess_count,
-          averageGuessCount: stats.total_guesses > 0 ? stats.total_guesses / stats.games_played : 0,
-          winStreak: stats.win_streak,
-          bestStreak: stats.best_streak
-        } : undefined
+        
+      // Create the user profile object
+      const userProfile: UserProfile = {
+        id: userId,
+        username: profileData.username,
+        isAdmin: profileData.is_admin
       };
-
-      console.log("User profile loaded:", userWithStats.username);
-      setCurrentUser(userWithStats);
+      
+      // Add stats if they exist
+      if (statsData && !statsError) {
+        userProfile.stats = {
+          gamesWon: statsData.games_won,
+          totalGames: statsData.games_played,
+          bestGuessCount: statsData.best_guess_count,
+          averageGuessCount: statsData.games_played > 0 
+            ? statsData.total_guesses / statsData.games_played
+            : 0,
+          winStreak: statsData.win_streak,
+          bestStreak: statsData.best_streak
+        };
+      }
+      
+      return userProfile;
     } catch (error) {
-      console.error("Error in fetchUserProfile:", error);
-      setCurrentUser(null);
+      console.error("Error fetching user profile:", error);
       throw error;
     }
   };
-
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      toast({ title: "התחברות הצליחה", description: "ברוך הבא!" });
-    } catch (error: any) {
-      console.error("Login error:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "שגיאת התחברות", 
-        description: error.message 
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loginWithGoogle = async () => {
-    try {
-      console.log("Initiating Google login");
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
+  
+  // Initialize auth state
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, authSession) => {
+        setSession(authSession);
+        
+        // If session changes, reset currentUser to null
+        if (!authSession) {
+          setCurrentUser(null);
         }
+        
+        // Defer loading user profile if there's a session
+        if (authSession?.user) {
+          setTimeout(() => {
+            fetchUserProfile(authSession.user.id)
+              .then(userProfile => {
+                setCurrentUser(userProfile);
+              })
+              .catch(error => {
+                console.error("Error in onAuthStateChange:", error);
+              })
+              .finally(() => {
+                setIsLoading(false);
+              });
+          }, 0);
+        } else {
+          setIsLoading(false);
+        }
+      }
+    );
+
+    // THEN get existing session
+    supabase.auth.getSession().then(({ data: { session: authSession } }) => {
+      setSession(authSession);
+      
+      // Load user profile if session exists
+      if (authSession?.user) {
+        fetchUserProfile(authSession.user.id)
+          .then(userProfile => {
+            setCurrentUser(userProfile);
+          })
+          .catch(error => {
+            console.error("Error loading initial user profile:", error);
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+  
+  // Sign in with email and password
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
       
       if (error) throw error;
       
-      console.log("Google login initiated:", data);
     } catch (error: any) {
-      console.error("Google login error:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "שגיאת התחברות", 
-        description: error.message 
+      console.error("Sign in error:", error);
+      
+      toast({
+        variant: "destructive",
+        title: "שגיאה בכניסה",
+        description: error.message
       });
+      
       throw error;
     }
   };
-
-  const logout = async () => {
-    setIsLoading(true);
-    
+  
+  // Sign up with email and password
+  const signUp = async (email: string, password: string, username: string) => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      toast({ title: "התנתקות הצליחה" });
-    } catch (error: any) {
-      console.error("Logout error:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "שגיאת התנתקות", 
-        description: error.message 
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const register = async (username: string, email: string, password: string) => {
-    setIsLoading(true);
-    
-    try {
-      const { error } = await supabase.auth.signUp({ 
-        email, 
+      // Create user in auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
         password,
         options: {
           data: {
-            preferred_username: username
+            username
           }
         }
       });
       
-      if (error) throw error;
-      toast({ title: "הרשמה הצליחה", description: "ברוך הבא!" });
+      if (signUpError) throw signUpError;
+      
+      // User profiles are created via trigger but we still need to set the username
+      if (signUpData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ username })
+          .eq('id', signUpData.user.id);
+          
+        if (profileError) throw profileError;
+      }
+      
     } catch (error: any) {
-      console.error("Registration error:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "שגיאת הרשמה", 
-        description: error.message 
+      console.error("Sign up error:", error);
+      
+      toast({
+        variant: "destructive",
+        title: "שגיאה בהרשמה",
+        description: error.message
       });
+      
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
-
-  const setUserAsAdmin = async (userId: string) => {
-    if (!currentUser?.isAdmin) {
-      toast({ 
-        variant: "destructive", 
-        title: "פעולה נדחתה", 
-        description: "אין לך הרשאה לבצע פעולה זו" 
+  
+  // Sign out
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
+    } catch (error: any) {
+      console.error("Sign out error:", error);
+      
+      toast({
+        variant: "destructive",
+        title: "שגיאה בהתנתקות",
+        description: error.message
       });
+      
+      throw error;
+    }
+  };
+  
+  // Refresh user profile data
+  const refreshUser = async () => {
+    if (!session?.user) {
       return;
     }
     
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_admin: true })
-        .eq('id', userId);
-      
-      if (error) throw error;
-      
-      toast({ title: "הצלחה", description: "משתמש עודכן כמנהל" });
-    } catch (error: any) {
-      console.error("Set admin error:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "שגיאה", 
-        description: error.message 
+      const userProfile = await fetchUserProfile(session.user.id);
+      setCurrentUser(userProfile);
+    } catch (error) {
+      console.error("Error refreshing user profile:", error);
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: "אירעה שגיאה ברענון נתוני המשתמש"
       });
     }
   };
 
   return (
     <AuthContext.Provider value={{ 
+      session, 
       currentUser, 
-      session,
-      isLoading, 
-      login, 
-      loginWithGoogle,
-      logout, 
-      register,
-      setUserAsAdmin
+      isLoading,
+      signIn,
+      signUp,
+      signOut,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>
