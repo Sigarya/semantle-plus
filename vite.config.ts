@@ -6,7 +6,7 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   return {
-    base: "/semantle-plus/", // ←← כאן שמתי את שם הריפו שלך
+    base: "/semantle-plus/", // שם הריפו שלך ב־GitHub Pages
     server: {
       host: "::",
       port: 8080,
