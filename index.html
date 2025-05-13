@@ -19,14 +19,10 @@
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
-    <!-- ===== הוסף את הסקריפט הבא לטיפול ב-redirect מ-404.html ===== -->
+    <!-- הסקריפט לטיפול ב-redirect מ-404.html -->
     <script type="text/javascript">
-      // Single Page Apps for GitHub Pages
-      // https://github.com/rafgraph/spa-github-pages
-      // Copyright (c) 2016 Rafael Pedicini, licensed under the MIT License
-      // MIT License: https://github.com/rafgraph/spa-github-pages/blob/master/LICENSE
       (function(l) {
-        if (l.search[1] === '/' ) { // בודק אם יש פרמטר כמו ?p=/...
+        if (l.search[1] === '/' ) {
           var decoded = l.search.slice(1).split('&').map(function(s) {
             return s.replace(/~and~/g, '&');
           }).join('?');
@@ -36,13 +32,13 @@
         }
       }(window.location))
     </script>
-    <!-- ===== סוף הסקריפט שהוספת ===== -->
-
+    <!-- ודא שאין כאן הפניות <script> או <link rel="stylesheet"> לקבצים מתיקיית assets -->
   </head>
 
   <body>
     <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+    <!-- אם הסקריפט הזה חיוני, השאר אותו. אם לא בטוח, נסה להשאיר אותו כרגע. -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <!-- ודא שאין כאן הפניה ל- src/main.tsx -->
   </body>
 </html>
