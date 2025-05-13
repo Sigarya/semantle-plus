@@ -5,6 +5,10 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // הגדרת נתיב הבסיס (base path)
+  // זה יהיה שם המאגר שלך ב-GitHub Pages
+  // הוא יופעל רק ב-build לפרודקשן, לא בפיתוח מקומי
+  base: mode === 'production' ? '/semantle-plus/' : '/',
   server: {
     host: "::",
     port: 8080,
