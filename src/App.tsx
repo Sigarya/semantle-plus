@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,7 +24,8 @@ const App = () => (
           <GameProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            {/* הוספת basename ל-BrowserRouter */}
+            <BrowserRouter basename="/semantle-plus">
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/about" element={<About />} />
