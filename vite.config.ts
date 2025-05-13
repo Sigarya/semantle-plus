@@ -3,12 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // הגדרת נתיב הבסיס (base path)
-  // זה יהיה שם המאגר שלך ב-GitHub Pages
-  // הוא יופעל רק ב-build לפרודקשן, לא בפיתוח מקומי
-  base: mode === 'production' ? '/semantle-plus/' : '/',
+  base: mode === 'production' ? '/semantle-plus/' : '/', // <--- ודא שזה כך
   server: {
     host: "::",
     port: 8080,
