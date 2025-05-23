@@ -38,6 +38,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
+  // Get the correct redirect URL based on environment
+  const getRedirectUrl = () => {
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    const isDevelopment = import.meta.env.MODE === 'development';
+    
+    if (isDevelopment) {
+      return window.location.origin;
+    } else if (isGitHubPages) {
+      return `${window.location.origin}/semantle-plus`;
+    } else {
+      return window.location.origin;
+    }
+  };
+
   // Fetch user profile data from the database
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -172,7 +186,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: getRedirectUrl()
         }
       });
       
