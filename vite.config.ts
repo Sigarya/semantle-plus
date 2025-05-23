@@ -1,10 +1,12 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/semantle-plus/' : '/', // <--- ודא שזה כך
+  // שינוי הגדרת ה-base כדי שתעבוד בכל הסביבות
+  base: import.meta.env.DEV ? '/' : '/semantle-plus/',
   server: {
     host: "::",
     port: 8080,
