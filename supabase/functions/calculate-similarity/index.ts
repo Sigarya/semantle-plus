@@ -30,6 +30,14 @@ interface ApiResponse {
   similarity: number;
 }
 
+// Get today's date in Israel timezone
+function getTodayInIsrael(): string {
+  const now = new Date();
+  // Convert to Israel timezone (UTC+2 in winter, UTC+3 in summer)
+  const israelTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jerusalem"}));
+  return israelTime.toISOString().split('T')[0];
+}
+
 serve(async (req) => {
   console.log("Received request:", req.method);
   
@@ -83,8 +91,8 @@ serve(async (req) => {
       );
     }
 
-    // Get the target date - use provided date for historical games, or today's date
-    const targetDate = date ? date : new Date().toISOString().split('T')[0];
+    // Get the target date - use provided date for historical games, or today's date in Israel timezone
+    const targetDate = date ? date : getTodayInIsrael();
     console.log("Target date for word lookup:", targetDate);
     
     // Query Supabase for the word matching the target date

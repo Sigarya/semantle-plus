@@ -1,6 +1,8 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { Guess, GameState, DailyWord, LeaderboardEntry } from "../types/game";
 import { isValidHebrewWord } from "../lib/utils";
+import { getTodayInIsrael, isToday } from "../lib/dateUtils";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -35,7 +37,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [gameState, setGameState] = useState<GameState>({
     guesses: [],
     isComplete: false,
-    wordDate: new Date().toISOString().split('T')[0],
+    wordDate: getTodayInIsrael(),
   });
   
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -65,8 +67,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             is_active: item.is_active
           })));
           
-          // Get today's date in YYYY-MM-DD format
-          const today = new Date().toISOString().split('T')[0];
+          // Get today's date in Israel timezone
+          const today = getTodayInIsrael();
           const todayWordData = data.find(w => w.date === today && w.is_active);
           
           if (todayWordData) {
@@ -114,8 +116,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     console.log("Initializing game...");
     
     try {
-      // Get today's date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0];
+      // Get today's date in Israel timezone
+      const today = getTodayInIsrael();
       
       // Check if we have a historical game flag
       const isHistorical = localStorage.getItem(STORAGE_KEY_HISTORICAL_FLAG) === "true";
@@ -211,7 +213,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error initializing game:", error);
       
       // Handle error by reverting to today's game
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayInIsrael();
       
       // Create a clean new game state for today
       const newGameState = {
@@ -587,7 +589,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   // Function to return to today's game
   const returnToTodayGame = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayInIsrael();
     console.log("Returning to today's game");
     
     // If we have a saved today game state, use it
