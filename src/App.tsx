@@ -19,8 +19,7 @@ const queryClient = new QueryClient();
 
 // קביעת ה-basename בהתאם לסביבת הריצה
 const getBasename = () => {
-  const isDev = import.meta.env.DEV;
-  return isDev ? '/' : '/semantle-plus';
+  return import.meta.env.MODE === 'development' ? '/' : '/semantle-plus';
 };
 
 const App = () => (

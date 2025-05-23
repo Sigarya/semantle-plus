@@ -6,7 +6,7 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   // שינוי הגדרת ה-base כדי שתעבוד בכל הסביבות
-  base: import.meta.env.DEV ? '/' : '/semantle-plus/',
+  base: mode === 'development' ? '/' : '/semantle-plus/',
   server: {
     host: "::",
     port: 8080,
