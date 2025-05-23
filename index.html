@@ -7,45 +7,50 @@
     <meta name="description" content="הסמנטעל המוכר והאהוב, עכשיו עם עוד כל מיני דברים!" />
     <meta name="author" content="Sigarya" />
 
-    <!-- Favicon - הוספתי כאן ותיקנתי את הלוכסן הכפול -->
+    <!-- Favicon -->
     <link rel="icon" href="https://ciuhkkmuvqoepohihofs.supabase.co/storage/v1/object/public/icon/Adobe%20Express%20-%20file.png" type="image/png" />
-    <!-- מומלץ להוסיף גם גרסאות נוספות של favicon לגדלים שונים ול-Apple -->
-    <!-- 
-    <link rel="apple-touch-icon" sizes="180x180" href="[link_to_your_apple_touch_icon_180x180.png]">
-    <link rel="icon" type="image/png" sizes="32x32" href="[link_to_your_favicon_32x32.png]">
-    <link rel="icon" type="image/png" sizes="16x16" href="[link_to_your_favicon_16x16.png]">
-    <link rel="manifest" href="/site.webmanifest"> (אם יש לך קובץ manifest)
-    -->
 
     <meta property="og:title" content="סמנטעל פלוס" />
     <meta property="og:description" content="הסמנטעל המוכר והאהוב, עכשיו עם עוד כל מיני דברים!" />
     <meta property="og:type" content="website" />
-    <!-- ה-URL של התמונה ל-Open Graph נראה שונה מה-favicon, ודא שזה מכוון -->
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" /> 
-    <!-- אופציונלי אבל מומלץ להוסיף מידות לתמונת OG -->
-    <!-- 
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    -->
-    <!-- מומלץ להוסיף גם URL קנוני של הדף -->
-    <!-- <meta property="og:url" content="[your_website_url]" /> -->
-
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" /> <!-- ודא שזה חשבון הטוויטר הנכון -->
-    <!-- ה-URL של התמונה לטוויטר נראה שונה מה-favicon, ודא שזה מכוון -->
+    <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    <!-- מומלץ להוסיף גם כותרת ותיאור ספציפיים לטוויטר -->
-    <!--
-    <meta name="twitter:title" content="סמנטעל פלוס" />
-    <meta name="twitter:description" content="הסמנטעל המוכר והאהוב, עכשיו עם עוד כל מיני דברים!" />
-    -->
+
+    <!-- הסקריפט לטיפול ב-redirect מ-404.html -->
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // https://github.com/rafgraph/spa-github-pages
+      // Copyright (c) 2016 Rafael Pedicini, licensed under the MIT License
+      // MIT License: https://github.com/rafgraph/spa-github-pages/blob/master/LICENSE
+
+      (function(l) {
+        if (l.search) {
+          var q = {};
+          l.search.slice(1).split('&').forEach(function(v) {
+            var a = v.split('=');
+            q[a[0]] = a.slice(1).join('=').replace(/~and~/g, '&');
+          });
+          if (q.p !== undefined) {
+            window.history.replaceState(null, null,
+              l.pathname.slice(0, -1) + (q.p || '') +
+              (q.q ? ('?' + q.q) : '') +
+              l.hash
+            );
+          }
+        }
+      }(window.location))
+    </script>
+    <!-- ודא שאין כאן הפניות <script> או <link rel="stylesheet"> לקבצים מתיקיית assets -->
   </head>
 
   <body>
     <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <!-- אם הסקריפט הזה חיוני, השאר אותו. אם לא בטוח, נסה להשאיר אותו כרגע. -->
+    <!-- <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script> -->
+    <!-- ודא שאין כאן הפניה ל- src/main.tsx -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
