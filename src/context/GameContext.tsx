@@ -166,13 +166,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         const savedState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
         savedStateObj = savedState ? JSON.parse(savedState) : null;
         
-        // If saved state is not for today, create a new one
+        // CRITICAL FIX: If saved state is not for today, clear guesses and create a new state
         if (!savedStateObj || savedStateObj.wordDate !== today) {
+          console.log("Creating new game state for today or clearing old guesses");
           savedStateObj = {
             guesses: [],
             isComplete: false,
             wordDate: today
           };
+          
+          // Clear the old state from localStorage
+          localStorage.removeItem(STORAGE_KEY_TODAY_GAME);
         }
       }
       
@@ -209,29 +213,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Handle error by reverting to today's game
       const today = new Date().toISOString().split('T')[0];
       
-      // Try to load today's game state if it exists
-      const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
-      let newGameState;
-      
-      if (savedTodayState) {
-        try {
-          const parsed = JSON.parse(savedTodayState);
-          if (parsed && parsed.wordDate === today) {
-            newGameState = parsed;
-          }
-        } catch (e) {
-          console.error("Error parsing saved today game state:", e);
-        }
-      }
-      
-      // If we couldn't load today's game state, create a new one
-      if (!newGameState) {
-        newGameState = {
-          guesses: [],
-          isComplete: false,
-          wordDate: today
-        };
-      }
+      // Create a clean new game state for today
+      const newGameState = {
+        guesses: [],
+        isComplete: false,
+        wordDate: today
+      };
       
       setGameState(newGameState);
       setIsHistoricalGame(false);
