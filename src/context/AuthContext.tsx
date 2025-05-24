@@ -40,32 +40,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session:", session);
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Error getting session:", error);
+        } else {
+          console.log("Initial session:", session);
+          if (mounted) {
+            setSession(session);
+            if (session?.user) {
+              await fetchUserProfile(session.user);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error in initializeAuth:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
+      
+      if (!mounted) return;
+      
       setSession(session);
+      
       if (session?.user) {
-        fetchUserProfile(session.user);
+        // Don't set loading here, let fetchUserProfile handle it
+        await fetchUserProfile(session.user);
       } else {
         setCurrentUser(null);
+        setIsLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (user: User) => {
     try {
+      console.log("Fetching profile for user:", user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -74,18 +103,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error && error.code !== 'PGRST116') {
         console.error("Error fetching profile:", error);
+        setIsLoading(false);
         return;
       }
 
       if (data) {
+        console.log("Profile found:", data);
         setCurrentUser({
           id: data.id,
           username: data.username,
           isAdmin: data.is_admin || false
         });
       } else {
+        console.log("No profile found, creating new profile");
         // Create profile if it doesn't exist
-        const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
+        const username = user.user_metadata?.username || 
+                        user.user_metadata?.full_name || 
+                        user.email?.split('@')[0] || 
+                        'User';
+        
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert({
@@ -95,7 +131,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .select()
           .single();
 
-        if (!createError && newProfile) {
+        if (createError) {
+          console.error("Error creating profile:", createError);
+          toast({
+            variant: "destructive",
+            title: "שגיאה",
+            description: "אירעה שגיאה ביצירת הפרופיל"
+          });
+        } else if (newProfile) {
+          console.log("Profile created successfully:", newProfile);
           setCurrentUser({
             id: newProfile.id,
             username: newProfile.username,
@@ -105,6 +149,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Error in fetchUserProfile:", error);
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: "אירעה שגיאה בטעינת הפרופיל"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
