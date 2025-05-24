@@ -39,57 +39,114 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  // Fetch user profile data from the database
-  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  // Create or fetch user profile
+  const ensureUserProfile = async (userId: string, userData?: any): Promise<UserProfile | null> => {
     try {
-      console.log("Fetching user profile for ID:", userId);
+      console.log("Ensuring user profile for ID:", userId, "with data:", userData);
       
-      // Get the profile data
-      const { data: profileData, error: profileError } = await supabase
+      // First try to get existing profile
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('username, is_admin')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
-      if (profileError) {
-        console.error("Profile error:", profileError);
-        return null;
+      if (existingProfile) {
+        console.log("Found existing profile:", existingProfile);
+        
+        // Get user stats
+        const { data: statsData } = await supabase
+          .from('user_stats')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+          
+        const userProfile: UserProfile = {
+          id: userId,
+          username: existingProfile.username,
+          isAdmin: existingProfile.is_admin
+        };
+        
+        if (statsData) {
+          userProfile.stats = {
+            gamesWon: statsData.games_won,
+            totalGames: statsData.games_played,
+            bestGuessCount: statsData.best_guess_count,
+            averageGuessCount: statsData.games_played > 0 
+              ? statsData.total_guesses / statsData.games_played
+              : 0,
+            winStreak: statsData.win_streak,
+            bestStreak: statsData.best_streak
+          };
+        }
+        
+        return userProfile;
       }
       
-      console.log("Profile data:", profileData);
+      // Profile doesn't exist, create it
+      console.log("Profile not found, creating new profile");
       
-      // Get user stats if they exist
-      const { data: statsData, error: statsError } = await supabase
-        .from('user_stats')
-        .select('*')
-        .eq('id', userId)
+      const username = userData?.username || 
+                      userData?.user_metadata?.username || 
+                      userData?.email?.split('@')[0] || 
+                      'משתמש';
+      
+      // Create profile
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          username: username,
+          is_admin: false
+        })
+        .select()
         .single();
         
-      // Create the user profile object
-      const userProfile: UserProfile = {
-        id: userId,
-        username: profileData.username,
-        isAdmin: profileData.is_admin
-      };
-      
-      // Add stats if they exist
-      if (statsData && !statsError) {
-        userProfile.stats = {
-          gamesWon: statsData.games_won,
-          totalGames: statsData.games_played,
-          bestGuessCount: statsData.best_guess_count,
-          averageGuessCount: statsData.games_played > 0 
-            ? statsData.total_guesses / statsData.games_played
-            : 0,
-          winStreak: statsData.win_streak,
-          bestStreak: statsData.best_streak
+      if (createError) {
+        console.error("Error creating profile:", createError);
+        // Still return a basic profile even if creation fails
+        return {
+          id: userId,
+          username: username,
+          isAdmin: false
         };
       }
       
-      console.log("Complete user profile:", userProfile);
-      return userProfile;
+      // Create initial stats
+      const { error: statsError } = await supabase
+        .from('user_stats')
+        .insert({
+          id: userId,
+          games_played: 0,
+          games_won: 0,
+          total_guesses: 0,
+          best_guess_count: null,
+          win_streak: 0,
+          best_streak: 0
+        });
+        
+      if (statsError) {
+        console.error("Error creating stats:", statsError);
+      }
+      
+      console.log("Created new profile:", newProfile);
+      
+      return {
+        id: userId,
+        username: newProfile.username,
+        isAdmin: newProfile.is_admin,
+        stats: {
+          gamesWon: 0,
+          totalGames: 0,
+          bestGuessCount: null,
+          averageGuessCount: 0,
+          winStreak: 0,
+          bestStreak: 0
+        }
+      };
+      
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.error("Error in ensureUserProfile:", error);
       return null;
     }
   };
@@ -110,7 +167,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (authSession?.user) {
         try {
-          const userProfile = await fetchUserProfile(authSession.user.id);
+          const userProfile = await ensureUserProfile(authSession.user.id, authSession.user);
           if (isMounted) {
             setCurrentUser(userProfile);
           }
@@ -134,9 +191,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(authSession);
         
         if (authSession?.user && event !== 'TOKEN_REFRESHED') {
-          // User is signed in, fetch profile
           try {
-            const userProfile = await fetchUserProfile(authSession.user.id);
+            const userProfile = await ensureUserProfile(authSession.user.id, authSession.user);
             if (isMounted) {
               setCurrentUser(userProfile);
             }
@@ -147,7 +203,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         } else if (!authSession) {
-          // User is signed out
           if (isMounted) {
             setCurrentUser(null);
           }
@@ -266,14 +321,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       console.log("Signup response:", data);
       
-      // If signup successful and user is immediately logged in
       if (data.user && data.session) {
         toast({
           title: "הרשמה הושלמה בהצלחה",
           description: "ברוך הבא למשחק!"
         });
       } else if (data.user && !data.session) {
-        // User created but needs email confirmation
         toast({
           title: "הרשמה הושלמה",
           description: "אנא בדוק את האימייל שלך לאישור החשבון"
@@ -315,7 +368,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Sign out error:", error);
       }
       
-      // Clear local state
       setCurrentUser(null);
       setSession(null);
       
@@ -323,8 +375,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
     } catch (error: any) {
       console.error("Sign out error:", error);
-      
-      // Clear local state even if there's an error
       setCurrentUser(null);
       setSession(null);
     }
@@ -337,7 +387,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
-      const userProfile = await fetchUserProfile(session.user.id);
+      const userProfile = await ensureUserProfile(session.user.id, session.user);
       setCurrentUser(userProfile);
     } catch (error) {
       console.error("Error refreshing user profile:", error);
