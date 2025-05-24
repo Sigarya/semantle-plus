@@ -17,11 +17,6 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// No basename needed for custom domain
-const getBasename = () => {
-  return '/';
-};
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -30,7 +25,7 @@ const App = () => (
           <GameProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter basename={getBasename()}>
+            <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/about" element={<About />} />

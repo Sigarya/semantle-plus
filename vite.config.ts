@@ -5,8 +5,8 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
-  // Handle both GitHub Pages and custom domain
-  base: mode === 'development' ? '/' : '/',
+  // For custom domain, always use root path
+  base: '/',
   server: {
     host: "::",
     port: 8080,
