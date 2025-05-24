@@ -45,7 +45,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isHistoricalGame, setIsHistoricalGame] = useState<boolean>(false);
   const [todayGameState, setTodayGameState] = useState<GameState | null>(null);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   // Save guesses to server for authenticated users
   const saveGuessesToServer = async (guesses: Guess[], wordDate: string) => {
@@ -131,12 +130,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Load today's word and all daily words - only once
+  // Load daily words and initialize game - single effect
   useEffect(() => {
     let mounted = true;
     
-    const loadDailyWords = async () => {
+    const initializeApp = async () => {
       try {
+        console.log("Loading daily words and initializing game...");
+        
+        // Load daily words
         const { data, error } = await supabase
           .from('daily_words')
           .select('*')
@@ -157,11 +159,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           const today = new Date().toISOString().split('T')[0];
           const todayWordData = data.find(w => w.date === today && w.is_active);
           
+          let targetWord;
           if (todayWordData) {
-            setTodayWord(todayWordData.word);
+            targetWord = todayWordData.word;
           } else {
             // Fallback to a default word if no word is set for today
-            setTodayWord("בית");
+            targetWord = "בית";
             console.log("No active word found for today, using default word: בית");
             
             // Insert default word for today if admin
@@ -181,223 +184,124 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
               }
             }
           }
+          
+          // Initialize game state
+          const isHistorical = localStorage.getItem(STORAGE_KEY_HISTORICAL_FLAG) === "true";
+          setIsHistoricalGame(isHistorical);
+          
+          let gameStateToLoad;
+          let wordForGame = targetWord;
+          
+          if (isHistorical) {
+            // Load historical game
+            const savedState = localStorage.getItem(STORAGE_KEY_GAME_STATE);
+            gameStateToLoad = savedState ? JSON.parse(savedState) : null;
+            
+            if (!gameStateToLoad || !gameStateToLoad.wordDate) {
+              // Invalid historical state, reset to today
+              localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
+              setIsHistoricalGame(false);
+              gameStateToLoad = null;
+            } else {
+              // Load word for historical date
+              const historicalWordData = data.find(w => w.date === gameStateToLoad.wordDate && w.is_active);
+              if (historicalWordData) {
+                wordForGame = historicalWordData.word;
+              }
+            }
+          }
+          
+          if (!gameStateToLoad) {
+            // Load today's game
+            if (currentUser) {
+              const serverGuesses = await loadGuessesFromServer(today);
+              if (serverGuesses.length > 0) {
+                gameStateToLoad = {
+                  guesses: serverGuesses,
+                  isComplete: serverGuesses.some(g => g.isCorrect),
+                  wordDate: today
+                };
+              }
+            }
+            
+            if (!gameStateToLoad) {
+              const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
+              gameStateToLoad = savedTodayState ? JSON.parse(savedTodayState) : null;
+              
+              if (!gameStateToLoad || gameStateToLoad.wordDate !== today) {
+                gameStateToLoad = {
+                  guesses: [],
+                  isComplete: false,
+                  wordDate: today
+                };
+              }
+            }
+          }
+          
+          if (mounted) {
+            setTodayWord(wordForGame);
+            setGameState(gameStateToLoad);
+            setIsLoading(false);
+          }
         }
       } catch (error) {
-        console.error("Error loading daily words:", error);
-        // Fallback in case of error
+        console.error("Error initializing app:", error);
+        
         if (mounted) {
+          const today = new Date().toISOString().split('T')[0];
           setTodayWord("בית");
+          setGameState({
+            guesses: [],
+            isComplete: false,
+            wordDate: today
+          });
+          setIsHistoricalGame(false);
+          localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
+          setIsLoading(false);
+          
+          toast({
+            variant: "destructive",
+            title: "שגיאה",
+            description: "אירעה שגיאה בטעינת המשחק"
+          });
         }
       }
     };
     
-    loadDailyWords();
+    initializeApp();
     
     return () => {
       mounted = false;
     };
-  }, []); // Empty dependency array - only run once
+  }, [currentUser]); // Only depend on currentUser
 
-  // Initialize game - fixed to prevent infinite loops
-  const initializeGame = useCallback(async () => {
-    if (isInitialized || !todayWord) {
-      return;
-    }
-    
-    setIsLoading(true);
-    console.log("Initializing game...");
-    
-    try {
-      // Get today's date in UTC
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Check if we have a historical game flag
-      const isHistorical = localStorage.getItem(STORAGE_KEY_HISTORICAL_FLAG) === "true";
-      setIsHistoricalGame(isHistorical);
-      
-      // Try to load saved game state
-      let savedStateObj;
-      
-      if (isHistorical) {
-        // If we're in a historical game, try to load that state
-        const savedState = localStorage.getItem(STORAGE_KEY_GAME_STATE);
-        savedStateObj = savedState ? JSON.parse(savedState) : null;
-        console.log("Loading historical game:", savedStateObj?.wordDate);
-        
-        // If we don't have a valid saved state for historical game, reset to today's game
-        if (!savedStateObj || !savedStateObj.wordDate) {
-          console.log("Invalid historical game state, resetting to today's game");
-          localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
-          setIsHistoricalGame(false);
-          
-          // Try to load today's saved state or server data
-          const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
-          savedStateObj = savedTodayState ? JSON.parse(savedTodayState) : null;
-          
-          // If no valid today state either, create new and load from server
-          if (!savedStateObj || savedStateObj.wordDate !== today) {
-            const serverGuesses = await loadGuessesFromServer(today);
-            savedStateObj = {
-              guesses: serverGuesses,
-              isComplete: serverGuesses.some(g => g.isCorrect),
-              wordDate: today
-            };
-          }
-        } else {
-          // For historical games, try to load from server if authenticated
-          if (currentUser && savedStateObj.wordDate) {
-            const serverGuesses = await loadGuessesFromServer(savedStateObj.wordDate);
-            if (serverGuesses.length > 0) {
-              savedStateObj = {
-                guesses: serverGuesses,
-                isComplete: serverGuesses.some(g => g.isCorrect),
-                wordDate: savedStateObj.wordDate
-              };
-            }
-          }
-        }
-        
-        // Make sure we have today's game state saved
-        const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
-        if (savedTodayState) {
-          const todayStateObj = JSON.parse(savedTodayState);
-          if (todayStateObj.wordDate === today) {
-            setTodayGameState(todayStateObj);
-          }
-        }
-      } else {
-        // We're loading today's game
-        console.log("Loading today's game");
-        
-        // Try to load from server first if authenticated
-        if (currentUser) {
-          const serverGuesses = await loadGuessesFromServer(today);
-          if (serverGuesses.length > 0) {
-            savedStateObj = {
-              guesses: serverGuesses,
-              isComplete: serverGuesses.some(g => g.isCorrect),
-              wordDate: today
-            };
-            console.log("Loaded game state from server");
-          }
-        }
-        
-        // If no server data, try local storage
-        if (!savedStateObj) {
-          const savedState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
-          savedStateObj = savedState ? JSON.parse(savedState) : null;
-        }
-        
-        // CRITICAL FIX: If saved state is not for today, clear guesses and create a new state
-        if (!savedStateObj || savedStateObj.wordDate !== today) {
-          console.log("Creating new game state for today or clearing old guesses");
-          savedStateObj = {
-            guesses: [],
-            isComplete: false,
-            wordDate: today
-          };
-          
-          // Clear the old state from localStorage
-          localStorage.removeItem(STORAGE_KEY_TODAY_GAME);
-        }
-      }
-      
-      // Set the game state from what we loaded or created
-      setGameState(savedStateObj);
-      
-      // If we have a date that doesn't match today, we need to fetch the word for that date
-      if (savedStateObj.wordDate !== today) {
-        const { data, error } = await supabase
-          .from('daily_words')
-          .select('word')
-          .eq('date', savedStateObj.wordDate)
-          .eq('is_active', true)
-          .single();
-          
-        if (error) {
-          console.error("Error fetching word for date:", error);
-          throw new Error("שגיאה בטעינת המילה");
-        }
-        
-        if (data) {
-          console.log(`Setting target word for ${savedStateObj.wordDate}: ${data.word}`);
-          setTodayWord(data.word);
-        } else {
-          console.error("No word found for date:", savedStateObj.wordDate);
-          throw new Error(`לא נמצאה מילה לתאריך ${savedStateObj.wordDate}`);
-        }
-      }
-      
-      setIsInitialized(true);
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error initializing game:", error);
-      
-      // Handle error by reverting to today's game
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Create a clean new game state for today
-      const newGameState = {
-        guesses: [],
-        isComplete: false,
-        wordDate: today
-      };
-      
-      setGameState(newGameState);
-      setIsHistoricalGame(false);
-      localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
-      
-      setIsInitialized(true);
-      setIsLoading(false);
-      
-      toast({
-        variant: "destructive",
-        title: "שגיאה",
-        description: "אירעה שגיאה בטעינת המשחק"
-      });
-    }
-  }, [todayWord, currentUser, isInitialized, loadGuessesFromServer, toast]);
-
-  // Load or initialize game - only when todayWord is available and not yet initialized
+  // Save game state when it changes
   useEffect(() => {
-    if (todayWord && !isInitialized && !isLoading) {
-      initializeGame();
-    }
-  }, [todayWord, isInitialized, isLoading, initializeGame]);
-
-  // Save game state when it changes - but only after initialization
-  useEffect(() => {
-    if (!isLoading && isInitialized) {
-      // Always save the current game state to localStorage
+    if (!isLoading && todayWord) {
       localStorage.setItem(STORAGE_KEY_GAME_STATE, JSON.stringify(gameState));
       
-      // If this is today's game, also save it as today's game state
       if (!isHistoricalGame) {
         const today = new Date().toISOString().split('T')[0];
         if (gameState.wordDate === today) {
           localStorage.setItem(STORAGE_KEY_TODAY_GAME, JSON.stringify(gameState));
           setTodayGameState(gameState);
           
-          // Save to server if authenticated
           if (currentUser) {
             saveGuessesToServer(gameState.guesses, gameState.wordDate);
           }
         }
-      }
-      // If this is a historical game, save it in the historical states record
-      else {
+      } else {
         const savedHistoricalStates = localStorage.getItem(STORAGE_KEY_HISTORICAL_STATES);
         let historicalStates = savedHistoricalStates ? JSON.parse(savedHistoricalStates) : {};
         historicalStates[gameState.wordDate] = gameState;
         localStorage.setItem(STORAGE_KEY_HISTORICAL_STATES, JSON.stringify(historicalStates));
         
-        // Save to server if authenticated
         if (currentUser) {
           saveGuessesToServer(gameState.guesses, gameState.wordDate);
         }
       }
     }
-  }, [gameState, isLoading, isHistoricalGame, currentUser, isInitialized, saveGuessesToServer]);
+  }, [gameState, isLoading, isHistoricalGame, currentUser, todayWord]);
 
   const makeGuess = async (word: string): Promise<Guess> => {
     if (!todayWord) throw new Error("המשחק לא נטען כראוי");
@@ -809,12 +713,18 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const initializeGame = async () => {
+    // This function is now mostly handled by the main useEffect
+    // Keep it for backward compatibility but make it a no-op
+    console.log("initializeGame called - handled by main initialization");
+  };
+
   // Load leaderboard when component mounts or game state changes
   useEffect(() => {
-    if (gameState.wordDate && !isLoading && isInitialized) {
+    if (gameState.wordDate && !isLoading && todayWord) {
       fetchLeaderboard();
     }
-  }, [gameState.wordDate, isLoading, isInitialized]);
+  }, [gameState.wordDate, isLoading, todayWord]);
 
   return (
     <GameContext.Provider 

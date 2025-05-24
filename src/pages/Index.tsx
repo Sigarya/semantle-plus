@@ -9,7 +9,6 @@ const Index = () => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Simple mounting check - the GameContext handles all initialization
     setMounted(true);
   }, []);
 
