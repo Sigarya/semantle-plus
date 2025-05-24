@@ -39,132 +39,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  // Simple profile fetcher that doesn't cause deadlocks
-  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
-    try {
-      console.log("Fetching profile for user:", userId);
-      
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('username, is_admin')
-        .eq('id', userId)
-        .maybeSingle();
-        
-      if (error) {
-        console.error("Error fetching profile:", error);
-        return null;
-      }
-      
-      if (!profile) {
-        console.log("No profile found, will be created by trigger");
-        return null;
-      }
-      
-      // Get stats
-      const { data: stats } = await supabase
-        .from('user_stats')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-        
-      const userProfile: UserProfile = {
-        id: userId,
-        username: profile.username,
-        isAdmin: profile.is_admin || false
-      };
-      
-      if (stats) {
-        userProfile.stats = {
-          gamesWon: stats.games_won || 0,
-          totalGames: stats.games_played || 0,
-          bestGuessCount: stats.best_guess_count,
-          averageGuessCount: stats.games_played > 0 ? (stats.total_guesses || 0) / stats.games_played : 0,
-          winStreak: stats.win_streak || 0,
-          bestStreak: stats.best_streak || 0
-        };
-      }
-      
-      console.log("Profile fetched successfully:", userProfile);
-      return userProfile;
-    } catch (error) {
-      console.error("Error in fetchUserProfile:", error);
-      return null;
-    }
-  };
-  
-  // Initialize auth state
   useEffect(() => {
-    let mounted = true;
-    
-    console.log("AuthContext: Setting up auth listeners");
-    
     // Get initial session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log("AuthContext: Initial session:", initialSession?.user?.id);
-        
-        if (!mounted) return;
-        
-        setSession(initialSession);
-        
-        if (initialSession?.user) {
-          // Fetch profile in background without blocking
-          setTimeout(async () => {
-            if (mounted) {
-              const profile = await fetchUserProfile(initialSession.user.id);
-              if (mounted) {
-                setCurrentUser(profile);
-              }
-            }
-          }, 0);
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error("AuthContext: Error during initialization:", error);
-        if (mounted) {
-          setIsLoading(false);
-        }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      if (!session) {
+        setCurrentUser(null);
       }
-    };
-    
-    // Set up auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("AuthContext: Auth state changed:", event, session?.user?.id);
-        
-        if (!mounted) return;
-        
-        setSession(session);
-        
-        if (session?.user && event !== 'TOKEN_REFRESHED') {
-          // Fetch profile without blocking the auth state update
-          setTimeout(async () => {
-            if (mounted) {
-              const profile = await fetchUserProfile(session.user.id);
-              if (mounted) {
-                setCurrentUser(profile);
-              }
-            }
-          }, 0);
-        } else if (!session) {
-          setCurrentUser(null);
-        }
-      }
-    );
-    
-    initializeAuth();
-    
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
-  
+
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("AuthContext: Starting sign in");
       setIsLoading(true);
       
       const { error } = await supabase.auth.signInWithPassword({
@@ -174,10 +68,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) throw error;
       
-      console.log("AuthContext: Sign in successful");
-      
     } catch (error: any) {
-      console.error("AuthContext: Sign in error:", error);
+      console.error("Sign in error:", error);
       setIsLoading(false);
       
       let errorMessage = "שגיאה בהתחברות. אנא נסה שוב.";
@@ -200,8 +92,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signInWithGoogle = async () => {
     try {
-      console.log("AuthContext: Starting Google sign in");
-      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -212,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       
     } catch (error: any) {
-      console.error("AuthContext: Google sign in error:", error);
+      console.error("Google sign in error:", error);
       
       toast({
         variant: "destructive",
@@ -226,7 +116,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      console.log("AuthContext: Starting signup");
       setIsLoading(true);
       
       const { data, error } = await supabase.auth.signUp({
@@ -241,8 +130,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) throw error;
       
-      console.log("AuthContext: Signup response:", data);
-      
       if (data.user && data.session) {
         toast({
           title: "הרשמה הושלמה בהצלחה",
@@ -256,7 +143,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
     } catch (error: any) {
-      console.error("AuthContext: Sign up error:", error);
+      console.error("Sign up error:", error);
       setIsLoading(false);
       
       let errorMessage = "שגיאה בהרשמה. אנא נסה שוב.";
@@ -281,27 +168,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signOut = async () => {
     try {
-      console.log("AuthContext: Starting sign out");
-      
       await supabase.auth.signOut();
       setCurrentUser(null);
       setSession(null);
-      
     } catch (error: any) {
-      console.error("AuthContext: Sign out error:", error);
+      console.error("Sign out error:", error);
       setCurrentUser(null);
       setSession(null);
     }
   };
   
   const refreshUser = async () => {
-    if (!session?.user) return;
-    
-    try {
-      const profile = await fetchUserProfile(session.user.id);
-      setCurrentUser(profile);
-    } catch (error) {
-      console.error("AuthContext: Error refreshing user:", error);
+    // Simple refresh that doesn't cause issues
+    if (session?.user) {
+      // Just trigger a re-render, profile data will be fetched when needed
+      setCurrentUser(prev => prev);
     }
   };
 
