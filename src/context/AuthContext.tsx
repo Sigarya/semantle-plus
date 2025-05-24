@@ -56,10 +56,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Fetch user profile data from the database
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string): Promise<UserProfile> => {
+    console.log("Fetching user profile for ID:", userId);
+    
     try {
-      console.log("Fetching user profile for ID:", userId);
-      
       // Get the profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -116,66 +116,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     console.log("Setting up auth listeners");
     
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, authSession) => {
         console.log("Auth state changed:", event, authSession?.user?.id);
         
         if (!isMounted) return;
         
-        // Clear user data when signing out
-        if (!authSession) {
-          setSession(null);
-          setCurrentUser(null);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Set session immediately
         setSession(authSession);
         
-        // Load user profile when signing in
         if (authSession?.user) {
+          // User is signed in, fetch profile
           try {
             const userProfile = await fetchUserProfile(authSession.user.id);
             if (isMounted) {
               setCurrentUser(userProfile);
-              setIsLoading(false);
             }
           } catch (error) {
-            console.error("Error in onAuthStateChange:", error);
+            console.error("Error loading user profile:", error);
             if (isMounted) {
-              setIsLoading(false);
+              setCurrentUser(null);
             }
           }
+        } else {
+          // User is signed out
+          if (isMounted) {
+            setCurrentUser(null);
+          }
+        }
+        
+        if (isMounted) {
+          setIsLoading(false);
         }
       }
     );
 
-    // THEN get existing session
-    supabase.auth.getSession().then(async ({ data: { session: authSession } }) => {
+    // Get existing session
+    supabase.auth.getSession().then(({ data: { session: authSession } }) => {
       if (!isMounted) return;
       
       console.log("Initial session check:", authSession?.user?.id);
-      setSession(authSession);
       
-      // Load user profile if session exists
-      if (authSession?.user) {
-        try {
-          const userProfile = await fetchUserProfile(authSession.user.id);
-          if (isMounted) {
-            setCurrentUser(userProfile);
-            setIsLoading(false);
-          }
-        } catch (error) {
-          console.error("Error loading initial user profile:", error);
-          if (isMounted) {
-            setIsLoading(false);
-          }
-        }
-      } else {
+      if (!authSession) {
+        setSession(null);
+        setCurrentUser(null);
         setIsLoading(false);
       }
+      // If there is a session, the onAuthStateChange will handle it
     });
 
     return () => {
@@ -184,42 +171,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
   
-  // Sign in with email/username and password
+  // Sign in with email and password (simplified)
   const signIn = async (emailOrUsername: string, password: string) => {
     try {
       console.log("Starting sign in process with:", { emailOrUsername });
       setIsLoading(true);
       
-      // Determine if input is email or username
-      const isEmail = emailOrUsername.includes('@');
-      let email = emailOrUsername;
-      
-      // If it's a username, find the corresponding email
-      if (!isEmail) {
-        console.log("Looking up email for username:", emailOrUsername);
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('username', emailOrUsername)
-          .single();
-          
-        if (profileError || !profileData) {
-          throw new Error("שם המשתמש לא נמצא");
-        }
-        
-        // Get the auth.users info using the service role
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(profileData.id);
-        
-        if (userError || !userData.user?.email) {
-          throw new Error("לא ניתן למצוא את האימייל המשויך לשם המשתמש");
-        }
-        
-        email = userData.user.email;
-        console.log("Found email for username:", email);
+      // Simple approach: try to sign in directly with the input
+      // If it contains @, treat as email. Otherwise, show error.
+      if (!emailOrUsername.includes('@')) {
+        throw new Error("אנא הכנס כתובת אימייל תקינה");
       }
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: emailOrUsername,
         password
       });
       
@@ -236,14 +201,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       let errorMessage = "שגיאה בהתחברות. אנא נסה שוב.";
       
-      if (error.message.includes("Invalid login credentials") || error.message.includes("שם המשתמש לא נמצא")) {
+      if (error.message.includes("Invalid login credentials")) {
         errorMessage = "פרטי ההתחברות שגויים";
       } else if (error.message.includes("Email not confirmed")) {
         errorMessage = "האימייל לא אושר. אנא בדוק את תיבת הדואר שלך";
+      } else if (error.message.includes("אנא הכנס כתובת אימייל תקינה")) {
+        errorMessage = "אנא הכנס כתובת אימייל תקינה";
       } else if (error.message.includes("Too many requests")) {
         errorMessage = "יותר מדי ניסיונות התחברות. אנא נסה שוב מאוחר יותר";
-      } else if (error.message.includes("fetch") || error.message.includes("network")) {
-        errorMessage = "בעיית חיבור לשרת. אנא בדוק את החיבור לאינטרנט";
       }
       
       toast({
@@ -341,8 +306,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         errorMessage = "כתובת האימייל אינה תקינה";
       } else if (error.message.includes("Password")) {
         errorMessage = "הסיסמה חייבת להכיל לפחות 6 תווים";
-      } else if (error.message.includes("Signup requires a valid password")) {
-        errorMessage = "נדרשת סיסמה תקינה להרשמה";
       }
       
       toast({
@@ -355,7 +318,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  // Sign out with better error handling
+  // Sign out
   const signOut = async () => {
     try {
       console.log("Starting sign out process");
@@ -364,17 +327,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         console.error("Sign out error:", error);
-        // Only show user-facing errors for significant issues
-        if (!error.message.includes('session') && !error.message.includes('missing')) {
-          toast({
-            variant: "destructive",
-            title: "שגיאה בהתנתקות",
-            description: error.message
-          });
-        }
       }
       
-      // Clear local state regardless of error
+      // Clear local state
       setCurrentUser(null);
       setSession(null);
       
@@ -386,15 +341,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Clear local state even if there's an error
       setCurrentUser(null);
       setSession(null);
-      
-      // Only show user-facing errors for significant issues
-      if (!error.message.includes('session') && !error.message.includes('missing')) {
-        toast({
-          variant: "destructive",
-          title: "שגיאה בהתנתקות",
-          description: error.message
-        });
-      }
     }
   };
   

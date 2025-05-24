@@ -93,7 +93,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
       console.log("Signup successful");
     } catch (error: any) {
       console.error("Signup error:", error);
-      // Don't show additional error here as AuthContext already shows toast
+      // AuthContext already shows toast
     } finally {
       setIsLoading(false);
     }

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ interface LoginFormProps {
 }
 
 const LoginForm = ({ onToggleMode }: LoginFormProps) => {
-  const [emailOrUsername, setEmailOrUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,8 +20,14 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailOrUsername.trim() || !password.trim()) {
+    
+    if (!email.trim() || !password.trim()) {
       setError("אנא מלא את כל השדות");
+      return;
+    }
+    
+    if (!email.includes('@')) {
+      setError("אנא הכנס כתובת אימייל תקינה");
       return;
     }
     
@@ -29,12 +35,12 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
     setIsLoading(true);
     
     try {
-      console.log("Attempting login with:", emailOrUsername);
-      await signIn(emailOrUsername.trim(), password);
+      console.log("Attempting login with email:", email);
+      await signIn(email.trim(), password);
       console.log("Login successful");
     } catch (error: any) {
       console.error("Login error:", error);
-      // Don't show additional error here as AuthContext already shows toast
+      // AuthContext already shows toast, so we don't need to show additional error
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +55,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       console.log("Google login initiated");
     } catch (error: any) {
       console.error("Google login error:", error);
-      // Don't show additional error here as AuthContext already shows toast
+      // AuthContext already shows toast
     }
   };
 
@@ -60,7 +66,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
         variant="outline"
         onClick={handleGoogleLogin}
         className="w-full flex items-center justify-center space-x-2 space-x-reverse"
-        disabled={authLoading}
+        disabled={authLoading || isLoading}
       >
         <svg width="20" height="20" viewBox="0 0 24 24">
           <path
@@ -95,13 +101,13 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="emailOrUsername">אימייל או שם משתמש</Label>
+        <Label htmlFor="email">אימייל</Label>
         <Input
-          id="emailOrUsername"
-          type="text"
-          value={emailOrUsername}
-          onChange={(e) => setEmailOrUsername(e.target.value)}
-          placeholder="you@example.com או שם משתמש"
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
           required
           disabled={isLoading || authLoading}
         />
