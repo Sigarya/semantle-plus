@@ -176,7 +176,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
       
       try {
-        console.log("Initializing app with auth ready...");
+        console.log("Initializing app with auth ready. Current user:", auth.currentUser?.id);
         setIsLoading(true);
         
         // Load daily words
@@ -185,7 +185,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           .select('*')
           .order('date', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error loading daily words:", error);
+          throw error;
+        }
         
         if (data && mounted) {
           setDailyWords(data.map(item => ({
@@ -272,7 +275,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       mounted = false;
     };
-  }, [auth.isLoading, auth.currentUser, toast]);
+  }, [auth.isLoading, auth.currentUser?.id, toast]);
 
   // Save game state when it changes
   useEffect(() => {

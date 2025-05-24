@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Session, User, Provider } from "@supabase/supabase-js";
+import { Session, User } from "@supabase/supabase-js";
 import { useToast } from "@/components/ui/use-toast";
 
 interface UserStats {
@@ -24,7 +24,7 @@ interface AuthContextType {
   session: Session | null;
   currentUser: UserProfile | null;
   isLoading: boolean;
-  signIn: (emailOrUsername: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -39,27 +39,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  // Get the correct redirect URL based on environment
-  const getRedirectUrl = () => {
-    const hostname = window.location.hostname;
-    const isDevelopment = import.meta.env.MODE === 'development';
-    
-    if (isDevelopment) {
-      return window.location.origin;
-    } else if (hostname === 'semantle.sigarya.xyz') {
-      return 'https://semantle.sigarya.xyz';
-    } else if (hostname.includes('github.io')) {
-      return `${window.location.origin}/semantle-plus`;
-    } else {
-      return window.location.origin;
-    }
-  };
-
   // Fetch user profile data from the database
-  const fetchUserProfile = async (userId: string): Promise<UserProfile> => {
-    console.log("Fetching user profile for ID:", userId);
-    
+  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
+      console.log("Fetching user profile for ID:", userId);
+      
       // Get the profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -69,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
       if (profileError) {
         console.error("Profile error:", profileError);
-        throw profileError;
+        return null;
       }
       
       console.log("Profile data:", profileData);
@@ -106,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return userProfile;
     } catch (error) {
       console.error("Error fetching user profile:", error);
-      throw error;
+      return null;
     }
   };
   
@@ -115,6 +99,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let isMounted = true;
     
     console.log("Setting up auth listeners");
+    
+    // Get existing session first
+    supabase.auth.getSession().then(async ({ data: { session: authSession } }) => {
+      if (!isMounted) return;
+      
+      console.log("Initial session check:", authSession?.user?.id);
+      
+      setSession(authSession);
+      
+      if (authSession?.user) {
+        try {
+          const userProfile = await fetchUserProfile(authSession.user.id);
+          if (isMounted) {
+            setCurrentUser(userProfile);
+          }
+        } catch (error) {
+          console.error("Error loading user profile:", error);
+        }
+      }
+      
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    });
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -125,7 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         setSession(authSession);
         
-        if (authSession?.user) {
+        if (authSession?.user && event !== 'TOKEN_REFRESHED') {
           // User is signed in, fetch profile
           try {
             const userProfile = await fetchUserProfile(authSession.user.id);
@@ -138,32 +146,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setCurrentUser(null);
             }
           }
-        } else {
+        } else if (!authSession) {
           // User is signed out
           if (isMounted) {
             setCurrentUser(null);
           }
         }
         
-        if (isMounted) {
+        if (isMounted && event !== 'TOKEN_REFRESHED') {
           setIsLoading(false);
         }
       }
     );
-
-    // Get existing session
-    supabase.auth.getSession().then(({ data: { session: authSession } }) => {
-      if (!isMounted) return;
-      
-      console.log("Initial session check:", authSession?.user?.id);
-      
-      if (!authSession) {
-        setSession(null);
-        setCurrentUser(null);
-        setIsLoading(false);
-      }
-      // If there is a session, the onAuthStateChange will handle it
-    });
 
     return () => {
       isMounted = false;
@@ -171,20 +165,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
   
-  // Sign in with email and password (simplified)
-  const signIn = async (emailOrUsername: string, password: string) => {
+  // Sign in with email and password
+  const signIn = async (email: string, password: string) => {
     try {
-      console.log("Starting sign in process with:", { emailOrUsername });
+      console.log("Starting sign in process with:", { email });
       setIsLoading(true);
       
-      // Simple approach: try to sign in directly with the input
-      // If it contains @, treat as email. Otherwise, show error.
-      if (!emailOrUsername.includes('@')) {
-        throw new Error("אנא הכנס כתובת אימייל תקינה");
-      }
-      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailOrUsername,
+        email,
         password
       });
       
@@ -205,8 +193,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         errorMessage = "פרטי ההתחברות שגויים";
       } else if (error.message.includes("Email not confirmed")) {
         errorMessage = "האימייל לא אושר. אנא בדוק את תיבת הדואר שלך";
-      } else if (error.message.includes("אנא הכנס כתובת אימייל תקינה")) {
-        errorMessage = "אנא הכנס כתובת אימייל תקינה";
       } else if (error.message.includes("Too many requests")) {
         errorMessage = "יותר מדי ניסיונות התחברות. אנא נסה שוב מאוחר יותר";
       }
@@ -229,7 +215,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: getRedirectUrl(),
+          redirectTo: window.location.origin,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
