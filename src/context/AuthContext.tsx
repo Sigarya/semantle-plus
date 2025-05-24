@@ -113,14 +113,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (!isMounted) return;
         
-        setSession(authSession);
-        
         // Clear user data when signing out
         if (!authSession) {
+          setSession(null);
           setCurrentUser(null);
           setIsLoading(false);
           return;
         }
+        
+        // Set session immediately
+        setSession(authSession);
         
         // Load user profile when signing in
         if (authSession?.user) {
@@ -263,9 +265,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  // Sign out
+  // Sign out with better error handling
   const signOut = async () => {
     try {
+      console.log("Starting sign out process");
+      
       // Clear local state immediately
       setCurrentUser(null);
       setSession(null);
@@ -274,8 +278,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         console.error("Sign out error:", error);
-        // Don't show error to user for session issues, just log it
-        if (!error.message.includes('session')) {
+        // Only show user-facing errors for significant issues
+        if (!error.message.includes('session') && !error.message.includes('missing')) {
           toast({
             variant: "destructive",
             title: "שגיאה בהתנתקות",
@@ -284,11 +288,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
+      console.log("Sign out completed successfully");
+      
     } catch (error: any) {
       console.error("Sign out error:", error);
       
-      // Don't show error to user for session issues, just log it
-      if (!error.message.includes('session')) {
+      // Only show user-facing errors for significant issues
+      if (!error.message.includes('session') && !error.message.includes('missing')) {
         toast({
           variant: "destructive",
           title: "שגיאה בהתנתקות",

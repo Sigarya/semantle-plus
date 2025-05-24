@@ -61,84 +61,102 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return currentUser ? currentUser.id : getGuestId();
   };
 
-  // Save guesses to server for both authenticated and guest users
+  // Save guesses to server - with proper error handling
   const saveGuessesToServer = async (guesses: Guess[], wordDate: string) => {
     try {
       const userId = getCurrentUserId();
       console.log("Saving guesses to server for user:", userId, "date:", wordDate, "guesses count:", guesses.length);
       
-      // First, delete existing guesses for this user and date
-      const { error: deleteError } = await supabase
-        .from('user_guesses')
-        .delete()
-        .eq('user_id', userId)
-        .eq('word_date', wordDate);
-        
-      if (deleteError) {
-        console.error("Error deleting existing guesses:", deleteError);
-        return;
-      }
-      
-      // Then insert new guesses if any exist
-      if (guesses.length > 0) {
-        const guessesToSave = guesses.map((guess, index) => ({
-          user_id: userId,
-          word_date: wordDate,
-          guess_word: guess.word,
-          similarity: guess.similarity,
-          rank: guess.rank || null,
-          is_correct: guess.isCorrect,
-          guess_order: index + 1
-        }));
-        
-        console.log("Inserting guesses:", guessesToSave);
-        
-        const { error: insertError } = await supabase
+      // For authenticated users, use user_guesses table
+      if (currentUser) {
+        // First, delete existing guesses for this user and date
+        const { error: deleteError } = await supabase
           .from('user_guesses')
-          .insert(guessesToSave);
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('word_date', wordDate);
           
-        if (insertError) {
-          console.error("Error saving guesses:", insertError);
-        } else {
-          console.log("Successfully saved", guesses.length, "guesses to server");
+        if (deleteError) {
+          console.error("Error deleting existing guesses:", deleteError);
+          return;
         }
+        
+        // Then insert new guesses if any exist
+        if (guesses.length > 0) {
+          const guessesToSave = guesses.map((guess, index) => ({
+            user_id: currentUser.id,
+            word_date: wordDate,
+            guess_word: guess.word,
+            similarity: guess.similarity,
+            rank: guess.rank || null,
+            is_correct: guess.isCorrect,
+            guess_order: index + 1
+          }));
+          
+          const { error: insertError } = await supabase
+            .from('user_guesses')
+            .insert(guessesToSave);
+            
+          if (insertError) {
+            console.error("Error saving guesses:", insertError);
+          } else {
+            console.log("Successfully saved", guesses.length, "guesses to server");
+          }
+        }
+      } else {
+        // For guest users, save to localStorage as fallback
+        const guestGameKey = `guest_game_${wordDate}_${userId}`;
+        localStorage.setItem(guestGameKey, JSON.stringify(guesses));
+        console.log("Saved guest guesses to localStorage");
       }
     } catch (error) {
       console.error("Error in saveGuessesToServer:", error);
     }
   };
 
-  // Load guesses from server for both authenticated and guest users
+  // Load guesses from server - with proper error handling
   const loadGuessesFromServer = async (wordDate: string): Promise<Guess[]> => {
     try {
       const userId = getCurrentUserId();
       console.log("Loading guesses from server for user:", userId, "date:", wordDate);
       
-      const { data, error } = await supabase
-        .from('user_guesses')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('word_date', wordDate)
-        .order('guess_order', { ascending: true });
+      // For authenticated users, load from user_guesses table
+      if (currentUser) {
+        const { data, error } = await supabase
+          .from('user_guesses')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('word_date', wordDate)
+          .order('guess_order', { ascending: true });
+          
+        if (error) {
+          console.error("Error loading guesses:", error);
+          return [];
+        }
         
-      if (error) {
-        console.error("Error loading guesses:", error);
-        return [];
+        if (data && data.length > 0) {
+          const loadedGuesses = data.map(guess => ({
+            word: guess.guess_word,
+            similarity: Number(guess.similarity),
+            rank: guess.rank,
+            isCorrect: guess.is_correct
+          }));
+          
+          console.log("Successfully loaded", loadedGuesses.length, "guesses from server:", loadedGuesses);
+          return loadedGuesses;
+        }
+      } else {
+        // For guest users, load from localStorage
+        const guestGameKey = `guest_game_${wordDate}_${userId}`;
+        const savedGuesses = localStorage.getItem(guestGameKey);
+        if (savedGuesses) {
+          const loadedGuesses = JSON.parse(savedGuesses);
+          console.log("Loaded guest guesses from localStorage:", loadedGuesses);
+          return loadedGuesses;
+        }
       }
       
-      if (data && data.length > 0) {
-        const loadedGuesses = data.map(guess => ({
-          word: guess.guess_word,
-          similarity: Number(guess.similarity),
-          rank: guess.rank,
-          isCorrect: guess.is_correct
-        }));
-        
-        console.log("Successfully loaded", loadedGuesses.length, "guesses from server:", loadedGuesses);
-        return loadedGuesses;
-      }
-      
-      console.log("No guesses found on server for this user and date");
+      console.log("No guesses found for this user and date");
       return [];
     } catch (error) {
       console.error("Error in loadGuessesFromServer:", error);
@@ -201,7 +219,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           }
           
           if (!gameStateToLoad) {
-            // Load today's game - always prioritize server data
+            // Load today's game from server
             console.log("Loading today's game from server");
             const serverGuesses = await loadGuessesFromServer(today);
             gameStateToLoad = {
@@ -248,17 +266,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       mounted = false;
     };
-  }, [currentUser, toast]); // Re-run when user changes (login/logout)
+  }, [currentUser, toast]);
 
-  // Save game state when it changes - always to server
+  // Save game state when it changes
   useEffect(() => {
     if (!isLoading && todayWord && gameState.guesses.length >= 0) {
       console.log("Saving game state:", gameState);
       
-      // Always save to server
+      // Save to server
       saveGuessesToServer(gameState.guesses, gameState.wordDate);
       
-      // Also save locally as backup for historical games
+      // Also save locally as backup
       localStorage.setItem(STORAGE_KEY_GAME_STATE, JSON.stringify(gameState));
       
       if (!isHistoricalGame) {
@@ -324,22 +342,23 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           .eq('id', currentUser.id)
           .single();
           
-        if (statsError) {
+        if (statsError && statsError.code !== 'PGRST116') {
           console.error("Error fetching stats:", statsError);
-        } else if (stats) {
-          const newGamesPlayed = stats.games_played + 1;
-          const newGamesWon = stats.games_won + 1;
-          const newWinStreak = stats.win_streak + 1;
-          const newBestStreak = Math.max(stats.best_streak, newWinStreak);
-          const newGuessCount = newGuesses.length;
-          const newTotalGuesses = stats.total_guesses + newGuessCount;
-          const newBestGuessCount = stats.best_guess_count 
-            ? Math.min(stats.best_guess_count, newGuessCount) 
-            : newGuessCount;
+        } else {
+          let statsToUpdate;
           
-          const { error: updateError } = await supabase
-            .from('user_stats')
-            .update({
+          if (stats) {
+            const newGamesPlayed = stats.games_played + 1;
+            const newGamesWon = stats.games_won + 1;
+            const newWinStreak = stats.win_streak + 1;
+            const newBestStreak = Math.max(stats.best_streak, newWinStreak);
+            const newGuessCount = newGuesses.length;
+            const newTotalGuesses = stats.total_guesses + newGuessCount;
+            const newBestGuessCount = stats.best_guess_count 
+              ? Math.min(stats.best_guess_count, newGuessCount) 
+              : newGuessCount;
+            
+            statsToUpdate = {
               games_played: newGamesPlayed,
               games_won: newGamesWon,
               win_streak: newWinStreak,
@@ -347,11 +366,35 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
               best_guess_count: newBestGuessCount,
               total_guesses: newTotalGuesses,
               updated_at: new Date().toISOString()
-            })
-            .eq('id', currentUser.id);
+            };
             
-          if (updateError) {
-            console.error("Error updating stats:", updateError);
+            const { error: updateError } = await supabase
+              .from('user_stats')
+              .update(statsToUpdate)
+              .eq('id', currentUser.id);
+              
+            if (updateError) {
+              console.error("Error updating stats:", updateError);
+            }
+          } else {
+            // Create new stats entry
+            statsToUpdate = {
+              id: currentUser.id,
+              games_played: 1,
+              games_won: 1,
+              win_streak: 1,
+              best_streak: 1,
+              best_guess_count: newGuesses.length,
+              total_guesses: newGuesses.length
+            };
+            
+            const { error: insertError } = await supabase
+              .from('user_stats')
+              .insert(statsToUpdate);
+              
+            if (insertError) {
+              console.error("Error creating stats:", insertError);
+            }
           }
         }
         
