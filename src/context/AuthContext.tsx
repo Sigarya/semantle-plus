@@ -40,12 +40,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Get the correct redirect URL based on environment
   const getRedirectUrl = () => {
-    const isGitHubPages = window.location.hostname.includes('github.io');
+    const hostname = window.location.hostname;
     const isDevelopment = import.meta.env.MODE === 'development';
     
     if (isDevelopment) {
       return window.location.origin;
-    } else if (isGitHubPages) {
+    } else if (hostname === 'semantle.sigarya.xyz') {
+      return 'https://semantle.sigarya.xyz';
+    } else if (hostname.includes('github.io')) {
       return `${window.location.origin}/semantle-plus`;
     } else {
       return window.location.origin;
