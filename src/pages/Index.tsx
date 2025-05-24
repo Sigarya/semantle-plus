@@ -17,7 +17,7 @@ const Index = () => {
     setMounted(true);
   }, []);
 
-  if (!mounted || authLoading) {
+  if (!mounted) {
     return (
       <PageLayout>
         <div className="flex flex-col justify-center items-center h-64">
@@ -27,11 +27,13 @@ const Index = () => {
     );
   }
 
-  if (gameLoading) {
+  if (authLoading || gameLoading) {
     return (
       <PageLayout>
         <div className="flex flex-col justify-center items-center h-64">
-          <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">טוען משחק...</div>
+          <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">
+            {authLoading ? "טוען..." : "טוען משחק..."}
+          </div>
         </div>
       </PageLayout>
     );

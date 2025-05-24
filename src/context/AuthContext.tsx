@@ -42,20 +42,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session:", session);
       setSession(session);
+      if (session?.user) {
+        fetchUserProfile(session.user);
+      }
       setIsLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       setSession(session);
-      if (!session) {
+      if (session?.user) {
+        fetchUserProfile(session.user);
+      } else {
         setCurrentUser(null);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserProfile = async (user: User) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching profile:", error);
+        return;
+      }
+
+      if (data) {
+        setCurrentUser({
+          id: data.id,
+          username: data.username,
+          isAdmin: data.is_admin || false
+        });
+      } else {
+        // Create profile if it doesn't exist
+        const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            username: username
+          })
+          .select()
+          .single();
+
+        if (!createError && newProfile) {
+          setCurrentUser({
+            id: newProfile.id,
+            username: newProfile.username,
+            isAdmin: newProfile.is_admin || false
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in fetchUserProfile:", error);
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -179,10 +230,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const refreshUser = async () => {
-    // Simple refresh that doesn't cause issues
     if (session?.user) {
-      // Just trigger a re-render, profile data will be fetched when needed
-      setCurrentUser(prev => prev);
+      await fetchUserProfile(session.user);
     }
   };
 

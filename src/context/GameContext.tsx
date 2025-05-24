@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Guess, GameState, DailyWord, LeaderboardEntry } from "../types/game";
 import { useAuth } from "./AuthContext";
@@ -42,9 +41,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [dailyWords, setDailyWords] = useState<DailyWord[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isHistoricalGame, setIsHistoricalGame] = useState<boolean>(false);
-  const [todayGameState, setTodayGameState] = useState<GameState | null>(null);
 
-  // Initialize game - simple version without complex server interactions
+  // Initialize game
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -58,10 +56,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         
         if (error) {
           console.error("Error loading daily words:", error);
-          throw error;
         }
         
-        if (data) {
+        let targetWord = "בית"; // Default word
+        
+        if (data && data.length > 0) {
           setDailyWords(data.map(item => ({
             id: item.id,
             word: item.word,
@@ -73,45 +72,48 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           const today = new Date().toISOString().split('T')[0];
           const todayWordData = data.find(w => w.date === today && w.is_active);
           
-          let targetWord = todayWordData?.word || "בית";
+          if (todayWordData) {
+            targetWord = todayWordData.word;
+          }
+        }
+        
+        // Check if we're in historical mode
+        const isHistorical = localStorage.getItem(STORAGE_KEY_HISTORICAL_FLAG) === "true";
+        setIsHistoricalGame(isHistorical);
+        
+        let gameStateToLoad;
+        let wordForGame = targetWord;
+        
+        if (isHistorical) {
+          const savedState = localStorage.getItem(STORAGE_KEY_GAME_STATE);
+          gameStateToLoad = savedState ? JSON.parse(savedState) : null;
           
-          // Check if we're in historical mode
-          const isHistorical = localStorage.getItem(STORAGE_KEY_HISTORICAL_FLAG) === "true";
-          setIsHistoricalGame(isHistorical);
-          
-          let gameStateToLoad;
-          let wordForGame = targetWord;
-          
-          if (isHistorical) {
-            const savedState = localStorage.getItem(STORAGE_KEY_GAME_STATE);
-            gameStateToLoad = savedState ? JSON.parse(savedState) : null;
-            
-            if (!gameStateToLoad || !gameStateToLoad.wordDate) {
-              localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
-              setIsHistoricalGame(false);
-              gameStateToLoad = null;
-            } else {
-              const historicalWordData = data.find(w => w.date === gameStateToLoad.wordDate && w.is_active);
-              if (historicalWordData) {
-                wordForGame = historicalWordData.word;
-              }
+          if (!gameStateToLoad || !gameStateToLoad.wordDate) {
+            localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
+            setIsHistoricalGame(false);
+            gameStateToLoad = null;
+          } else if (data) {
+            const historicalWordData = data.find(w => w.date === gameStateToLoad.wordDate && w.is_active);
+            if (historicalWordData) {
+              wordForGame = historicalWordData.word;
             }
           }
-          
-          if (!gameStateToLoad) {
-            // Load today's game from localStorage
-            const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
-            gameStateToLoad = savedTodayState ? JSON.parse(savedTodayState) : {
-              guesses: [],
-              isComplete: false,
-              wordDate: today
-            };
-          }
-          
-          setTodayWord(wordForGame);
-          setGameState(gameStateToLoad);
-          setIsLoading(false);
         }
+        
+        if (!gameStateToLoad) {
+          // Load today's game from localStorage
+          const today = new Date().toISOString().split('T')[0];
+          const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
+          gameStateToLoad = savedTodayState ? JSON.parse(savedTodayState) : {
+            guesses: [],
+            isComplete: false,
+            wordDate: today
+          };
+        }
+        
+        setTodayWord(wordForGame);
+        setGameState(gameStateToLoad);
+        
       } catch (error) {
         console.error("Error initializing app:", error);
         
@@ -124,20 +126,21 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         });
         setIsHistoricalGame(false);
         localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
-        setIsLoading(false);
         
         toast({
           variant: "destructive",
           title: "שגיאה",
           description: "אירעה שגיאה בטעינת המשחק"
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
     initializeApp();
   }, [toast]);
 
-  // Save game state when it changes - simple localStorage only
+  // Save game state when it changes
   useEffect(() => {
     if (!isLoading && todayWord && gameState.guesses.length >= 0) {
       localStorage.setItem(STORAGE_KEY_GAME_STATE, JSON.stringify(gameState));
@@ -146,7 +149,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         const today = new Date().toISOString().split('T')[0];
         if (gameState.wordDate === today) {
           localStorage.setItem(STORAGE_KEY_TODAY_GAME, JSON.stringify(gameState));
-          setTodayGameState(gameState);
         }
       }
     }
@@ -313,7 +315,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       
       if (!isHistoricalGame && date !== today && gameState.wordDate === today) {
         localStorage.setItem(STORAGE_KEY_TODAY_GAME, JSON.stringify(gameState));
-        setTodayGameState(gameState);
       }
       
       localStorage.setItem(STORAGE_KEY_HISTORICAL_FLAG, "true");
