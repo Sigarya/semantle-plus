@@ -30,7 +30,7 @@ const STORAGE_KEY_TODAY_GAME = "semantle_today_game_state";
 const STORAGE_KEY_HISTORICAL_FLAG = "semantle_historical_game";
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser } = useAuth();
+  const auth = useAuth();
   const { toast } = useToast();
   
   const [gameState, setGameState] = useState<GameState>({
@@ -58,7 +58,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   // Get current user identifier (authenticated user ID or guest ID)
   const getCurrentUserId = () => {
-    return currentUser ? currentUser.id : getGuestId();
+    return auth.currentUser ? auth.currentUser.id : getGuestId();
   };
 
   // Save guesses to server - with proper error handling
@@ -68,12 +68,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       console.log("Saving guesses to server for user:", userId, "date:", wordDate, "guesses count:", guesses.length);
       
       // For authenticated users, use user_guesses table
-      if (currentUser) {
+      if (auth.currentUser) {
         // First, delete existing guesses for this user and date
         const { error: deleteError } = await supabase
           .from('user_guesses')
           .delete()
-          .eq('user_id', currentUser.id)
+          .eq('user_id', auth.currentUser.id)
           .eq('word_date', wordDate);
           
         if (deleteError) {
@@ -84,7 +84,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         // Then insert new guesses if any exist
         if (guesses.length > 0) {
           const guessesToSave = guesses.map((guess, index) => ({
-            user_id: currentUser.id,
+            user_id: auth.currentUser!.id,
             word_date: wordDate,
             guess_word: guess.word,
             similarity: guess.similarity,
@@ -121,11 +121,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       console.log("Loading guesses from server for user:", userId, "date:", wordDate);
       
       // For authenticated users, load from user_guesses table
-      if (currentUser) {
+      if (auth.currentUser) {
         const { data, error } = await supabase
           .from('user_guesses')
           .select('*')
-          .eq('user_id', currentUser.id)
+          .eq('user_id', auth.currentUser.id)
           .eq('word_date', wordDate)
           .order('guess_order', { ascending: true });
           
@@ -164,13 +164,19 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Load daily words and initialize game
+  // Load daily words and initialize game - wait for auth to be ready
   useEffect(() => {
     let mounted = true;
     
     const initializeApp = async () => {
+      // Wait for auth to finish loading
+      if (auth.isLoading) {
+        console.log("Waiting for auth to finish loading...");
+        return;
+      }
+      
       try {
-        console.log("Initializing app...");
+        console.log("Initializing app with auth ready...");
         setIsLoading(true);
         
         // Load daily words
@@ -266,7 +272,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       mounted = false;
     };
-  }, [currentUser, toast]);
+  }, [auth.isLoading, auth.currentUser, toast]);
 
   // Save game state when it changes
   useEffect(() => {
@@ -334,12 +340,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Update user stats if authenticated and game is completed
-    if (isCorrect && currentUser) {
+    if (isCorrect && auth.currentUser) {
       try {
         const { data: stats, error: statsError } = await supabase
           .from('user_stats')
           .select('*')
-          .eq('id', currentUser.id)
+          .eq('id', auth.currentUser.id)
           .single();
           
         if (statsError && statsError.code !== 'PGRST116') {
@@ -371,7 +377,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             const { error: updateError } = await supabase
               .from('user_stats')
               .update(statsToUpdate)
-              .eq('id', currentUser.id);
+              .eq('id', auth.currentUser.id);
               
             if (updateError) {
               console.error("Error updating stats:", updateError);
@@ -379,7 +385,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           } else {
             // Create new stats entry
             statsToUpdate = {
-              id: currentUser.id,
+              id: auth.currentUser.id,
               games_played: 1,
               games_won: 1,
               win_streak: 1,
@@ -401,7 +407,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         const { error: scoreError } = await supabase
           .from('daily_scores')
           .upsert({
-            user_id: currentUser.id,
+            user_id: auth.currentUser.id,
             word_date: gameState.wordDate,
             guesses_count: newGuesses.length,
             completion_time: new Date().toISOString()
@@ -440,7 +446,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const setWordForDate = async (word: string, date: string): Promise<void> => {
-    if (!currentUser?.isAdmin) {
+    if (!auth.currentUser?.isAdmin) {
       toast({
         variant: "destructive",
         title: "פעולה נדחתה",
@@ -466,7 +472,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           .from('daily_words')
           .update({
             word,
-            created_by: currentUser.id
+            created_by: auth.currentUser.id
           })
           .eq('date', date);
       } else {
@@ -476,7 +482,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           .insert({
             word,
             date,
-            created_by: currentUser.id
+            created_by: auth.currentUser.id
           });
       }
       

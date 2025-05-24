@@ -207,19 +207,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           throw new Error("שם המשתמש לא נמצא");
         }
         
-        // Get the user's auth data to find email
-        const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+        // Get the auth.users info using the service role
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(profileData.id);
         
-        if (usersError) {
-          throw new Error("שגיאה בחיפוש המשתמש");
-        }
-        
-        const userData = users.find(user => user.id === profileData.id);
-        if (!userData?.email) {
+        if (userError || !userData.user?.email) {
           throw new Error("לא ניתן למצוא את האימייל המשויך לשם המשתמש");
         }
         
-        email = userData.email;
+        email = userData.user.email;
         console.log("Found email for username:", email);
       }
       
@@ -241,14 +236,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       let errorMessage = "שגיאה בהתחברות. אנא נסה שוב.";
       
-      if (error.message.includes("Invalid login credentials")) {
+      if (error.message.includes("Invalid login credentials") || error.message.includes("שם המשתמש לא נמצא")) {
         errorMessage = "פרטי ההתחברות שגויים";
       } else if (error.message.includes("Email not confirmed")) {
         errorMessage = "האימייל לא אושר. אנא בדוק את תיבת הדואר שלך";
       } else if (error.message.includes("Too many requests")) {
         errorMessage = "יותר מדי ניסיונות התחברות. אנא נסה שוב מאוחר יותר";
-      } else if (error.message.includes("שם המשתמש לא נמצא")) {
-        errorMessage = "שם המשתמש לא נמצא";
       } else if (error.message.includes("fetch") || error.message.includes("network")) {
         errorMessage = "בעיית חיבור לשרת. אנא בדוק את החיבור לאינטרנט";
       }
