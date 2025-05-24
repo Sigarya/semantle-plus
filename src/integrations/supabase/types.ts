@@ -193,6 +193,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_guesses: {
+        Row: {
+          created_at: string
+          guess_order: number
+          guess_word: string
+          id: string
+          is_correct: boolean
+          rank: number | null
+          similarity: number
+          user_id: string
+          word_date: string
+        }
+        Insert: {
+          created_at?: string
+          guess_order: number
+          guess_word: string
+          id?: string
+          is_correct?: boolean
+          rank?: number | null
+          similarity: number
+          user_id: string
+          word_date: string
+        }
+        Update: {
+          created_at?: string
+          guess_order?: number
+          guess_word?: string
+          id?: string
+          is_correct?: boolean
+          rank?: number | null
+          similarity?: number
+          user_id?: string
+          word_date?: string
+        }
+        Relationships: []
+      }
       user_stats: {
         Row: {
           best_guess_count: number | null
