@@ -11,7 +11,7 @@ interface LoginFormProps {
 }
 
 const LoginForm = ({ onToggleMode }: LoginFormProps) => {
-  const [email, setEmail] = useState("");
+  const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +24,11 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
     setIsLoading(true);
     
     try {
-      await signIn(email, password);
+      console.log("Attempting login with:", emailOrUsername);
+      await signIn(emailOrUsername, password);
+      console.log("Login successful");
     } catch (error: any) {
+      console.error("Login error:", error);
       setError(error.message || "שגיאה בהתחברות. אנא נסה שוב.");
     } finally {
       setIsLoading(false);
@@ -36,8 +39,11 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
     setError(null);
     
     try {
+      console.log("Attempting Google login");
       await signInWithGoogle();
+      console.log("Google login initiated");
     } catch (error: any) {
+      console.error("Google login error:", error);
       setError(error.message || "שגיאה בהתחברות עם Google. אנא נסה שוב.");
     }
   };
@@ -83,13 +89,13 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="email">אימייל</Label>
+        <Label htmlFor="emailOrUsername">אימייל או שם משתמש</Label>
         <Input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          id="emailOrUsername"
+          type="text"
+          value={emailOrUsername}
+          onChange={(e) => setEmailOrUsername(e.target.value)}
+          placeholder="you@example.com או שם משתמש"
           required
         />
       </div>

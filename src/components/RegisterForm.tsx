@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,33 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+  
   const { signUp } = useAuth();
+
+  // Auto-fill confirm password when password is auto-filled by browser
+  useEffect(() => {
+    const passwordInput = passwordRef.current;
+    const confirmPasswordInput = confirmPasswordRef.current;
+    
+    if (passwordInput && confirmPasswordInput) {
+      const handlePasswordChange = () => {
+        // Small delay to ensure auto-fill is complete
+        setTimeout(() => {
+          if (passwordInput.value && !confirmPasswordInput.value) {
+            setConfirmPassword(passwordInput.value);
+          }
+        }, 100);
+      };
+      
+      passwordInput.addEventListener('input', handlePasswordChange);
+      
+      return () => {
+        passwordInput.removeEventListener('input', handlePasswordChange);
+      };
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,9 +74,11 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
     setIsLoading(true);
     
     try {
+      console.log("Attempting signup with:", { email, username });
       await signUp(email, password, username.trim());
-      // Don't show success message here as it's handled in AuthContext
+      console.log("Signup successful");
     } catch (error: any) {
+      console.error("Signup error:", error);
       setError(error.message || "שגיאה בהרשמה. אנא נסה שוב.");
     } finally {
       setIsLoading(false);
@@ -86,6 +114,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
       <div className="grid gap-2">
         <Label htmlFor="register-password">סיסמה</Label>
         <Input
+          ref={passwordRef}
           id="register-password"
           type="password"
           value={password}
@@ -99,6 +128,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
       <div className="grid gap-2">
         <Label htmlFor="confirm-password">אימות סיסמה</Label>
         <Input
+          ref={confirmPasswordRef}
           id="confirm-password"
           type="password"
           value={confirmPassword}

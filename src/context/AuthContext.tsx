@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User, Provider } from "@supabase/supabase-js";
@@ -24,7 +23,7 @@ interface AuthContextType {
   session: Session | null;
   currentUser: UserProfile | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (emailOrUsername: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -178,10 +177,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
   
-  // Sign in with email and password
-  const signIn = async (email: string, password: string) => {
+  // Sign in with email/username and password
+  const signIn = async (emailOrUsername: string, password: string) => {
     try {
-      console.log("Attempting sign in with:", { email });
+      console.log("Attempting sign in with:", { emailOrUsername });
+      
+      // Determine if input is email or username
+      const isEmail = emailOrUsername.includes('@');
+      let email = emailOrUsername;
+      
+      // If it's a username, find the corresponding email
+      if (!isEmail) {
+        console.log("Looking up email for username:", emailOrUsername);
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', emailOrUsername)
+          .single();
+          
+        if (profileError || !profileData) {
+          throw new Error("שם המשתמש לא נמצא");
+        }
+        
+        // Get the email from the auth.users table via the user ID
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(profileData.id);
+        
+        if (userError || !userData.user?.email) {
+          throw new Error("לא ניתן למצוא את האימייל המשויך לשם המשתמש");
+        }
+        
+        email = userData.user.email;
+        console.log("Found email for username:", email);
+      }
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -204,8 +231,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         errorMessage = "פרטי ההתחברות שגויים";
       } else if (error.message.includes("Email not confirmed")) {
         errorMessage = "האימייל לא אושר. אנא בדוק את תיבת הדואר שלך";
-      } else if (error.message.includes("fetch")) {
+      } else if (error.message.includes("fetch") || error.message.includes("network")) {
         errorMessage = "בעיית חיבור לשרת. אנא בדוק את החיבור לאינטרנט";
+      } else if (error.message.includes("שם המשתמש לא נמצא")) {
+        errorMessage = "שם המשתמש לא נמצא";
       }
       
       toast({
@@ -265,8 +294,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         options: {
           data: {
             username: username
-          },
-          emailRedirectTo: getRedirectUrl()
+          }
         }
       });
       
@@ -277,17 +305,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       console.log("Signup response:", data);
       
-      // Check if user needs email confirmation
-      if (data.user && !data.session) {
-        toast({
-          title: "הרשמה הושלמה",
-          description: "אנא בדוק את האימייל שלך לאישור החשבון"
-        });
-      } else if (data.session) {
-        // Auto-login successful
+      // If signup successful and user is immediately logged in
+      if (data.user && data.session) {
         toast({
           title: "הרשמה הושלמה בהצלחה",
           description: "ברוך הבא למשחק!"
+        });
+      } else if (data.user && !data.session) {
+        // User created but needs email confirmation
+        toast({
+          title: "הרשמה הושלמה",
+          description: "אנא בדוק את האימייל שלך לאישור החשבון"
         });
       }
       
