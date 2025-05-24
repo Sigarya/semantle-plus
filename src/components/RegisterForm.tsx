@@ -10,9 +10,9 @@ interface RegisterFormProps {
 }
 
 const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,15 +23,33 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
     e.preventDefault();
     setError(null);
     
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("כתובת האימייל אינה תקינה");
+      return;
+    }
+    
     if (password !== confirmPassword) {
       setError("הסיסמאות אינן תואמות");
+      return;
+    }
+    
+    if (password.length < 6) {
+      setError("הסיסמה חייבת להכיל לפחות 6 תווים");
+      return;
+    }
+    
+    if (!username.trim()) {
+      setError("שם המשתמש חובה");
       return;
     }
     
     setIsLoading(true);
     
     try {
-      await signUp(username, email, password);
+      // Call signUp with correct parameter order: email, password, username
+      await signUp(email, password, username.trim());
     } catch (error: any) {
       setError(error.message || "שגיאה בהרשמה. אנא נסה שוב.");
     } finally {

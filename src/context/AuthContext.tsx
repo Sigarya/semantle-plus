@@ -226,39 +226,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  // Sign up with email and password
+  // Sign up with email and password - FIXED PARAMETER ORDER
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      // Create user in auth
+      console.log("Attempting signup with:", { email, password: "***", username });
+      
+      // Create user in auth with correct parameter order
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username
+            username: username
           }
         }
       });
       
-      if (signUpError) throw signUpError;
-      
-      // User profiles are created via trigger but we still need to set the username
-      if (signUpData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ username })
-          .eq('id', signUpData.user.id);
-          
-        if (profileError) throw profileError;
+      if (signUpError) {
+        console.error("Signup error:", signUpError);
+        throw signUpError;
       }
+      
+      console.log("Signup successful:", signUpData);
+      
+      // Show success message
+      toast({
+        title: "הרשמה הושלמה בהצלחה",
+        description: "אנא בדוק את האימייל שלך לאישור החשבון"
+      });
       
     } catch (error: any) {
       console.error("Sign up error:", error);
       
+      let errorMessage = "שגיאה בהרשמה. אנא נסה שוב.";
+      
+      if (error.message.includes("User already registered")) {
+        errorMessage = "המשתמש כבר רשום במערכת";
+      } else if (error.message.includes("Invalid email")) {
+        errorMessage = "כתובת האימייל אינה תקינה";
+      } else if (error.message.includes("Password")) {
+        errorMessage = "הסיסמה חייבת להכיל לפחות 6 תווים";
+      }
+      
       toast({
         variant: "destructive",
         title: "שגיאה בהרשמה",
-        description: error.message
+        description: errorMessage
       });
       
       throw error;
@@ -269,10 +282,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       console.log("Starting sign out process");
-      
-      // Clear local state immediately
-      setCurrentUser(null);
-      setSession(null);
       
       const { error } = await supabase.auth.signOut();
       
@@ -288,10 +297,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
+      // Clear local state regardless of error
+      setCurrentUser(null);
+      setSession(null);
+      
       console.log("Sign out completed successfully");
       
     } catch (error: any) {
       console.error("Sign out error:", error);
+      
+      // Clear local state even if there's an error
+      setCurrentUser(null);
+      setSession(null);
       
       // Only show user-facing errors for significant issues
       if (!error.message.includes('session') && !error.message.includes('missing')) {
