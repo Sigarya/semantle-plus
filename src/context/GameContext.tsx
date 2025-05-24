@@ -1,7 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Guess, GameState, DailyWord, LeaderboardEntry } from "../types/game";
-import { isValidHebrewWord } from "../lib/utils";
-import { getTodayInIsrael, isToday } from "../lib/dateUtils";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
