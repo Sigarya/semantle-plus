@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User, Provider } from "@supabase/supabase-js";
@@ -103,51 +104,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   // Initialize auth state
   useEffect(() => {
+    let isMounted = true;
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, authSession) => {
+        console.log("Auth state changed:", event, authSession?.user?.id);
+        
+        if (!isMounted) return;
+        
         setSession(authSession);
         
-        // If session changes, reset currentUser to null
+        // Clear user data when signing out
         if (!authSession) {
           setCurrentUser(null);
+          setIsLoading(false);
+          return;
         }
         
-        // Defer loading user profile if there's a session
+        // Load user profile when signing in
         if (authSession?.user) {
           setTimeout(() => {
             fetchUserProfile(authSession.user.id)
               .then(userProfile => {
-                setCurrentUser(userProfile);
+                if (isMounted) {
+                  setCurrentUser(userProfile);
+                  setIsLoading(false);
+                }
               })
               .catch(error => {
                 console.error("Error in onAuthStateChange:", error);
-              })
-              .finally(() => {
-                setIsLoading(false);
+                if (isMounted) {
+                  setIsLoading(false);
+                }
               });
           }, 0);
-        } else {
-          setIsLoading(false);
         }
       }
     );
 
     // THEN get existing session
     supabase.auth.getSession().then(({ data: { session: authSession } }) => {
+      if (!isMounted) return;
+      
+      console.log("Initial session check:", authSession?.user?.id);
       setSession(authSession);
       
       // Load user profile if session exists
       if (authSession?.user) {
         fetchUserProfile(authSession.user.id)
           .then(userProfile => {
-            setCurrentUser(userProfile);
+            if (isMounted) {
+              setCurrentUser(userProfile);
+              setIsLoading(false);
+            }
           })
           .catch(error => {
             console.error("Error loading initial user profile:", error);
-          })
-          .finally(() => {
-            setIsLoading(false);
+            if (isMounted) {
+              setIsLoading(false);
+            }
           });
       } else {
         setIsLoading(false);
@@ -155,6 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -249,20 +266,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Sign out
   const signOut = async () => {
     try {
+      // Clear local state immediately
+      setCurrentUser(null);
+      setSession(null);
+      
       const { error } = await supabase.auth.signOut();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Sign out error:", error);
+        // Don't show error to user for session issues, just log it
+        if (!error.message.includes('session')) {
+          toast({
+            variant: "destructive",
+            title: "שגיאה בהתנתקות",
+            description: error.message
+          });
+        }
+      }
       
     } catch (error: any) {
       console.error("Sign out error:", error);
       
-      toast({
-        variant: "destructive",
-        title: "שגיאה בהתנתקות",
-        description: error.message
-      });
-      
-      throw error;
+      // Don't show error to user for session issues, just log it
+      if (!error.message.includes('session')) {
+        toast({
+          variant: "destructive",
+          title: "שגיאה בהתנתקות",
+          description: error.message
+        });
+      }
     }
   };
   
