@@ -51,7 +51,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!currentUser) return;
     
     try {
-      console.log("Saving guesses to server for date:", wordDate);
+      console.log("Saving guesses to server for date:", wordDate, "guesses count:", guesses.length);
       
       // First, delete existing guesses for this date
       const { error: deleteError } = await supabase
@@ -72,10 +72,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           word_date: wordDate,
           guess_word: guess.word,
           similarity: guess.similarity,
-          rank: guess.rank,
+          rank: guess.rank || null,
           is_correct: guess.isCorrect,
           guess_order: index + 1
         }));
+        
+        console.log("Inserting guesses:", guessesToSave);
         
         const { error: insertError } = await supabase
           .from('user_guesses')
@@ -97,7 +99,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!currentUser) return [];
     
     try {
-      console.log("Loading guesses from server for date:", wordDate);
+      console.log("Loading guesses from server for date:", wordDate, "user:", currentUser.id);
       
       const { data, error } = await supabase
         .from('user_guesses')
@@ -119,10 +121,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           isCorrect: guess.is_correct
         }));
         
-        console.log("Successfully loaded", loadedGuesses.length, "guesses from server");
+        console.log("Successfully loaded", loadedGuesses.length, "guesses from server:", loadedGuesses);
         return loadedGuesses;
       }
       
+      console.log("No guesses found on server for this date");
       return [];
     } catch (error) {
       console.error("Error in loadGuessesFromServer:", error);
@@ -130,13 +133,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Load daily words and initialize game - single effect
+  // Load daily words and initialize game
   useEffect(() => {
     let mounted = true;
     
     const initializeApp = async () => {
       try {
-        console.log("Loading daily words and initializing game...");
+        console.log("Initializing app...");
+        setIsLoading(true);
         
         // Load daily words
         const { data, error } = await supabase
@@ -155,37 +159,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             is_active: item.is_active
           })));
           
-          // Get today's date in UTC
           const today = new Date().toISOString().split('T')[0];
           const todayWordData = data.find(w => w.date === today && w.is_active);
           
-          let targetWord;
-          if (todayWordData) {
-            targetWord = todayWordData.word;
-          } else {
-            // Fallback to a default word if no word is set for today
-            targetWord = "בית";
-            console.log("No active word found for today, using default word: בית");
-            
-            // Insert default word for today if admin
-            if (currentUser?.isAdmin) {
-              try {
-                await supabase
-                  .from('daily_words')
-                  .upsert({
-                    word: "בית",
-                    date: today,
-                    is_active: true,
-                    created_by: currentUser.id
-                  });
-                console.log("Default word inserted for today");
-              } catch (insertError) {
-                console.error("Error inserting default word:", insertError);
-              }
-            }
-          }
+          let targetWord = todayWordData?.word || "בית";
           
-          // Initialize game state
+          // Check if we're in historical mode
           const isHistorical = localStorage.getItem(STORAGE_KEY_HISTORICAL_FLAG) === "true";
           setIsHistoricalGame(isHistorical);
           
@@ -193,17 +172,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           let wordForGame = targetWord;
           
           if (isHistorical) {
-            // Load historical game
             const savedState = localStorage.getItem(STORAGE_KEY_GAME_STATE);
             gameStateToLoad = savedState ? JSON.parse(savedState) : null;
             
             if (!gameStateToLoad || !gameStateToLoad.wordDate) {
-              // Invalid historical state, reset to today
               localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
               setIsHistoricalGame(false);
               gameStateToLoad = null;
             } else {
-              // Load word for historical date
               const historicalWordData = data.find(w => w.date === gameStateToLoad.wordDate && w.is_active);
               if (historicalWordData) {
                 wordForGame = historicalWordData.word;
@@ -212,8 +188,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           }
           
           if (!gameStateToLoad) {
-            // Load today's game
+            // Load today's game - prioritize server data for authenticated users
             if (currentUser) {
+              console.log("Loading guesses from server for today's game");
               const serverGuesses = await loadGuessesFromServer(today);
               if (serverGuesses.length > 0) {
                 gameStateToLoad = {
@@ -221,20 +198,30 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
                   isComplete: serverGuesses.some(g => g.isCorrect),
                   wordDate: today
                 };
+                console.log("Using server guesses:", gameStateToLoad);
               }
             }
             
+            // If no server data, try local storage
             if (!gameStateToLoad) {
               const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
-              gameStateToLoad = savedTodayState ? JSON.parse(savedTodayState) : null;
-              
-              if (!gameStateToLoad || gameStateToLoad.wordDate !== today) {
-                gameStateToLoad = {
-                  guesses: [],
-                  isComplete: false,
-                  wordDate: today
-                };
+              if (savedTodayState) {
+                const localState = JSON.parse(savedTodayState);
+                if (localState.wordDate === today) {
+                  gameStateToLoad = localState;
+                  console.log("Using local storage state:", gameStateToLoad);
+                }
               }
+            }
+            
+            // Create new game state if nothing found
+            if (!gameStateToLoad) {
+              gameStateToLoad = {
+                guesses: [],
+                isComplete: false,
+                wordDate: today
+              };
+              console.log("Created new game state");
             }
           }
           
@@ -242,6 +229,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             setTodayWord(wordForGame);
             setGameState(gameStateToLoad);
             setIsLoading(false);
+            console.log("App initialized successfully with word:", wordForGame, "and state:", gameStateToLoad);
           }
         }
       } catch (error) {
@@ -273,11 +261,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       mounted = false;
     };
-  }, [currentUser]); // Only depend on currentUser
+  }, [currentUser, toast]);
 
   // Save game state when it changes
   useEffect(() => {
-    if (!isLoading && todayWord) {
+    if (!isLoading && todayWord && gameState.guesses.length >= 0) {
+      console.log("Saving game state:", gameState);
+      
       localStorage.setItem(STORAGE_KEY_GAME_STATE, JSON.stringify(gameState));
       
       if (!isHistoricalGame) {
@@ -286,17 +276,21 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem(STORAGE_KEY_TODAY_GAME, JSON.stringify(gameState));
           setTodayGameState(gameState);
           
+          // Save to server for authenticated users
           if (currentUser) {
+            console.log("Triggering server save for today's game");
             saveGuessesToServer(gameState.guesses, gameState.wordDate);
           }
         }
       } else {
+        // Historical game - save to local storage and server
         const savedHistoricalStates = localStorage.getItem(STORAGE_KEY_HISTORICAL_STATES);
         let historicalStates = savedHistoricalStates ? JSON.parse(savedHistoricalStates) : {};
         historicalStates[gameState.wordDate] = gameState;
         localStorage.setItem(STORAGE_KEY_HISTORICAL_STATES, JSON.stringify(historicalStates));
         
         if (currentUser) {
+          console.log("Triggering server save for historical game");
           saveGuessesToServer(gameState.guesses, gameState.wordDate);
         }
       }
@@ -313,11 +307,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Call our edge function to calculate similarity using the real API
-    // Pass the target date for historical games
     const { data, error } = await supabase.functions.invoke("calculate-similarity", {
       body: { 
         guess: word,
-        date: gameState.wordDate // Pass the target date
+        date: gameState.wordDate
       }
     });
 
@@ -326,7 +319,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("שגיאה בחישוב הדמיון");
     }
 
-    // Handle API errors returned in the response
     if (data.error) {
       console.error("API response error:", data.error);
       throw new Error(data.error);
@@ -341,7 +333,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       isCorrect
     };
 
-    // Add the new guess to the *end* of the array (chronological order)
     const newGuesses = [...gameState.guesses, newGuess];
 
     setGameState({
@@ -353,7 +344,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // Update user stats if authenticated and game is completed
     if (isCorrect && currentUser) {
       try {
-        // Update user_stats
         const { data: stats, error: statsError } = await supabase
           .from('user_stats')
           .select('*')
@@ -391,7 +381,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // Record the score in daily_scores
         const { error: scoreError } = await supabase
           .from('daily_scores')
           .upsert({
@@ -405,7 +394,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           console.error("Error recording score:", scoreError);
         }
         
-        // Update leaderboard after recording the score
         fetchLeaderboard(gameState.wordDate);
         
       } catch (error) {
@@ -682,7 +670,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const targetDate = date || gameState.wordDate;
     
     try {
-      // Join daily_scores with profiles to get usernames
       const { data, error } = await supabase
         .from('daily_scores')
         .select(`
