@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User, Provider } from "@supabase/supabase-js";
@@ -57,6 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Fetch user profile data from the database
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log("Fetching user profile for ID:", userId);
+      
       // Get the profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -64,7 +67,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', userId)
         .single();
         
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Profile error:", profileError);
+        throw profileError;
+      }
+      
+      console.log("Profile data:", profileData);
       
       // Get user stats if they exist
       const { data: statsData, error: statsError } = await supabase
@@ -94,6 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
       }
       
+      console.log("Complete user profile:", userProfile);
       return userProfile;
     } catch (error) {
       console.error("Error fetching user profile:", error);
@@ -105,9 +114,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let isMounted = true;
     
+    console.log("Setting up auth listeners");
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, authSession) => {
+      async (event, authSession) => {
         console.log("Auth state changed:", event, authSession?.user?.id);
         
         if (!isMounted) return;
@@ -125,27 +136,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // Load user profile when signing in
         if (authSession?.user) {
-          setTimeout(() => {
-            fetchUserProfile(authSession.user.id)
-              .then(userProfile => {
-                if (isMounted) {
-                  setCurrentUser(userProfile);
-                  setIsLoading(false);
-                }
-              })
-              .catch(error => {
-                console.error("Error in onAuthStateChange:", error);
-                if (isMounted) {
-                  setIsLoading(false);
-                }
-              });
-          }, 0);
+          try {
+            const userProfile = await fetchUserProfile(authSession.user.id);
+            if (isMounted) {
+              setCurrentUser(userProfile);
+              setIsLoading(false);
+            }
+          } catch (error) {
+            console.error("Error in onAuthStateChange:", error);
+            if (isMounted) {
+              setIsLoading(false);
+            }
+          }
         }
       }
     );
 
     // THEN get existing session
-    supabase.auth.getSession().then(({ data: { session: authSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: authSession } }) => {
       if (!isMounted) return;
       
       console.log("Initial session check:", authSession?.user?.id);
@@ -153,19 +161,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // Load user profile if session exists
       if (authSession?.user) {
-        fetchUserProfile(authSession.user.id)
-          .then(userProfile => {
-            if (isMounted) {
-              setCurrentUser(userProfile);
-              setIsLoading(false);
-            }
-          })
-          .catch(error => {
-            console.error("Error loading initial user profile:", error);
-            if (isMounted) {
-              setIsLoading(false);
-            }
-          });
+        try {
+          const userProfile = await fetchUserProfile(authSession.user.id);
+          if (isMounted) {
+            setCurrentUser(userProfile);
+            setIsLoading(false);
+          }
+        } catch (error) {
+          console.error("Error loading initial user profile:", error);
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        }
       } else {
         setIsLoading(false);
       }
@@ -180,7 +187,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Sign in with email/username and password
   const signIn = async (emailOrUsername: string, password: string) => {
     try {
-      console.log("Attempting sign in with:", { emailOrUsername });
+      console.log("Starting sign in process with:", { emailOrUsername });
+      setIsLoading(true);
       
       // Determine if input is email or username
       const isEmail = emailOrUsername.includes('@');
@@ -199,14 +207,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           throw new Error("שם המשתמש לא נמצא");
         }
         
-        // Get the email from the auth.users table via the user ID
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(profileData.id);
+        // Get the user's auth data to find email
+        const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
         
-        if (userError || !userData.user?.email) {
+        if (usersError) {
+          throw new Error("שגיאה בחיפוש המשתמש");
+        }
+        
+        const userData = users.find(user => user.id === profileData.id);
+        if (!userData?.email) {
           throw new Error("לא ניתן למצוא את האימייל המשויך לשם המשתמש");
         }
         
-        email = userData.user.email;
+        email = userData.email;
         console.log("Found email for username:", email);
       }
       
@@ -216,7 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (error) {
-        console.error("Sign in error details:", error);
+        console.error("Sign in error:", error);
         throw error;
       }
       
@@ -224,6 +237,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
     } catch (error: any) {
       console.error("Sign in error:", error);
+      setIsLoading(false);
       
       let errorMessage = "שגיאה בהתחברות. אנא נסה שוב.";
       
@@ -231,10 +245,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         errorMessage = "פרטי ההתחברות שגויים";
       } else if (error.message.includes("Email not confirmed")) {
         errorMessage = "האימייל לא אושר. אנא בדוק את תיבת הדואר שלך";
-      } else if (error.message.includes("fetch") || error.message.includes("network")) {
-        errorMessage = "בעיית חיבור לשרת. אנא בדוק את החיבור לאינטרנט";
+      } else if (error.message.includes("Too many requests")) {
+        errorMessage = "יותר מדי ניסיונות התחברות. אנא נסה שוב מאוחר יותר";
       } else if (error.message.includes("שם המשתמש לא נמצא")) {
         errorMessage = "שם המשתמש לא נמצא";
+      } else if (error.message.includes("fetch") || error.message.includes("network")) {
+        errorMessage = "בעיית חיבור לשרת. אנא בדוק את החיבור לאינטרנט";
       }
       
       toast({
@@ -250,7 +266,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Sign in with Google
   const signInWithGoogle = async () => {
     try {
-      console.log("Attempting Google sign in");
+      console.log("Starting Google sign in");
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -276,7 +292,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({
         variant: "destructive",
         title: "שגיאה בהתחברות עם Google",
-        description: "שגיאה בהתחברות. אנא נסה שוב או בדוק את הגדרות Google Auth"
+        description: "שגיאה בהתחברות עם Google. אנא נסה שוב"
       });
       
       throw error;
@@ -286,7 +302,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Sign up with email and password
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      console.log("Attempting signup with:", { email, username });
+      console.log("Starting signup with:", { email, username });
+      setIsLoading(true);
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -321,6 +338,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
     } catch (error: any) {
       console.error("Sign up error:", error);
+      setIsLoading(false);
       
       let errorMessage = "שגיאה בהרשמה. אנא נסה שוב.";
       

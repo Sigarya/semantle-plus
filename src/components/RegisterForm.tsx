@@ -20,7 +20,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
   
-  const { signUp } = useAuth();
+  const { signUp, isLoading: authLoading } = useAuth();
 
   // Auto-fill confirm password when password is auto-filled by browser
   useEffect(() => {
@@ -37,13 +37,27 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
         }, 100);
       };
       
+      // Also listen for browser autofill events
+      const handleInput = () => {
+        setTimeout(() => {
+          if (passwordInput.value && passwordInput.value !== password) {
+            setPassword(passwordInput.value);
+            if (!confirmPasswordInput.value) {
+              setConfirmPassword(passwordInput.value);
+            }
+          }
+        }, 100);
+      };
+      
       passwordInput.addEventListener('input', handlePasswordChange);
+      passwordInput.addEventListener('input', handleInput);
       
       return () => {
         passwordInput.removeEventListener('input', handlePasswordChange);
+        passwordInput.removeEventListener('input', handleInput);
       };
     }
-  }, []);
+  }, [password]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +93,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
       console.log("Signup successful");
     } catch (error: any) {
       console.error("Signup error:", error);
-      setError(error.message || "שגיאה בהרשמה. אנא נסה שוב.");
+      // Don't show additional error here as AuthContext already shows toast
     } finally {
       setIsLoading(false);
     }
@@ -96,6 +110,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="שם משתמש"
           required
+          disabled={isLoading || authLoading}
         />
       </div>
       
@@ -108,6 +123,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
           required
+          disabled={isLoading || authLoading}
         />
       </div>
       
@@ -122,6 +138,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
           placeholder="********"
           required
           minLength={6}
+          disabled={isLoading || authLoading}
         />
       </div>
       
@@ -135,6 +152,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
           onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder="********"
           required
+          disabled={isLoading || authLoading}
         />
       </div>
 
@@ -145,7 +163,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
       <Button 
         type="submit" 
         className="w-full bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600" 
-        disabled={isLoading}
+        disabled={isLoading || authLoading}
       >
         {isLoading ? "נרשם..." : "הירשם"}
       </Button>
@@ -156,6 +174,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
           type="button"
           onClick={onToggleMode}
           className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+          disabled={isLoading || authLoading}
         >
           התחבר
         </button>

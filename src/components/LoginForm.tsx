@@ -16,20 +16,25 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, isLoading: authLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!emailOrUsername.trim() || !password.trim()) {
+      setError("אנא מלא את כל השדות");
+      return;
+    }
+    
     setError(null);
     setIsLoading(true);
     
     try {
       console.log("Attempting login with:", emailOrUsername);
-      await signIn(emailOrUsername, password);
+      await signIn(emailOrUsername.trim(), password);
       console.log("Login successful");
     } catch (error: any) {
       console.error("Login error:", error);
-      setError(error.message || "שגיאה בהתחברות. אנא נסה שוב.");
+      // Don't show additional error here as AuthContext already shows toast
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +49,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       console.log("Google login initiated");
     } catch (error: any) {
       console.error("Google login error:", error);
-      setError(error.message || "שגיאה בהתחברות עם Google. אנא נסה שוב.");
+      // Don't show additional error here as AuthContext already shows toast
     }
   };
 
@@ -55,6 +60,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
         variant="outline"
         onClick={handleGoogleLogin}
         className="w-full flex items-center justify-center space-x-2 space-x-reverse"
+        disabled={authLoading}
       >
         <svg width="20" height="20" viewBox="0 0 24 24">
           <path
@@ -97,6 +103,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
           onChange={(e) => setEmailOrUsername(e.target.value)}
           placeholder="you@example.com או שם משתמש"
           required
+          disabled={isLoading || authLoading}
         />
       </div>
       
@@ -109,6 +116,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="********"
           required
+          disabled={isLoading || authLoading}
         />
       </div>
 
@@ -119,7 +127,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       <Button 
         type="submit" 
         className="w-full bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600"
-        disabled={isLoading}
+        disabled={isLoading || authLoading}
       >
         {isLoading ? "מתחבר..." : "התחבר"}
       </Button>
@@ -130,6 +138,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
           type="button"
           onClick={onToggleMode}
           className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+          disabled={isLoading || authLoading}
         >
           הירשם עכשיו
         </button>
