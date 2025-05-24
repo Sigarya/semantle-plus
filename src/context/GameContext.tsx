@@ -45,6 +45,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isHistoricalGame, setIsHistoricalGame] = useState<boolean>(false);
   const [todayGameState, setTodayGameState] = useState<GameState | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   // Save guesses to server for authenticated users
   const saveGuessesToServer = async (guesses: Guess[], wordDate: string) => {
@@ -130,8 +131,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Load today's word and all daily words
+  // Load today's word and all daily words - only once
   useEffect(() => {
+    let mounted = true;
+    
     const loadDailyWords = async () => {
       try {
         const { data, error } = await supabase
@@ -141,7 +144,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         
         if (error) throw error;
         
-        if (data) {
+        if (data && mounted) {
           setDailyWords(data.map(item => ({
             id: item.id,
             word: item.word,
@@ -178,23 +181,29 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
               }
             }
           }
-          
-          // Set loading to false now that we have a word
-          setIsLoading(false);
         }
       } catch (error) {
         console.error("Error loading daily words:", error);
         // Fallback in case of error
-        setTodayWord("בית");
-        setIsLoading(false);
+        if (mounted) {
+          setTodayWord("בית");
+        }
       }
     };
     
     loadDailyWords();
-  }, [currentUser]);
+    
+    return () => {
+      mounted = false;
+    };
+  }, []); // Empty dependency array - only run once
 
-  // Initialize game - can be called explicitly to force initialization
+  // Initialize game - fixed to prevent infinite loops
   const initializeGame = useCallback(async () => {
+    if (isInitialized || !todayWord) {
+      return;
+    }
+    
     setIsLoading(true);
     console.log("Initializing game...");
     
@@ -319,6 +328,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
+      setIsInitialized(true);
       setIsLoading(false);
     } catch (error) {
       console.error("Error initializing game:", error);
@@ -337,12 +347,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       setIsHistoricalGame(false);
       localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
       
-      // Find today's word again
-      const todayWordData = dailyWords.find(w => w.date === today && w.is_active);
-      if (todayWordData) {
-        setTodayWord(todayWordData.word);
-      }
-      
+      setIsInitialized(true);
       setIsLoading(false);
       
       toast({
@@ -351,18 +356,18 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         description: "אירעה שגיאה בטעינת המשחק"
       });
     }
-  }, [toast, dailyWords, currentUser, loadGuessesFromServer]);
+  }, [todayWord, currentUser, isInitialized, loadGuessesFromServer, toast]);
 
-  // Load or initialize game
+  // Load or initialize game - only when todayWord is available and not yet initialized
   useEffect(() => {
-    if (todayWord) {
+    if (todayWord && !isInitialized && !isLoading) {
       initializeGame();
     }
-  }, [todayWord, initializeGame]);
+  }, [todayWord, isInitialized, isLoading, initializeGame]);
 
-  // Save game state when it changes
+  // Save game state when it changes - but only after initialization
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && isInitialized) {
       // Always save the current game state to localStorage
       localStorage.setItem(STORAGE_KEY_GAME_STATE, JSON.stringify(gameState));
       
@@ -392,7 +397,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     }
-  }, [gameState, isLoading, isHistoricalGame, currentUser, saveGuessesToServer]);
+  }, [gameState, isLoading, isHistoricalGame, currentUser, isInitialized, saveGuessesToServer]);
 
   const makeGuess = async (word: string): Promise<Guess> => {
     if (!todayWord) throw new Error("המשחק לא נטען כראוי");
@@ -806,10 +811,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   // Load leaderboard when component mounts or game state changes
   useEffect(() => {
-    if (gameState.wordDate && !isLoading) {
+    if (gameState.wordDate && !isLoading && isInitialized) {
       fetchLeaderboard();
     }
-  }, [gameState.wordDate, isLoading]);
+  }, [gameState.wordDate, isLoading, isInitialized]);
 
   return (
     <GameContext.Provider 
