@@ -181,20 +181,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Attempting sign in with:", { email });
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Sign in error details:", error);
+        throw error;
+      }
+      
+      console.log("Sign in successful:", data);
       
     } catch (error: any) {
       console.error("Sign in error:", error);
       
+      let errorMessage = "שגיאה בהתחברות. אנא נסה שוב.";
+      
+      if (error.message.includes("Invalid login credentials")) {
+        errorMessage = "פרטי ההתחברות שגויים";
+      } else if (error.message.includes("Email not confirmed")) {
+        errorMessage = "האימייל לא אושר. אנא בדוק את תיבת הדואר שלך";
+      } else if (error.message.includes("fetch")) {
+        errorMessage = "בעיית חיבור לשרת. אנא בדוק את החיבור לאינטרנט";
+      }
+      
       toast({
         variant: "destructive",
-        title: "שגיאה בכניסה",
-        description: error.message
+        title: "שגיאה בהתחברות",
+        description: errorMessage
       });
       
       throw error;
@@ -204,14 +221,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Sign in with Google
   const signInWithGoogle = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log("Attempting Google sign in");
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: getRedirectUrl()
+          redirectTo: getRedirectUrl(),
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Google sign in error:", error);
+        throw error;
+      }
+      
+      console.log("Google sign in initiated:", data);
       
     } catch (error: any) {
       console.error("Google sign in error:", error);
@@ -219,41 +247,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({
         variant: "destructive",
         title: "שגיאה בהתחברות עם Google",
-        description: error.message
+        description: "שגיאה בהתחברות. אנא נסה שוב או בדוק את הגדרות Google Auth"
       });
       
       throw error;
     }
   };
   
-  // Sign up with email and password - FIXED PARAMETER ORDER
+  // Sign up with email and password
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      console.log("Attempting signup with:", { email, password: "***", username });
+      console.log("Attempting signup with:", { email, username });
       
-      // Create user in auth with correct parameter order
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             username: username
-          }
+          },
+          emailRedirectTo: getRedirectUrl()
         }
       });
       
-      if (signUpError) {
-        console.error("Signup error:", signUpError);
-        throw signUpError;
+      if (error) {
+        console.error("Signup error:", error);
+        throw error;
       }
       
-      console.log("Signup successful:", signUpData);
+      console.log("Signup response:", data);
       
-      // Show success message
-      toast({
-        title: "הרשמה הושלמה בהצלחה",
-        description: "אנא בדוק את האימייל שלך לאישור החשבון"
-      });
+      // Check if user needs email confirmation
+      if (data.user && !data.session) {
+        toast({
+          title: "הרשמה הושלמה",
+          description: "אנא בדוק את האימייל שלך לאישור החשבון"
+        });
+      } else if (data.session) {
+        // Auto-login successful
+        toast({
+          title: "הרשמה הושלמה בהצלחה",
+          description: "ברוך הבא למשחק!"
+        });
+      }
       
     } catch (error: any) {
       console.error("Sign up error:", error);
@@ -266,6 +302,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         errorMessage = "כתובת האימייל אינה תקינה";
       } else if (error.message.includes("Password")) {
         errorMessage = "הסיסמה חייבת להכיל לפחות 6 תווים";
+      } else if (error.message.includes("Signup requires a valid password")) {
+        errorMessage = "נדרשת סיסמה תקינה להרשמה";
       }
       
       toast({

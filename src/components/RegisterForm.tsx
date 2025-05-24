@@ -48,8 +48,8 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
     setIsLoading(true);
     
     try {
-      // Call signUp with correct parameter order: email, password, username
       await signUp(email, password, username.trim());
+      // Don't show success message here as it's handled in AuthContext
     } catch (error: any) {
       setError(error.message || "שגיאה בהרשמה. אנא נסה שוב.");
     } finally {
@@ -117,7 +117,7 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
         className="w-full bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600" 
         disabled={isLoading}
       >
-        {isLoading ? "נרשם..." : "הרשם"}
+        {isLoading ? "נרשם..." : "הירשם"}
       </Button>
       
       <div className="text-center text-sm">
