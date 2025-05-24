@@ -5,8 +5,8 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
-  // שינוי הגדרת ה-base כדי שתעבוד בכל הסביבות
-  base: mode === 'development' ? '/' : '/semantle-plus/',
+  // Handle both GitHub Pages and custom domain
+  base: mode === 'development' ? '/' : '/',
   server: {
     host: "::",
     port: 8080,

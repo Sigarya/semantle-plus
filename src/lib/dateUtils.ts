@@ -1,16 +1,11 @@
 
-import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
-
-const ISRAEL_TIMEZONE = 'Asia/Jerusalem';
-
-// Get today's date in Israel timezone in YYYY-MM-DD format
+// Get today's date in UTC timezone in YYYY-MM-DD format
 export function getTodayInIsrael(): string {
   const now = new Date();
-  const israelDate = toZonedTime(now, ISRAEL_TIMEZONE);
-  return formatInTimeZone(israelDate, ISRAEL_TIMEZONE, 'yyyy-MM-dd');
+  return now.toISOString().split('T')[0];
 }
 
-// Check if a date string is today in Israel timezone
+// Check if a date string is today in UTC timezone
 export function isToday(dateString: string): boolean {
   return dateString === getTodayInIsrael();
 }
@@ -25,7 +20,7 @@ export function formatHebrewDate(dateString: string): string {
   });
 }
 
-// Get Israel timezone date from any date
+// Get UTC date from any date
 export function toIsraelDate(date: Date): string {
-  return formatInTimeZone(date, ISRAEL_TIMEZONE, 'yyyy-MM-dd');
+  return date.toISOString().split('T')[0];
 }

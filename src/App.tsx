@@ -17,9 +17,9 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// קביעת ה-basename בהתאם לסביבת הריצה
+// No basename needed for custom domain
 const getBasename = () => {
-  return import.meta.env.MODE === 'development' ? '/' : '/semantle-plus';
+  return '/';
 };
 
 const App = () => (

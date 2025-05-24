@@ -1,4 +1,3 @@
-
 // Follow this setup guide to integrate the Deno runtime into your project:
 // https://deno.com/manual/getting_started/setup_your_environment
 
@@ -30,12 +29,10 @@ interface ApiResponse {
   similarity: number;
 }
 
-// Get today's date in Israel timezone
+// Get today's date in UTC timezone
 function getTodayInIsrael(): string {
   const now = new Date();
-  // Convert to Israel timezone (UTC+2 in winter, UTC+3 in summer)
-  const israelTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jerusalem"}));
-  return israelTime.toISOString().split('T')[0];
+  return now.toISOString().split('T')[0];
 }
 
 serve(async (req) => {
@@ -91,7 +88,7 @@ serve(async (req) => {
       );
     }
 
-    // Get the target date - use provided date for historical games, or today's date in Israel timezone
+    // Get the target date - use provided date for historical games, or today's date in UTC timezone
     const targetDate = date ? date : getTodayInIsrael();
     console.log("Target date for word lookup:", targetDate);
     
