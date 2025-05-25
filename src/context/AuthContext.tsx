@@ -37,19 +37,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [initialized, setInitialized] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log("AuthContext: Starting initialization");
+        
+        // Get initial session with timeout
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session timeout')), 10000)
+        );
+        
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
+        
         if (error) {
-          console.error("Error getting session:", error);
+          console.error("AuthContext: Error getting session:", error);
         } else {
-          console.log("Initial session:", session);
+          console.log("AuthContext: Initial session:", session ? 'found' : 'none');
           if (mounted) {
             setSession(session);
             if (session?.user) {
@@ -58,42 +70,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } catch (error) {
-        console.error("Error in initializeAuth:", error);
+        console.error("AuthContext: Error in initializeAuth:", error);
       } finally {
         if (mounted) {
+          console.log("AuthContext: Initialization complete");
           setIsLoading(false);
+          setInitialized(true);
         }
       }
     };
 
-    initializeAuth();
-
-    // Listen for auth changes
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session);
+      console.log("AuthContext: Auth state changed:", event, session ? 'session exists' : 'no session');
       
       if (!mounted) return;
       
       setSession(session);
       
       if (session?.user) {
-        // Don't set loading here, let fetchUserProfile handle it
-        await fetchUserProfile(session.user);
+        // Don't set loading here for auth state changes after initialization
+        if (initialized) {
+          await fetchUserProfile(session.user);
+        }
       } else {
         setCurrentUser(null);
-        setIsLoading(false);
+        if (initialized) {
+          setIsLoading(false);
+        }
       }
     });
+
+    // Initialize auth
+    initializeAuth();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initialized]);
 
   const fetchUserProfile = async (user: User) => {
     try {
-      console.log("Fetching profile for user:", user.id);
+      console.log("AuthContext: Fetching profile for user:", user.id);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -102,21 +121,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error("Error fetching profile:", error);
+        console.error("AuthContext: Error fetching profile:", error);
         setIsLoading(false);
         return;
       }
 
       if (data) {
-        console.log("Profile found:", data);
+        console.log("AuthContext: Profile found:", data.username);
         setCurrentUser({
           id: data.id,
           username: data.username,
           isAdmin: data.is_admin || false
         });
       } else {
-        console.log("No profile found, creating new profile");
-        // Create profile if it doesn't exist
+        console.log("AuthContext: No profile found, creating new profile");
         const username = user.user_metadata?.username || 
                         user.user_metadata?.full_name || 
                         user.email?.split('@')[0] || 
@@ -132,14 +150,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .single();
 
         if (createError) {
-          console.error("Error creating profile:", createError);
+          console.error("AuthContext: Error creating profile:", createError);
           toast({
             variant: "destructive",
             title: "שגיאה",
             description: "אירעה שגיאה ביצירת הפרופיל"
           });
         } else if (newProfile) {
-          console.log("Profile created successfully:", newProfile);
+          console.log("AuthContext: Profile created successfully:", newProfile.username);
           setCurrentUser({
             id: newProfile.id,
             username: newProfile.username,
@@ -148,7 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     } catch (error) {
-      console.error("Error in fetchUserProfile:", error);
+      console.error("AuthContext: Error in fetchUserProfile:", error);
       toast({
         variant: "destructive",
         title: "שגיאה",

@@ -25,19 +25,31 @@ const Index = () => {
   const [mounted, setMounted] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authTimeout, setAuthTimeout] = useState(false);
 
   useEffect(() => {
     console.log("Index: useEffect - setting mounted to true");
     setMounted(true);
-  }, []);
+    
+    // Set a timeout for auth loading to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (authLoading) {
+        console.log("Index: Auth loading timeout reached");
+        setAuthTimeout(true);
+      }
+    }, 15000); // 15 seconds timeout
+    
+    return () => clearTimeout(timeout);
+  }, [authLoading]);
 
   useEffect(() => {
     console.log("Index: Auth state changed", { 
       authLoading, 
       session: !!session, 
-      currentUser: !!currentUser 
+      currentUser: !!currentUser,
+      authTimeout
     });
-  }, [authLoading, session, currentUser]);
+  }, [authLoading, session, currentUser, authTimeout]);
 
   useEffect(() => {
     console.log("Index: Game state changed", { 
@@ -74,7 +86,8 @@ const Index = () => {
     );
   }
 
-  if (authLoading) {
+  // If auth is taking too long, show the app anyway
+  if (authLoading && !authTimeout) {
     console.log("Index: Auth loading, showing auth loading message");
     return (
       <PageLayout>
@@ -82,22 +95,33 @@ const Index = () => {
           <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">
             טוען אימות...
           </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setAuthTimeout(true)}
+            className="mt-4"
+          >
+            המשך בלי אימות
+          </Button>
         </div>
       </PageLayout>
     );
   }
+
+  // If auth timeout occurred, treat as no session
+  const effectiveSession = authTimeout ? null : session;
+  const effectiveCurrentUser = authTimeout ? null : currentUser;
 
   try {
     return (
       <PageLayout>
         <div className="space-y-6">
           {/* User status bar */}
-          {currentUser && (
+          {effectiveCurrentUser && (
             <div className="bg-primary-50 dark:bg-slate-800 p-4 rounded-md border border-primary-200 dark:border-slate-700">
               <div className="flex justify-between items-center">
                 <div>
                   <span className="text-primary-700 dark:text-primary-300">
-                    שלום, {currentUser.username}!
+                    שלום, {effectiveCurrentUser.username}!
                   </span>
                 </div>
                 <Button 
@@ -108,6 +132,15 @@ const Index = () => {
                 >
                   התנתק
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Auth timeout notification */}
+          {authTimeout && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-md border border-yellow-200 dark:border-yellow-800">
+              <div className="text-yellow-800 dark:text-yellow-200 text-sm">
+                האימות לוקח זמן רב מהרגיל. המשחק נטען ללא אימות.
               </div>
             </div>
           )}
