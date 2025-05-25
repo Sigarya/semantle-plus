@@ -37,7 +37,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [initialized, setInitialized] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -47,16 +46,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         console.log("AuthContext: Starting initialization");
         
-        // Get initial session with timeout
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout')), 10000)
-        );
-        
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any;
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("AuthContext: Error getting session:", error);
@@ -66,21 +57,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setSession(session);
             if (session?.user) {
               await fetchUserProfile(session.user);
+            } else {
+              setIsLoading(false);
             }
           }
         }
       } catch (error) {
         console.error("AuthContext: Error in initializeAuth:", error);
-      } finally {
         if (mounted) {
-          console.log("AuthContext: Initialization complete");
           setIsLoading(false);
-          setInitialized(true);
         }
       }
     };
 
-    // Set up auth state listener first
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("AuthContext: Auth state changed:", event, session ? 'session exists' : 'no session');
       
@@ -89,15 +79,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       
       if (session?.user) {
-        // Don't set loading here for auth state changes after initialization
-        if (initialized) {
-          await fetchUserProfile(session.user);
-        }
+        await fetchUserProfile(session.user);
       } else {
         setCurrentUser(null);
-        if (initialized) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     });
 
@@ -108,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, []); // Remove initialized dependency to prevent loops
 
   const fetchUserProfile = async (user: User) => {
     try {
