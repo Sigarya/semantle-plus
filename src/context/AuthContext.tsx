@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
@@ -40,41 +39,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        console.log("AuthContext: Starting initialization");
-        
-        // Get initial session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("AuthContext: Error getting session:", error);
-        } else {
-          console.log("AuthContext: Initial session:", session ? 'found' : 'none');
-          if (mounted) {
-            setSession(session);
-            if (session?.user) {
-              await fetchUserProfile(session.user);
-            } else {
-              setIsLoading(false);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("AuthContext: Error in initializeAuth:", error);
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    // Set up auth state listener
+    console.log("AuthContext: Starting initialization");
+    
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("AuthContext: Auth state changed:", event, session ? 'session exists' : 'no session');
-      
-      if (!mounted) return;
       
       setSession(session);
       
@@ -86,14 +55,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Initialize auth
+    // Get initial session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("AuthContext: Error getting session:", error);
+          setIsLoading(false);
+        } else {
+          console.log("AuthContext: Initial session:", session ? 'found' : 'none');
+          // Don't set session here - let the onAuthStateChange handle it
+          if (!session) {
+            setIsLoading(false);
+          }
+        }
+      } catch (error) {
+        console.error("AuthContext: Error in initializeAuth:", error);
+        setIsLoading(false);
+      }
+    };
+
     initializeAuth();
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Remove initialized dependency to prevent loops
+  }, []);
 
   const fetchUserProfile = async (user: User) => {
     try {

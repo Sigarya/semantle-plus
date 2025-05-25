@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import GameBoard from "@/components/GameBoard";
@@ -5,24 +6,30 @@ import PageLayout from "@/components/PageLayout";
 import AuthModal from "@/components/AuthModal";
 import { useGame } from "@/context/GameContext";
 import { useAuth } from "@/context/AuthContext";
+
 const Index = () => {
   console.log("Index: Component rendering");
+  
   const {
     isLoading: gameLoading,
     gameState
   } = useGame();
+  
   const {
     session,
     currentUser,
     isLoading: authLoading,
     signOut
   } = useAuth();
+  
   const [mounted, setMounted] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+
   useEffect(() => {
     console.log("Index: useEffect - setting mounted to true");
     setMounted(true);
   }, []);
+
   useEffect(() => {
     console.log("Index: Auth state changed", {
       authLoading,
@@ -30,43 +37,55 @@ const Index = () => {
       currentUser: !!currentUser
     });
   }, [authLoading, session, currentUser]);
+
   useEffect(() => {
     console.log("Index: Game state changed", {
       gameLoading,
       gameState: gameState ? 'exists' : 'null'
     });
   }, [gameLoading, gameState]);
+
   if (!mounted) {
     console.log("Index: Not mounted yet, showing loading");
-    return <PageLayout>
+    return (
+      <PageLayout>
         <div className="flex flex-col justify-center items-center h-64">
           <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">טוען...</div>
         </div>
-      </PageLayout>;
+      </PageLayout>
+    );
   }
+
   if (authLoading) {
     console.log("Index: Auth loading, showing auth loading message");
-    return <PageLayout>
+    return (
+      <PageLayout>
         <div className="flex flex-col justify-center items-center h-64">
           <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">
             טוען אימות...
           </div>
         </div>
-      </PageLayout>;
+      </PageLayout>
+    );
   }
-  return <PageLayout>
-      <div className="space-y-6">
-        {/* User status bar */}
-        {currentUser}
 
-        {gameLoading ? <div className="flex flex-col justify-center items-center h-64">
+  return (
+    <PageLayout>
+      <div className="space-y-6">
+        {gameLoading ? (
+          <div className="flex flex-col justify-center items-center h-64">
             <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">
               טוען משחק...
             </div>
-          </div> : <GameBoard />}
+          </div>
+        ) : (
+          <GameBoard />
+        )}
         
         <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       </div>
-    </PageLayout>;
+    </PageLayout>
+  );
 };
+
 export default Index;
