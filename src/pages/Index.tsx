@@ -1,6 +1,5 @@
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import GameBoard from "@/components/GameBoard";
 import PageLayout from "@/components/PageLayout";
 import AuthModal from "@/components/AuthModal";
@@ -45,24 +44,14 @@ const Index = () => {
     });
   }, [gameLoading, gameState]);
 
-  if (!mounted) {
-    console.log("Index: Not mounted yet, showing loading");
-    return (
-      <PageLayout>
-        <div className="flex flex-col justify-center items-center h-64">
-          <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">טוען...</div>
-        </div>
-      </PageLayout>
-    );
-  }
-
-  if (authLoading) {
-    console.log("Index: Auth loading, showing auth loading message");
+  // Show loading only if not mounted yet or auth is still loading
+  if (!mounted || authLoading) {
+    console.log("Index: Showing loading state", { mounted, authLoading });
     return (
       <PageLayout>
         <div className="flex flex-col justify-center items-center h-64">
           <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">
-            טוען אימות...
+            {!mounted ? "טוען..." : "טוען אימות..."}
           </div>
         </div>
       </PageLayout>
