@@ -37,76 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [initialized, setInitialized] = useState<boolean>(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    console.log("AuthContext: Starting initialization");
-    
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        // Set up auth state listener first
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log("AuthContext: Auth state changed:", event, session ? 'session exists' : 'no session');
-          
-          if (!mounted) return;
-          
-          setSession(session);
-          
-          if (session?.user) {
-            // Use setTimeout to avoid blocking the auth state change
-            setTimeout(() => {
-              if (mounted) {
-                fetchUserProfile(session.user);
-              }
-            }, 0);
-          } else {
-            setCurrentUser(null);
-            if (initialized) {
-              setIsLoading(false);
-            }
-          }
-        });
-
-        // Get initial session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("AuthContext: Error getting session:", error);
-        } else {
-          console.log("AuthContext: Initial session:", session ? 'found' : 'none');
-        }
-        
-        // Mark as initialized
-        setInitialized(true);
-        
-        // If no session, stop loading
-        if (!session) {
-          setIsLoading(false);
-        }
-
-        return () => {
-          mounted = false;
-          subscription.unsubscribe();
-        };
-      } catch (error) {
-        console.error("AuthContext: Error in initializeAuth:", error);
-        if (mounted) {
-          setIsLoading(false);
-          setInitialized(true);
-        }
-      }
-    };
-
-    const cleanup = initializeAuth();
-    
-    return () => {
-      mounted = false;
-      cleanup?.then(cleanupFn => cleanupFn?.());
-    };
-  }, []);
 
   const fetchUserProfile = async (user: User) => {
     try {
@@ -120,7 +51,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error && error.code !== 'PGRST116') {
         console.error("AuthContext: Error fetching profile:", error);
-        setIsLoading(false);
         return;
       }
 
@@ -165,15 +95,69 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("AuthContext: Error in fetchUserProfile:", error);
-      toast({
-        variant: "destructive",
-        title: "שגיאה",
-        description: "אירעה שגיאה בטעינת הפרופיל"
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    console.log("AuthContext: Initializing auth");
+    
+    let mounted = true;
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("AuthContext: Auth state changed:", event, session ? 'session exists' : 'no session');
+      
+      if (!mounted) return;
+      
+      setSession(session);
+      
+      if (session?.user) {
+        // Fetch user profile without blocking
+        fetchUserProfile(session.user).finally(() => {
+          if (mounted) {
+            setIsLoading(false);
+          }
+        });
+      } else {
+        setCurrentUser(null);
+        setIsLoading(false);
+      }
+    });
+
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("AuthContext: Error getting initial session:", error);
+          if (mounted) {
+            setIsLoading(false);
+          }
+          return;
+        }
+        
+        console.log("AuthContext: Initial session check:", session ? 'found' : 'none');
+        
+        // If no session found, stop loading immediately
+        if (!session && mounted) {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("AuthContext: Error in getInitialSession:", error);
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    getInitialSession();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {

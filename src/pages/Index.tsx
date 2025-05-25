@@ -44,14 +44,14 @@ const Index = () => {
     });
   }, [gameLoading, gameState]);
 
-  // Show loading only if not mounted yet or auth is still loading
+  // Show loading only while auth is initializing
   if (!mounted || authLoading) {
     console.log("Index: Showing loading state", { mounted, authLoading });
     return (
       <PageLayout>
         <div className="flex flex-col justify-center items-center h-64">
           <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">
-            {!mounted ? "טוען..." : "טוען אימות..."}
+            טוען...
           </div>
         </div>
       </PageLayout>
