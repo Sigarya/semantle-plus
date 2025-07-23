@@ -104,11 +104,27 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           // Load today's game from localStorage
           const today = new Date().toISOString().split('T')[0];
           const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
-          gameStateToLoad = savedTodayState ? JSON.parse(savedTodayState) : {
-            guesses: [],
-            isComplete: false,
-            wordDate: today
-          };
+          
+          // Check if saved state is from today, if not create new state
+          if (savedTodayState) {
+            const parsedState = JSON.parse(savedTodayState);
+            if (parsedState.wordDate === today) {
+              gameStateToLoad = parsedState;
+            } else {
+              // Old game state from previous day - create new one
+              gameStateToLoad = {
+                guesses: [],
+                isComplete: false,
+                wordDate: today
+              };
+            }
+          } else {
+            gameStateToLoad = {
+              guesses: [],
+              isComplete: false,
+              wordDate: today
+            };
+          }
         }
         
         setTodayWord(wordForGame);
