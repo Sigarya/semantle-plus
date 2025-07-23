@@ -167,6 +167,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem(STORAGE_KEY_TODAY_GAME, JSON.stringify(gameState));
         }
       }
+      
+      // Save historical game state for specific date
+      if (isHistoricalGame && gameState.wordDate) {
+        localStorage.setItem(`game_state_${gameState.wordDate}`, JSON.stringify(gameState));
+      }
     }
   }, [gameState, isLoading, isHistoricalGame, todayWord]);
 
@@ -174,15 +179,19 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!todayWord) throw new Error("המשחק לא נטען כראוי");
     if (gameState.isComplete) throw new Error("המשחק הסתיים");
     
+    // Normalize word input
+    const normalizedWord = word.trim();
+    if (!normalizedWord) throw new Error("אנא הזן מילה");
+    
     // Check if word was already guessed
-    if (gameState.guesses.some(g => g.word === word)) {
+    if (gameState.guesses.some(g => g.word === normalizedWord)) {
       throw new Error("כבר ניחשת את המילה הזאת");
     }
 
     // Call our edge function to calculate similarity
     const { data, error } = await supabase.functions.invoke("calculate-similarity", {
       body: { 
-        guess: word,
+        guess: normalizedWord,
         date: gameState.wordDate
       }
     });
@@ -200,7 +209,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const { similarity, rank, isCorrect } = data;
     
     const newGuess: Guess = {
-      word,
+      word: normalizedWord,
       similarity,
       rank,
       isCorrect
@@ -208,11 +217,35 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     const newGuesses = [...gameState.guesses, newGuess];
 
-    setGameState({
+    const newGameState = {
       ...gameState,
       guesses: newGuesses,
       isComplete: isCorrect
-    });
+    };
+
+    setGameState(newGameState);
+
+    // Save user's score when game is completed
+    if (isCorrect && auth.currentUser) {
+      try {
+        const { error: scoreError } = await supabase
+          .from('daily_scores')
+          .upsert({
+            user_id: auth.currentUser.id,
+            word_date: gameState.wordDate,
+            guesses_count: newGuesses.length,
+            completion_time: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,word_date'
+          });
+
+        if (scoreError) {
+          console.error("Error saving score:", scoreError);
+        }
+      } catch (error) {
+        console.error("Error saving score:", error);
+      }
+    }
 
     return newGuess;
   };
@@ -409,28 +442,30 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const targetDate = date || gameState.wordDate;
     
     try {
-      const { data, error } = await supabase
-        .from('daily_scores')
-        .select(`
-          guesses_count,
-          completion_time,
-          user_id,
-          profiles (username)
-        `)
-        .eq('word_date', targetDate)
-        .order('guesses_count', { ascending: true })
-        .order('completion_time', { ascending: true });
+        const { data, error } = await supabase
+          .from('daily_scores')
+          .select(`
+            guesses_count,
+            completion_time,
+            user_id,
+            profiles!daily_scores_user_id_fkey (username)
+          `)
+          .eq('word_date', targetDate)
+          .order('guesses_count', { ascending: true })
+          .order('completion_time', { ascending: true });
         
       if (error) throw error;
       
       if (data) {
-        const formattedLeaderboard: LeaderboardEntry[] = data.map((entry, index) => ({
-          username: entry.profiles.username,
-          userId: entry.user_id,
-          guessesCount: entry.guesses_count,
-          completionTime: entry.completion_time,
-          rank: index + 1
-        }));
+        const formattedLeaderboard: LeaderboardEntry[] = data
+          .filter(entry => entry.profiles && entry.profiles.username)
+          .map((entry, index) => ({
+            username: entry.profiles.username,
+            userId: entry.user_id,
+            guessesCount: entry.guesses_count,
+            completionTime: entry.completion_time,
+            rank: index + 1
+          }));
         
         setLeaderboard(formattedLeaderboard);
       }

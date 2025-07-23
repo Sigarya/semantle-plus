@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useGame } from "@/context/GameContext";
 import { getSimilarityClass, isValidHebrewWord } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -108,21 +109,24 @@ const GameBoard = () => {
     setIsSubmitting(true);
     
     try {
-      const { data, error } = await fetch(`/api/calculate-similarity`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      // Use the same edge function as the main game
+      const { data, error } = await supabase.functions.invoke("calculate-similarity", {
+        body: { 
           guess: explorationInput,
-          date: gameState.wordDate,
-        }),
-      }).then(res => res.json());
-      
+          date: gameState.wordDate
+        }
+      });
+
       if (error) {
-        throw new Error(error);
+        console.error("Error calculating similarity:", error);
+        throw new Error("שגיאה בחישוב הדמיון");
       }
-      
+
+      if (data.error) {
+        console.error("API response error:", data.error);
+        throw new Error(data.error);
+      }
+
       setExplorationResult({
         word: explorationInput,
         similarity: data.similarity,
