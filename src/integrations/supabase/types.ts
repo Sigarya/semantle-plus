@@ -280,10 +280,62 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      daily_leaderboards: {
+        Row: {
+          completion_time: string | null
+          guesses_count: number | null
+          rank: number | null
+          user_id: string | null
+          username: string | null
+          word_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_scores_word_date_fkey"
+            columns: ["word_date"]
+            isOneToOne: false
+            referencedRelation: "daily_words"
+            referencedColumns: ["date"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_active_word_for_date: {
+        Args: { target_date: string }
+        Returns: {
+          word: string
+          hints: string[]
+        }[]
+      }
+      get_leaderboard_for_date: {
+        Args: { target_date: string }
+        Returns: {
+          username: string
+          user_id: string
+          guesses_count: number
+          completion_time: string
+          rank: number
+        }[]
+      }
+      get_user_daily_score: {
+        Args: { user_uuid: string; target_date: string }
+        Returns: {
+          guesses_count: number
+          completion_time: string
+        }[]
+      }
+      refresh_daily_leaderboards: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
