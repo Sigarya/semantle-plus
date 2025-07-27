@@ -29,6 +29,9 @@ interface ApiResponse {
   similarity: number;
 }
 
+// Cache for word lookup to reduce database queries
+const wordCache = new Map<string, string>();
+
 // Get today's date in UTC timezone
 function getTodayInIsrael(): string {
   const now = new Date();
@@ -92,53 +95,62 @@ serve(async (req) => {
     const targetDate = date ? date : getTodayInIsrael();
     console.log("Target date for word lookup:", targetDate);
     
-    // Query Supabase for the word matching the target date
-    console.log("Fetching word for date:", targetDate);
+    // Check cache first for better performance
+    let target = wordCache.get(targetDate);
     
-    const { data: wordData, error: wordError } = await supabase
-      .from('daily_words')
-      .select('word')
-      .eq('date', targetDate)
-      .eq('is_active', true)
-      .single();
-    
-    if (wordError) {
-      console.error("Error fetching word for date:", targetDate, wordError);
-      return new Response(
-        JSON.stringify({ 
-          error: `לא הוגדרה מילת יום לתאריך ${targetDate}`,
-          similarity: 0,
-          isCorrect: false
-        }),
-        { 
-          status: 200, 
-          headers: { 
-            "Content-Type": "application/json",
-            ...corsHeaders
-          } 
-        }
-      );
+    if (!target) {
+      console.log("Fetching word for date from database:", targetDate);
+      
+      // Use optimized function for better performance
+      const { data: wordData, error: wordError } = await supabase
+        .rpc('get_active_word_for_date', { target_date: targetDate });
+      
+      if (wordError) {
+        console.error("Error fetching word for date:", targetDate, wordError);
+        return new Response(
+          JSON.stringify({ 
+            error: `לא הוגדרה מילת יום לתאריך ${targetDate}`,
+            similarity: 0,
+            isCorrect: false
+          }),
+          { 
+            status: 200, 
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            } 
+          }
+        );
+      }
+      
+      if (!wordData || wordData.length === 0) {
+        console.error("No word found for date:", targetDate);
+        return new Response(
+          JSON.stringify({ 
+            error: `לא הוגדרה מילת יום לתאריך ${targetDate}`,
+            similarity: 0,
+            isCorrect: false
+          }),
+          { 
+            status: 200, 
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            } 
+          }
+        );
+      }
+      
+      target = wordData[0].word;
+      // Cache the word for 1 hour (you could make this longer for historical dates)
+      wordCache.set(targetDate, target);
+      
+      // Clear cache after 1 hour to prevent memory leaks
+      setTimeout(() => {
+        wordCache.delete(targetDate);
+      }, 3600000); // 1 hour
     }
     
-    if (!wordData || !wordData.word) {
-      console.error("No word found for date:", targetDate);
-      return new Response(
-        JSON.stringify({ 
-          error: `לא הוגדרה מילת יום לתאריך ${targetDate}`,
-          similarity: 0,
-          isCorrect: false
-        }),
-        { 
-          status: 200, 
-          headers: { 
-            "Content-Type": "application/json",
-            ...corsHeaders
-          } 
-        }
-      );
-    }
-    
-    const target = wordData.word;
     console.log(`Found word for date ${targetDate}:`, target);
     
     // Construct API URL with query parameters

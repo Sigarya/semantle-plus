@@ -442,6 +442,27 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const targetDate = date || gameState.wordDate;
     
     try {
+      // Use optimized database function for better performance
+      const { data, error } = await supabase
+        .rpc('get_leaderboard_for_date', { target_date: targetDate });
+        
+      if (error) throw error;
+      
+      if (data) {
+        const formattedLeaderboard: LeaderboardEntry[] = data.map((entry: any) => ({
+          username: entry.username,
+          userId: entry.user_id,
+          guessesCount: entry.guesses_count,
+          completionTime: entry.completion_time,
+          rank: entry.rank
+        }));
+        
+        setLeaderboard(formattedLeaderboard);
+      }
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      // Fallback to original query if optimized function fails
+      try {
         const { data, error } = await supabase
           .from('daily_scores')
           .select(`
@@ -454,23 +475,24 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           .order('guesses_count', { ascending: true })
           .order('completion_time', { ascending: true });
         
-      if (error) throw error;
-      
-      if (data) {
-        const formattedLeaderboard: LeaderboardEntry[] = data
-          .filter(entry => entry.profiles && entry.profiles.username)
-          .map((entry, index) => ({
-            username: entry.profiles.username,
-            userId: entry.user_id,
-            guessesCount: entry.guesses_count,
-            completionTime: entry.completion_time,
-            rank: index + 1
-          }));
+        if (error) throw error;
         
-        setLeaderboard(formattedLeaderboard);
+        if (data) {
+          const formattedLeaderboard: LeaderboardEntry[] = data
+            .filter(entry => entry.profiles && entry.profiles.username)
+            .map((entry, index) => ({
+              username: entry.profiles.username,
+              userId: entry.user_id,
+              guessesCount: entry.guesses_count,
+              completionTime: entry.completion_time,
+              rank: index + 1
+            }));
+          
+          setLeaderboard(formattedLeaderboard);
+        }
+      } catch (fallbackError) {
+        console.error("Error in fallback leaderboard fetch:", fallbackError);
       }
-    } catch (error) {
-      console.error("Error fetching leaderboard:", error);
     }
   };
 
