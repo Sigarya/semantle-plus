@@ -223,7 +223,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
     }
 
-    // Process rank response
+    // Process rank response (optional - don't fail if this doesn't work)
     let rankScore: number | undefined;
     if (rankResponse.status === 'fulfilled') {
       try {
@@ -234,15 +234,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             rankScore = rankData.rank;
           }
         } else {
-          throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
+          console.warn("Rank endpoint failed, continuing without rank score");
         }
       } catch (error) {
-        console.error("Error processing rank response:", error);
-        throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
+        console.warn("Error processing rank response, continuing without rank score:", error);
       }
     } else {
-      console.error("Error getting rank score:", rankResponse.reason);
-      throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
+      console.warn("Error getting rank score, continuing without rank score:", rankResponse.reason);
     }
 
     const { similarity, rank, isCorrect } = similarityData;
