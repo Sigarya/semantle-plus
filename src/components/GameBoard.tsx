@@ -235,12 +235,12 @@ const GameBoard = () => {
                     </span>
                   </div>
                   
-                  {explorationResult.rank && explorationResult.rank <= 1000 && (
-                    <Progress 
-                      value={((1000 - explorationResult.rank + 1) / 1000) * 100} 
-                      className="h-2 mt-2 bg-gray-200 dark:bg-slate-600"
-                    />
-                  )}
+                   {explorationResult.rank && explorationResult.rank <= 1000 && (
+                     <Progress 
+                       value={(explorationResult.rank / 1000) * 100} 
+                       className="h-2 mt-2 bg-gray-200 dark:bg-slate-600"
+                     />
+                   )}
                 </div>
               )}
             </div>
@@ -304,10 +304,10 @@ const GameBoard = () => {
                   <span>דירוג דמיון</span>
                   <span>#{mostRecentGuess.rank}/1000</span>
                 </div>
-                <Progress 
-                  value={((1000 - mostRecentGuess.rank + 1) / 1000) * 100} 
-                  className="h-2 bg-gray-200 dark:bg-slate-600"
-                />
+                 <Progress 
+                   value={(mostRecentGuess.rank / 1000) * 100} 
+                   className="h-2 bg-gray-200 dark:bg-slate-600"
+                 />
               </div>
             )}
             
@@ -363,10 +363,10 @@ const GameBoard = () => {
                         <span>דירוג דמיון</span>
                         <span>#{guess.rank}/1000</span>
                       </div>
-                      <Progress 
-                        value={((1000 - guess.rank + 1) / 1000) * 100} 
-                        className="h-2 bg-gray-200 dark:bg-slate-600"
-                      />
+                       <Progress 
+                         value={(guess.rank / 1000) * 100} 
+                         className="h-2 bg-gray-200 dark:bg-slate-600"
+                       />
                     </div>
                   )}
                   
