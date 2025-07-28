@@ -200,7 +200,11 @@ const AdminPanel = () => {
                           variant="default"
                           size="sm"
                           className="bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => handleSetWordOnServer(dailyWord.word, dailyWord.date)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSetWordOnServer(dailyWord.word, dailyWord.date);
+                          }}
                         >
                           הגדר
                         </Button>
