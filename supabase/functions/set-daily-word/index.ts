@@ -1,58 +1,73 @@
 // supabase/functions/set-daily-word/index.ts
+// --- ENHANCED DIAGNOSTIC VERSION ---
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const RENDER_API_URL = Deno.env.get("RENDER_API_URL")
-const ADMIN_PASSWORD = Deno.env.get("ADMIN_PASSWORD")
-const ADMIN_USERNAME = "admin"
-
 serve(async (req) => {
-  // Standard CORS preflight check
+  // Always handle CORS first
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' } })
   }
 
+  console.log("--- Supabase Function Invoked ---");
+
   try {
-    const { date, word } = await req.json()
-    if (!date || !word) throw new Error("Date and word are required.")
+    const RENDER_API_URL = Deno.env.get("RENDER_API_URL")
+    const ADMIN_PASSWORD = Deno.env.get("ADMIN_PASSWORD")
 
-    // This is the correct Basic authentication header.
-    const encodedAuth = btoa(`${ADMIN_USERNAME}:${ADMIN_PASSWORD}`)
-    const headers = { 'Authorization': `Basic ${encodedAuth}` }
+    console.log(`Step 1: Reading secrets. RENDER_API_URL is set: ${!!RENDER_API_URL}, ADMIN_PASSWORD is set: ${!!ADMIN_PASSWORD}`);
 
-    const targetUrl = `${RENDER_API_URL}/admin/set-daily-word?date=${date}&word=${word}`
-    
-    console.log(`Forwarding request to: ${targetUrl}`); // Log the exact URL being called
-
-    const response = await fetch(targetUrl, { method: 'POST', headers: headers })
-    
-    // ===================================================================
-    // === THIS IS THE NEW, CRITICAL DEBUGGING LOGIC =====================
-    // ===================================================================
-    // If the response from the Render server is NOT successful...
-    if (!response.ok) {
-        // ...read the exact error message text from the response body...
-        const errorBody = await response.text()
-        console.error(`Render server returned an error: Status ${response.status}`, errorBody);
-        
-        // ...and throw a new, much more detailed error.
-        throw new Error(`The Render server responded with a non-2xx status code. Status: ${response.status}. Body: ${errorBody}`)
+    if (!RENDER_API_URL || !ADMIN_PASSWORD) {
+      throw new Error("CRITICAL: RENDER_API_URL or ADMIN_PASSWORD secret is not set in Supabase Vault.");
     }
-    // ===================================================================
+    
+    const { date, word } = await req.json()
+    console.log(`Step 2: Parsed request body. Date: ${date}, Word: ${word}`);
+    if (!date || !word) {
+      throw new Error("Date and word are required in the request body.")
+    }
+
+    const encodedAuth = btoa(`admin:${ADMIN_PASSWORD}`)
+    const headers = {
+      'Authorization': `Basic ${encodedAuth}`,
+      'Content-Type': 'application/json'
+    }
+    console.log("Step 3: Created Authorization header.");
+
+    const targetUrl = `${RENDER_API_URL}/admin/set-daily-word`
+    console.log(`Step 4: Preparing to call Render server at URL: ${targetUrl}`);
+    
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ date, word })
+    })
+    console.log(`Step 5: Fetch call to Render completed with status: ${response.status}`);
+    
+    if (!response.ok) {
+        const errorBody = await response.text()
+        console.error(`Step 6 (FAILURE): Render server returned a non-200 status. Body: ${errorBody}`);
+        throw new Error(`Render server error: Status ${response.status} Body: ${errorBody}`)
+    }
     
     const responseData = await response.json()
+    console.log("Step 6 (SUCCESS): Successfully got JSON response from Render.");
 
-    // Send the success response back to the admin panel.
     return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
     })
 
   } catch (error) {
-    // The catch block will now receive our new, detailed error message.
-    console.error("Error in Supabase function:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500, // Keep the status 500, but the message will be more useful.
+    // This will now catch ANY failure from the steps above.
+    console.error("--- ERROR CATCH BLOCK TRIGGERED ---");
+    console.error("The function failed at some point. The error was:", error.message);
+    console.error("---------------------------------");
+    
+    return new Response(JSON.stringify({
+      error: `Supabase function failed: ${error.message}`
+    }), {
+      status: 500, // IMPORTANT: We now correctly return a 500 error status.
       headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
     })
   }
