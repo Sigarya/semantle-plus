@@ -179,13 +179,46 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!todayWord) throw new Error("המשחק לא נטען כראוי");
     if (gameState.isComplete) throw new Error("המשחק הסתיים");
     
-    // Normalize word input
+    // Enhanced input validation
     const normalizedWord = word.trim();
     if (!normalizedWord) throw new Error("אנא הזן מילה");
+    
+    // Length validation
+    if (normalizedWord.length < 2 || normalizedWord.length > 50) {
+      throw new Error("המילה חייבת להיות באורך של 2-50 תווים");
+    }
+
+    // Hebrew word validation (allow Hebrew letters, English letters, numbers, spaces, hyphens, dots)
+    const hebrewWordRegex = /^[א-תa-zA-Z0-9\s\-\.]+$/;
+    if (!hebrewWordRegex.test(normalizedWord)) {
+      throw new Error("המילה מכילה תווים לא חוקיים");
+    }
     
     // Check if word was already guessed
     if (gameState.guesses.some(g => g.word === normalizedWord)) {
       throw new Error("כבר ניחשת את המילה הזאת");
+    }
+
+    // Check rate limit if user is authenticated
+    if (auth.currentUser) {
+      try {
+        const { data: rateLimitResult, error: rateLimitError } = await supabase
+          .rpc('check_rate_limit', {
+            _user_id: auth.currentUser.id,
+            _action_type: 'guess_submission',
+            _max_requests: 10,
+            _window_minutes: 1
+          });
+
+        if (rateLimitError) {
+          console.warn("Rate limit check failed:", rateLimitError);
+        } else if (!rateLimitResult) {
+          throw new Error("יותר מדי ניחושים. אנא חכה דקה ונסה שוב");
+        }
+      } catch (error) {
+        console.warn("Rate limit check error:", error);
+        // Continue without rate limiting if check fails
+      }
     }
 
     // Format date for the new server (dd/mm/yyyy)
