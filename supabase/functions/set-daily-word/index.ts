@@ -27,20 +27,19 @@ serve(async (req) => {
       throw new Error("Date and word are required in the request body.")
     }
 
-    const encodedAuth = btoa(`admin:${ADMIN_PASSWORD}`)
-    const headers = {
-      'Authorization': `Basic ${encodedAuth}`,
-      'Content-Type': 'application/json'
-    }
-    console.log("Step 3: Created Authorization header.");
+    // Build URL with query parameters as expected by Render server
+    const targetUrl = `${RENDER_API_URL}/admin/set-daily-word?date=${encodeURIComponent(date)}&word=${encodeURIComponent(word)}`
+    console.log(`Step 3: Built target URL with query parameters: ${targetUrl}`);
 
-    const targetUrl = `${RENDER_API_URL}/admin/set-daily-word`
-    console.log(`Step 4: Preparing to call Render server at URL: ${targetUrl}`);
+    // Headers without Content-Type since there's no body
+    const headers = {
+      'Authorization': `Basic ${btoa(`admin:${ADMIN_PASSWORD}`)}`
+    }
+    console.log("Step 4: Created Authorization header.");
     
     const response = await fetch(targetUrl, {
       method: 'POST',
-      headers: headers,
-      body: JSON.stringify({ date, word })
+      headers: headers
     })
     console.log(`Step 5: Fetch call to Render completed with status: ${response.status}`);
     
