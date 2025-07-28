@@ -226,10 +226,14 @@ serve(async (req) => {
         );
       }
       
-      // Other API errors
+      // Other API errors - sanitize error message for security
+      const sanitizedError = apiResponse.status >= 500 
+        ? "שגיאה זמנית בשירות. אנא נסה שוב מאוחר יותר"
+        : "שגיאה בחישוב הדמיון";
+        
       return new Response(
         JSON.stringify({ 
-          error: apiData.error || "שגיאה בחישוב הדמיון",
+          error: sanitizedError,
           similarity: 0,
           isCorrect: false
         }),
@@ -275,12 +279,12 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error processing request:", error);
     
+    // Sanitize error response for security - don't expose internal details
     return new Response(
       JSON.stringify({ 
         error: "שגיאה בעיבוד הבקשה", 
         similarity: 0, 
-        isCorrect: false,
-        details: error.message
+        isCorrect: false
       }),
       { 
         status: 500, 

@@ -3,6 +3,7 @@ import { Guess, GameState, DailyWord, LeaderboardEntry } from "../types/game";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { format } from "date-fns";
 
 interface GameContextType {
   gameState: GameState;
@@ -513,22 +514,43 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const targetDate = date || gameState.wordDate;
     
     try {
-      // Use optimized database function for better performance
-      const { data, error } = await supabase
-        .rpc('get_leaderboard_for_date', { target_date: targetDate });
-        
-      if (error) throw error;
+      // Use secure function for today's leaderboard, regular RPC for other dates
+      const isToday = targetDate === format(new Date(), 'yyyy-MM-dd');
       
-      if (data) {
-        const formattedLeaderboard: LeaderboardEntry[] = data.map((entry: any) => ({
-          username: entry.username,
-          userId: entry.user_id,
-          guessesCount: entry.guesses_count,
-          completionTime: entry.completion_time,
-          rank: entry.rank
-        }));
+      if (isToday) {
+        const { data, error } = await supabase
+          .rpc('get_today_leaderboard');
         
-        setLeaderboard(formattedLeaderboard);
+        if (error) throw error;
+        
+        if (data) {
+          const formattedLeaderboard: LeaderboardEntry[] = data.map((entry: any) => ({
+            username: entry.username,
+            userId: entry.user_id,
+            guessesCount: entry.guesses_count,
+            completionTime: entry.completion_time,
+            rank: entry.rank
+          }));
+          
+          setLeaderboard(formattedLeaderboard);
+        }
+      } else {
+        const { data, error } = await supabase
+          .rpc('get_leaderboard_for_date', { target_date: targetDate });
+          
+        if (error) throw error;
+        
+        if (data) {
+          const formattedLeaderboard: LeaderboardEntry[] = data.map((entry: any) => ({
+            username: entry.username,
+            userId: entry.user_id,
+            guessesCount: entry.guesses_count,
+            completionTime: entry.completion_time,
+            rank: entry.rank
+          }));
+          
+          setLeaderboard(formattedLeaderboard);
+        }
       }
     } catch (error) {
       console.error("Error fetching leaderboard:", error);

@@ -369,24 +369,6 @@ export type Database = {
           },
         ]
       }
-      today_leaderboard: {
-        Row: {
-          completion_time: string | null
-          guesses_count: number | null
-          rank: number | null
-          user_id: string | null
-          username: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_scores_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Functions: {
       check_rate_limit: {
@@ -418,6 +400,20 @@ export type Database = {
           completion_time: string
           rank: number
         }[]
+      }
+      get_today_leaderboard: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          username: string
+          user_id: string
+          guesses_count: number
+          completion_time: string
+          rank: number
+        }[]
+      }
+      get_user_admin_status: {
+        Args: { _user_id: string }
+        Returns: boolean
       }
       get_user_daily_score: {
         Args: { user_uuid: string; target_date: string }

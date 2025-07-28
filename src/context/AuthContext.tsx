@@ -220,10 +220,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       
+      // Configure email redirect URL for security
+      const redirectUrl = `${window.location.origin}/`;
+      
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             username: username.trim()
           }
