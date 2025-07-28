@@ -209,18 +209,18 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // Process similarity response
     if (similarityResponse.status === 'rejected') {
       console.error("Error calculating similarity:", similarityResponse.reason);
-      throw new Error("שגיאה בחישוב הדמיון");
+      throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
     }
 
     const { data: similarityData, error: similarityError } = similarityResponse.value;
     if (similarityError) {
       console.error("Error calculating similarity:", similarityError);
-      throw new Error("שגיאה בחישוב הדמיון");
+      throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
     }
 
     if (similarityData.error) {
       console.error("API response error:", similarityData.error);
-      throw new Error(similarityData.error);
+      throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
     }
 
     // Process rank response
@@ -229,17 +229,20 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       try {
         if (rankResponse.value.ok) {
           const rankData = await rankResponse.value.json();
+          // The new server returns rank in the rank field
           if (rankData.rank && rankData.rank > 0) {
             rankScore = rankData.rank;
           }
+        } else {
+          throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
         }
       } catch (error) {
         console.error("Error processing rank response:", error);
-        // Continue without rank score if there's an error
+        throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
       }
     } else {
       console.error("Error getting rank score:", rankResponse.reason);
-      // Continue without rank score if there's an error
+      throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
     }
 
     const { similarity, rank, isCorrect } = similarityData;

@@ -316,7 +316,7 @@ const GameBoard = () => {
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>דירוג מילים</span>
-                  <span>{mostRecentGuess.rankScore}/1000</span>
+                  <span>{mostRecentGuess.rankScore}/1,000</span>
                 </div>
                 <Progress 
                   value={(mostRecentGuess.rankScore / 1000) * 100} 
@@ -375,7 +375,7 @@ const GameBoard = () => {
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs text-muted-foreground">
                         <span>דירוג מילים</span>
-                        <span>{guess.rankScore}/1000</span>
+                        <span>{guess.rankScore}/1,000</span>
                       </div>
                       <Progress 
                         value={(guess.rankScore / 1000) * 100} 
