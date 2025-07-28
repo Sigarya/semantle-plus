@@ -12,62 +12,66 @@ serve(async (req) => {
   console.log("--- Supabase Function Invoked ---");
 
   try {
-    const RENDER_API_URL = Deno.env.get("RENDER_API_URL")
-    const ADMIN_PASSWORD = Deno.env.get("ADMIN_PASSWORD")
-
-    console.log(`Step 1: Reading secrets. RENDER_API_URL is set: ${!!RENDER_API_URL}, ADMIN_PASSWORD is set: ${!!ADMIN_PASSWORD}`);
-
+    console.log("--- Function Invoked ---");
+    
+    // Step 1: Securely get secrets
+    const RENDER_API_URL = Deno.env.get("RENDER_API_URL");
+    const ADMIN_PASSWORD = Deno.env.get("ADMIN_PASSWORD");
     if (!RENDER_API_URL || !ADMIN_PASSWORD) {
-      throw new Error("CRITICAL: RENDER_API_URL or ADMIN_PASSWORD secret is not set in Supabase Vault.");
+      throw new Error("Missing required secrets: RENDER_API_URL or ADMIN_PASSWORD");
     }
-    
-    const { date, word } = await req.json()
-    console.log(`Step 2: Parsed request body. Date: ${date}, Word: ${word}`);
+
+    // Step 2: Get data from the incoming request
+    const { date, word } = await req.json();
     if (!date || !word) {
-      throw new Error("Date and word are required in the request body.")
+      throw new Error("Request body must contain 'date' and 'word'.");
     }
+    console.log(`Received data: date=${date}, word=${word}`);
 
-    // Build URL with query parameters as expected by Render server
-    const targetUrl = `${RENDER_API_URL}/admin/set-daily-word?date=${encodeURIComponent(date)}&word=${encodeURIComponent(word)}`
-    console.log(`Step 3: Built target URL with query parameters: ${targetUrl}`);
+    // Step 3: Explicitly construct the URL with URLSearchParams
+    // This is the most robust way to handle encoding of special characters.
+    const url = new URL(`${RENDER_API_URL}/admin/set-daily-word`);
+    url.searchParams.append("date", date);
+    url.searchParams.append("word", word);
+    console.log(`Constructed final URL: ${url.toString()}`);
 
-    // Headers without Content-Type since there's no body
-    const headers = {
-      'Authorization': `Basic ${btoa(`admin:${ADMIN_PASSWORD}`)}`
-    }
-    console.log("Step 4: Created Authorization header.");
+    // Step 4: Create the Basic Authentication header
+    const encodedAuth = btoa(`admin:${ADMIN_PASSWORD}`);
     
-    const response = await fetch(targetUrl, {
+    // Step 5: Create a new Headers object. This is the most reliable method.
+    const headers = new Headers();
+    headers.append("Authorization", `Basic ${encodedAuth}`);
+    
+    console.log("Sending POST request to Render server...");
+
+    // Step 6: Make the fetch call. The body is explicitly null.
+    const response = await fetch(url.toString(), {
       method: 'POST',
-      headers: headers
-    })
-    console.log(`Step 5: Fetch call to Render completed with status: ${response.status}`);
-    
+      headers: headers,
+      body: null // Explicitly no body
+    });
+
+    console.log(`Received response from Render server with status: ${response.status}`);
+
     if (!response.ok) {
-        const errorBody = await response.text()
-        console.error(`Step 6 (FAILURE): Render server returned a non-200 status. Body: ${errorBody}`);
-        throw new Error(`Render server error: Status ${response.status} Body: ${errorBody}`)
+        const errorBody = await response.text();
+        throw new Error(`Render server error. Status: ${response.status}, Body: ${errorBody}`);
     }
     
-    const responseData = await response.json()
-    console.log("Step 6 (SUCCESS): Successfully got JSON response from Render.");
+    const responseData = await response.json();
 
+    // Step 7: Return the successful response
     return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
-    })
+    });
 
-  } catch (error) {
-    // This will now catch ANY failure from the steps above.
-    console.error("--- ERROR CATCH BLOCK TRIGGERED ---");
-    console.error("The function failed at some point. The error was:", error.message);
-    console.error("---------------------------------");
-    
-    return new Response(JSON.stringify({
-      error: `Supabase function failed: ${error.message}`
-    }), {
-      status: 500, // IMPORTANT: We now correctly return a 500 error status.
+} catch (error) {
+    console.error("--- A CRITICAL ERROR OCCURRED ---");
+    console.error(error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
       headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
-    })
-  }
+    });
+}
 })
