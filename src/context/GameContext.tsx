@@ -8,7 +8,7 @@ import { format } from "date-fns";
 interface GameContextType {
   gameState: GameState;
   isLoading: boolean;
-  todayWord: string | null;
+  currentWord: string | null;
   leaderboard: LeaderboardEntry[];
   isHistoricalGame: boolean;
   makeGuess: (word: string) => Promise<Guess>;
@@ -18,14 +18,20 @@ interface GameContextType {
   loadHistoricalGame: (date: string) => Promise<void>;
   fetchLeaderboard: (date?: string) => Promise<void>;
   initializeGame: () => Promise<void>;
-  returnToTodayGame: () => void;
+  getCurrentGameDate: () => string;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 const STORAGE_KEY_GAME_STATE = "semantle_game_state";
-const STORAGE_KEY_TODAY_GAME = "semantle_today_game_state";
-const STORAGE_KEY_HISTORICAL_FLAG = "semantle_historical_game";
+const STORAGE_KEY_CURRENT_GAME = "semantle_current_game_state";
+
+// Helper function to get yesterday's date
+const getYesterdayDate = (): string => {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return yesterday.toISOString().split('T')[0];
+};
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const auth = useAuth();
@@ -34,14 +40,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [gameState, setGameState] = useState<GameState>({
     guesses: [],
     isComplete: false,
-    wordDate: new Date().toISOString().split('T')[0],
+    wordDate: getYesterdayDate(),
   });
   
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [todayWord, setTodayWord] = useState<string | null>(null);
+  const [currentWord, setCurrentWord] = useState<string | null>(null);
   const [dailyWords, setDailyWords] = useState<DailyWord[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [isHistoricalGame, setIsHistoricalGame] = useState<boolean>(false);
+  const [isHistoricalGame, setIsHistoricalGame] = useState<boolean>(true); // Always historical now
 
   // Initialize game
   useEffect(() => {
@@ -60,6 +66,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
         
         let targetWord = "בית"; // Default word
+        const yesterdayDate = getYesterdayDate();
         
         if (data && data.length > 0) {
           setDailyWords(data.map(item => ({
@@ -70,79 +77,52 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             is_active: item.is_active
           })));
           
-          const today = new Date().toISOString().split('T')[0];
-          const todayWordData = data.find(w => w.date === today && w.is_active);
+          // Look for yesterday's word by default
+          const yesterdayWordData = data.find(w => w.date === yesterdayDate && w.is_active);
           
-          if (todayWordData) {
-            targetWord = todayWordData.word;
+          if (yesterdayWordData) {
+            targetWord = yesterdayWordData.word;
           }
         }
         
-        // Check if we're in historical mode
-        const isHistorical = localStorage.getItem(STORAGE_KEY_HISTORICAL_FLAG) === "true";
-        setIsHistoricalGame(isHistorical);
-        
+        // Load saved game state for yesterday's date
+        const savedState = localStorage.getItem(STORAGE_KEY_CURRENT_GAME);
         let gameStateToLoad;
-        let wordForGame = targetWord;
         
-        if (isHistorical) {
-          const savedState = localStorage.getItem(STORAGE_KEY_GAME_STATE);
-          gameStateToLoad = savedState ? JSON.parse(savedState) : null;
-          
-          if (!gameStateToLoad || !gameStateToLoad.wordDate) {
-            localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
-            setIsHistoricalGame(false);
-            gameStateToLoad = null;
-          } else if (data) {
-            const historicalWordData = data.find(w => w.date === gameStateToLoad.wordDate && w.is_active);
-            if (historicalWordData) {
-              wordForGame = historicalWordData.word;
-            }
-          }
-        }
-        
-        if (!gameStateToLoad) {
-          // Load today's game from localStorage
-          const today = new Date().toISOString().split('T')[0];
-          const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
-          
-          // Check if saved state is from today, if not create new state
-          if (savedTodayState) {
-            const parsedState = JSON.parse(savedTodayState);
-            if (parsedState.wordDate === today) {
-              gameStateToLoad = parsedState;
-            } else {
-              // Old game state from previous day - create new one
-              gameStateToLoad = {
-                guesses: [],
-                isComplete: false,
-                wordDate: today
-              };
-            }
+        if (savedState) {
+          const parsedState = JSON.parse(savedState);
+          // Check if saved state is for yesterday, if not create new state
+          if (parsedState.wordDate === yesterdayDate) {
+            gameStateToLoad = parsedState;
           } else {
+            // Old game state from different day - create new one for yesterday
             gameStateToLoad = {
               guesses: [],
               isComplete: false,
-              wordDate: today
+              wordDate: yesterdayDate
             };
           }
+        } else {
+          gameStateToLoad = {
+            guesses: [],
+            isComplete: false,
+            wordDate: yesterdayDate
+          };
         }
         
-        setTodayWord(wordForGame);
+        setCurrentWord(targetWord);
         setGameState(gameStateToLoad);
         
       } catch (error) {
         console.error("Error initializing app:", error);
         
-        const today = new Date().toISOString().split('T')[0];
-        setTodayWord("בית");
+        const yesterdayDate = getYesterdayDate();
+        setCurrentWord("בית");
         setGameState({
           guesses: [],
           isComplete: false,
-          wordDate: today
+          wordDate: yesterdayDate
         });
-        setIsHistoricalGame(false);
-        localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
         
         toast({
           variant: "destructive",
@@ -159,25 +139,21 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   // Save game state when it changes
   useEffect(() => {
-    if (!isLoading && todayWord && gameState.guesses.length >= 0) {
+    if (!isLoading && currentWord && gameState.guesses.length >= 0) {
       localStorage.setItem(STORAGE_KEY_GAME_STATE, JSON.stringify(gameState));
       
-      if (!isHistoricalGame) {
-        const today = new Date().toISOString().split('T')[0];
-        if (gameState.wordDate === today) {
-          localStorage.setItem(STORAGE_KEY_TODAY_GAME, JSON.stringify(gameState));
-        }
-      }
+      // Save current game state (could be yesterday or any historical date)
+      localStorage.setItem(STORAGE_KEY_CURRENT_GAME, JSON.stringify(gameState));
       
       // Save historical game state for specific date
-      if (isHistoricalGame && gameState.wordDate) {
+      if (gameState.wordDate) {
         localStorage.setItem(`game_state_${gameState.wordDate}`, JSON.stringify(gameState));
       }
     }
-  }, [gameState, isLoading, isHistoricalGame, todayWord]);
+  }, [gameState, isLoading, currentWord]);
 
   const makeGuess = async (word: string): Promise<Guess> => {
-    if (!todayWord) throw new Error("המשחק לא נטען כראוי");
+    if (!currentWord) throw new Error("המשחק לא נטען כראוי");
     if (gameState.isComplete) throw new Error("המשחק הסתיים");
     
     // Enhanced input validation
@@ -325,17 +301,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const resetGame = () => {
     if (!gameState.isComplete) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const yesterdayDate = getYesterdayDate();
     setGameState({
       guesses: [],
       isComplete: false,
-      wordDate: today
+      wordDate: yesterdayDate
     });
-    
-    if (isHistoricalGame) {
-      setIsHistoricalGame(false);
-      localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
-    }
   };
 
   const setWordForDate = async (word: string, date: string): Promise<void> => {
@@ -396,9 +367,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         })));
       }
       
-      const today = new Date().toISOString().split('T')[0];
-      if (date === today) {
-        setTodayWord(word);
+      // Update current word if we're setting word for the current game date
+      if (date === gameState.wordDate) {
+        setCurrentWord(word);
       }
       
       toast({
@@ -432,16 +403,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("לא נמצאה מילה לתאריך זה");
       }
       
-      const today = new Date().toISOString().split('T')[0];
-      
-      if (!isHistoricalGame && date !== today && gameState.wordDate === today) {
-        localStorage.setItem(STORAGE_KEY_TODAY_GAME, JSON.stringify(gameState));
+      // Save current game state before switching
+      if (gameState.wordDate && gameState.wordDate !== date) {
+        localStorage.setItem(`game_state_${gameState.wordDate}`, JSON.stringify(gameState));
       }
       
-      localStorage.setItem(STORAGE_KEY_HISTORICAL_FLAG, "true");
-      setIsHistoricalGame(true);
-      
-      setTodayWord(data.word);
+      setCurrentWord(data.word);
       
       // Try to load existing historical game state
       const savedHistoricalState = localStorage.getItem(`game_state_${date}`);
@@ -453,6 +420,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       
       setGameState(historicalGameState);
       localStorage.setItem(STORAGE_KEY_GAME_STATE, JSON.stringify(historicalGameState));
+      localStorage.setItem(STORAGE_KEY_CURRENT_GAME, JSON.stringify(historicalGameState));
       
       toast({
         title: "משחק היסטורי נטען",
@@ -463,16 +431,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       console.error("Error loading historical game:", error);
       
-      const today = new Date().toISOString().split('T')[0];
-      const todayState = {
+      const yesterdayDate = getYesterdayDate();
+      const yesterdayState = {
         guesses: [],
         isComplete: false,
-        wordDate: today
+        wordDate: yesterdayDate
       };
       
-      setGameState(todayState);
-      setIsHistoricalGame(false);
-      localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
+      setGameState(yesterdayState);
       
       toast({
         variant: "destructive",
@@ -485,29 +451,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const returnToTodayGame = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    const savedTodayState = localStorage.getItem(STORAGE_KEY_TODAY_GAME);
-    const todayGameStateToUse = savedTodayState ? JSON.parse(savedTodayState) : {
-      guesses: [],
-      isComplete: false,
-      wordDate: today
-    };
-    
-    setGameState(todayGameStateToUse);
-    setIsHistoricalGame(false);
-    localStorage.removeItem(STORAGE_KEY_HISTORICAL_FLAG);
-    
-    const todayWordData = dailyWords.find(w => w.date === today && w.is_active);
-    if (todayWordData) {
-      setTodayWord(todayWordData.word);
-    }
-    
-    toast({
-      title: "חזרה למשחק היומי",
-      description: "המשחק היומי נטען בהצלחה"
-    });
+  const getCurrentGameDate = (): string => {
+    return gameState.wordDate;
   };
 
   const fetchLeaderboard = async (date?: string): Promise<void> => {
@@ -594,17 +539,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    if (gameState.wordDate && !isLoading && todayWord) {
+    if (gameState.wordDate && !isLoading && currentWord) {
       fetchLeaderboard();
     }
-  }, [gameState.wordDate, isLoading, todayWord]);
+  }, [gameState.wordDate, isLoading, currentWord]);
 
   return (
     <GameContext.Provider 
       value={{ 
         gameState, 
         isLoading, 
-        todayWord, 
+        currentWord, 
         leaderboard,
         isHistoricalGame,
         makeGuess, 
@@ -614,7 +559,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         loadHistoricalGame,
         fetchLeaderboard,
         initializeGame,
-        returnToTodayGame
+        getCurrentGameDate
       }}
     >
       {children}

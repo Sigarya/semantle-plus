@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const GameBoard = () => {
-  const { gameState, todayWord, makeGuess, resetGame, isLoading, isHistoricalGame, returnToTodayGame } = useGame();
+  const { gameState, currentWord, makeGuess, resetGame, isLoading, isHistoricalGame } = useGame();
   const { currentUser } = useAuth();
   const [guessInput, setGuessInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -159,9 +159,14 @@ const GameBoard = () => {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold text-center font-heebo">
-        סמנטעל +
-      </h2>
+      <div className="text-center">
+        <h2 className="text-2xl font-bold font-heebo">
+          סמנטעל +
+        </h2>
+        <div className="text-sm text-muted-foreground mt-2">
+          משחק מיום {new Date(gameState.wordDate).toLocaleDateString('he-IL')}
+        </div>
+      </div>
       
       {gameState.isComplete ? (
         <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
@@ -170,41 +175,33 @@ const GameBoard = () => {
               כל הכבוד! מצאת את המילה!
             </div>
             <div className="text-xl mb-4">
-              המילה היא: <span className="font-bold text-primary-500 dark:text-primary-400">{todayWord}</span>
+              המילה היא: <span className="font-bold text-primary-500 dark:text-primary-400">{currentWord}</span>
             </div>
             <div className="text-muted-foreground mb-6">
               מספר ניחושים: {gameState.guesses.length}
             </div>
             
             <div className="flex flex-col gap-4 items-center">
-              {!isHistoricalGame && (
-                <Button 
-                  onClick={resetGame}
-                  className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600"
-                >
-                  שחק שוב
-                </Button>
-              )}
+              <Button 
+                onClick={resetGame}
+                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600"
+              >
+                שחק שוב
+              </Button>
               
               <Link to="/history" className="block">
                 <Button variant="outline">
                   משחק מיום אחר
                 </Button>
               </Link>
-              
-              {isHistoricalGame && (
-                <Button variant="outline" onClick={returnToTodayGame}>
-                  חזור למשחק היום
-                </Button>
-              )}
             </div>
             
             {/* Exploration mode for completed games */}
             <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-medium mb-4">נסה מילים נוספות</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                נסה מילים אחרות לראות כמה הן קרובות למילת היום
-              </p>
+               <p className="text-sm text-muted-foreground mb-4">
+                 נסה מילים אחרות לראות כמה הן קרובות למילה
+               </p>
               <form onSubmit={handleExplorationSubmit} className="space-y-4">
                 <div className="flex gap-2">
                   <Input
@@ -275,9 +272,9 @@ const GameBoard = () => {
           )}
           
           <div className="text-center p-4 bg-background dark:bg-slate-800 rounded-md border border-primary-200 dark:border-slate-700">
-            <p className="text-primary-600 dark:text-primary-400">
-              נחש את המילה היומית! ככל שהניחוש שלך קרוב יותר למילה, כך המדד יהיה גבוה יותר.
-            </p>
+             <p className="text-primary-600 dark:text-primary-400">
+               נחש את המילה! ככל שהניחוש שלך קרוב יותר למילה, כך המדד יהיה גבוה יותר.
+             </p>
           </div>
         </form>
       )}
