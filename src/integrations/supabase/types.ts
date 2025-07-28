@@ -306,8 +306,30 @@ export type Database = {
           },
         ]
       }
+      today_leaderboard: {
+        Row: {
+          completion_time: string | null
+          guesses_count: number | null
+          rank: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      cleanup_old_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_active_word_for_date: {
         Args: { target_date: string }
         Returns: {
@@ -334,6 +356,10 @@ export type Database = {
       }
       refresh_daily_leaderboards: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      refresh_leaderboards_for_date: {
+        Args: { target_date: string }
         Returns: undefined
       }
     }
