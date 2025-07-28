@@ -1,49 +1,177 @@
-// supabase/functions/set-daily-word/index.ts
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-// These secrets are read securely from the Supabase Vault.
-const RENDER_API_URL = Deno.env.get("RENDER_API_URL")
-const ADMIN_PASSWORD = Deno.env.get("ADMIN_PASSWORD")
-const ADMIN_USERNAME = "admin"
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+};
+
+interface RequestBody {
+  date: string;  // Format: DD/MM/YYYY
+  word: string;
+}
 
 serve(async (req) => {
-  // Standard CORS preflight check
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' } })
+  console.log("Received request:", req.method);
+  
+  // Handle OPTIONS request for CORS preflight
+  if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS request");
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
   }
 
   try {
-    const { date, word } = await req.json()
-    if (!date || !word) throw new Error("Date and word are required.")
-
-    // Securely create the Authorization header on the server.
-    const encodedAuth = btoa(`${ADMIN_USERNAME}:${ADMIN_PASSWORD}`)
-    const headers = { 'Authorization': `Basic ${encodedAuth}` }
-
-    const targetUrl = `${RENDER_API_URL}/admin/set-daily-word?date=${date}&word=${word}`
+    // Parse request body
+    let body: RequestBody;
     
-    // Make the secure, server-to-server call.
-    const response = await fetch(targetUrl, { method: 'POST', headers: headers })
-    
-    if (!response.ok) {
-        const errorBody = await response.text()
-        throw new Error(`Render server error: ${response.status} ${errorBody}`)
+    try {
+      body = await req.json();
+      console.log("Request body:", JSON.stringify(body));
+    } catch (parseError) {
+      console.error("Error parsing request JSON:", parseError);
+      return new Response(
+        JSON.stringify({ 
+          error: "בקשה לא תקינה, לא ניתן לנתח את ה-JSON"
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
     }
     
-    const responseData = await response.json()
+    const { date, word } = body;
 
-    // Send the success response back to the admin panel.
-    return new Response(JSON.stringify(responseData), {
-      status: 200,
-      headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
-    })
+    if (!date || !word) {
+      console.error("Missing required parameters");
+      return new Response(
+        JSON.stringify({ error: "חסרים פרמטרים נדרשים: date, word" }),
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
 
+    // Get admin password from environment
+    const adminPassword = Deno.env.get("ADMIN_PASSWORD");
+    if (!adminPassword) {
+      console.error("Admin password not configured");
+      return new Response(
+        JSON.stringify({ error: "הגדרת שרת לא תקינה - סיסמת מנהל חסרה" }),
+        { 
+          status: 500, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+
+    // Construct API URL for setting daily word
+    const apiUrl = `https://hebrew-w2v-api.onrender.com/admin/set-daily-word?date=${encodeURIComponent(date)}&word=${encodeURIComponent(word)}`;
+    
+    console.log(`Calling external API: ${apiUrl}`);
+    
+    // Call the external API to set daily word
+    let apiResponse;
+    
+    try {
+      apiResponse = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${adminPassword}` // Using admin password for Bearer auth
+        }
+      });
+      
+      console.log("API response status:", apiResponse.status);
+      
+      if (!apiResponse.ok) {
+        const errorText = await apiResponse.text();
+        console.error("External API error:", errorText);
+        
+        if (apiResponse.status === 401) {
+          return new Response(
+            JSON.stringify({ error: "שגיאת אימות - סיסמת מנהל לא תקינה" }),
+            { 
+              status: 401, 
+              headers: { 
+                "Content-Type": "application/json",
+                ...corsHeaders
+              } 
+            }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ error: `שגיאה בשרת החיצוני: ${apiResponse.status}` }),
+          { 
+            status: apiResponse.status, 
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            } 
+          }
+        );
+      }
+      
+      const responseText = await apiResponse.text();
+      console.log("API response:", responseText);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `המילה "${word}" נקבעה בהצלחה לתאריך ${date}`
+        }),
+        { 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+      
+    } catch (fetchError) {
+      console.error("Error calling external API:", fetchError);
+      return new Response(
+        JSON.stringify({ 
+          error: "שגיאה בקשת השרת החיצוני - יתכן שהשרת אינו זמין"
+        }),
+        { 
+          status: 500, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+    
   } catch (error) {
-    // Send any failure response back to the admin panel.
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
-    })
+    console.error("Error processing request:", error);
+    
+    return new Response(
+      JSON.stringify({ 
+        error: "שגיאה בעיבוד הבקשה"
+      }),
+      { 
+        status: 500, 
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        } 
+      }
+    );
   }
-})
+});

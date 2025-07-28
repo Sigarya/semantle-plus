@@ -75,6 +75,45 @@ const AdminPanel = () => {
     }
   };
 
+  // Function to set word on external server
+  const handleSetWordOnServer = async (word: string, date: string) => {
+    try {
+      // Format date for the API (dd/mm/yyyy)
+      const dateObj = new Date(date + 'T12:00:00');
+      const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
+      
+      // Call the secure edge function
+      const { data, error } = await supabase.functions.invoke("set-daily-word", {
+        body: { 
+          date: formattedDate,
+          word: word.trim()
+        }
+      });
+
+      if (error) {
+        console.error("Error calling edge function:", error);
+        throw new Error("שגיאה בקשת השרת");
+      }
+
+      if (data?.error) {
+        console.error("Server error:", data.error);
+        throw new Error(data.error);
+      }
+      
+      toast({
+        title: "הצלחה",
+        description: `המילה "${word}" נקבעה בהצלחה בשרת החיצוני לתאריך ${formatHebrewDate(dateObj)}`,
+      });
+      
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: error instanceof Error ? error.message : "אירעה שגיאה בהגדרת המילה בשרת החיצוני",
+      });
+    }
+  };
+
   return (
     <div className="space-y-8">
       <Card className="bg-semantle-dark border-semantle-primary">
@@ -136,16 +175,26 @@ const AdminPanel = () => {
                     <TableCell>{formatHebrewDate(new Date(dailyWord.date))}</TableCell>
                     <TableCell>{dailyWord.word}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setNewWord(dailyWord.word);
-                          setSelectedDate(dailyWord.date);
-                        }}
-                      >
-                        ערוך
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setNewWord(dailyWord.word);
+                            setSelectedDate(dailyWord.date);
+                          }}
+                        >
+                          ערוך
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleSetWordOnServer(dailyWord.word, dailyWord.date)}
+                        >
+                          הגדר
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
