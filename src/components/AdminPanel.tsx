@@ -78,11 +78,16 @@ const AdminPanel = () => {
   // Function to set word on external server
   const handleSetWordOnServer = async (word: string, date: string) => {
     try {
+      console.log("Setting word on server:", { word, date });
+      
       // Format date for the API (dd/mm/yyyy)
       const dateObj = new Date(date + 'T12:00:00');
       const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
       
+      console.log("Formatted date:", formattedDate);
+      
       // Call the secure edge function
+      console.log("Calling edge function set-daily-word...");
       const { data, error } = await supabase.functions.invoke("set-daily-word", {
         body: { 
           date: formattedDate,
@@ -90,9 +95,11 @@ const AdminPanel = () => {
         }
       });
 
+      console.log("Edge function response:", { data, error });
+
       if (error) {
         console.error("Error calling edge function:", error);
-        throw new Error("שגיאה בקשת השרת");
+        throw new Error(`שגיאה בקשת השרת: ${error.message || error}`);
       }
 
       if (data?.error) {
@@ -106,6 +113,7 @@ const AdminPanel = () => {
       });
       
     } catch (error) {
+      console.error("Full error in handleSetWordOnServer:", error);
       toast({
         variant: "destructive",
         title: "שגיאה",
@@ -116,37 +124,38 @@ const AdminPanel = () => {
 
   return (
     <div className="space-y-8">
-      <Card className="bg-semantle-dark border-semantle-primary">
+      <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="text-xl">הגדר מילה חדשה</CardTitle>
+          <CardTitle className="text-xl text-gray-900 dark:text-white">הגדר מילה חדשה</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="date">תאריך</Label>
+              <Label htmlFor="date" className="text-gray-700 dark:text-gray-300">תאריך</Label>
               <Input
                 id="date"
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="rtl:text-right"
+                className="rtl:text-right bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white"
               />
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="word">מילה</Label>
+              <Label htmlFor="word" className="text-gray-700 dark:text-gray-300">מילה</Label>
               <Input
                 id="word"
                 value={newWord}
                 onChange={(e) => setNewWord(e.target.value)}
                 placeholder="הכנס מילה חדשה..."
                 dir="rtl"
+                className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white"
               />
             </div>
             
             <Button 
               type="submit" 
-              className="bg-semantle-primary hover:bg-semantle-secondary"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               שמור מילה
             </Button>
@@ -154,26 +163,26 @@ const AdminPanel = () => {
         </CardContent>
       </Card>
       
-      <Card className="bg-semantle-dark border-semantle-primary">
+      <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="text-xl">מילים מוגדרות</CardTitle>
+          <CardTitle className="text-xl text-gray-900 dark:text-white">מילים מוגדרות</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">תאריך</TableHead>
-                <TableHead className="text-right">מילה</TableHead>
-                <TableHead className="text-right">פעולות</TableHead>
+                <TableHead className="text-right text-gray-700 dark:text-gray-300">תאריך</TableHead>
+                <TableHead className="text-right text-gray-700 dark:text-gray-300">מילה</TableHead>
+                <TableHead className="text-right text-gray-700 dark:text-gray-300">פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {dailyWords
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 .map((dailyWord: DailyWord) => (
-                  <TableRow key={dailyWord.date}>
-                    <TableCell>{formatHebrewDate(new Date(dailyWord.date))}</TableCell>
-                    <TableCell>{dailyWord.word}</TableCell>
+                  <TableRow key={dailyWord.date} className="hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <TableCell className="text-gray-900 dark:text-white">{formatHebrewDate(new Date(dailyWord.date))}</TableCell>
+                    <TableCell className="text-gray-900 dark:text-white">{dailyWord.word}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
@@ -183,13 +192,14 @@ const AdminPanel = () => {
                             setNewWord(dailyWord.word);
                             setSelectedDate(dailyWord.date);
                           }}
+                          className="border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600"
                         >
                           ערוך
                         </Button>
                         <Button
                           variant="default"
                           size="sm"
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-600 hover:bg-green-700 text-white"
                           onClick={() => handleSetWordOnServer(dailyWord.word, dailyWord.date)}
                         >
                           הגדר
