@@ -188,31 +188,68 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("כבר ניחשת את המילה הזאת");
     }
 
-    // Call our edge function to calculate similarity
-    const { data, error } = await supabase.functions.invoke("calculate-similarity", {
-      body: { 
-        guess: normalizedWord,
-        date: gameState.wordDate
-      }
-    });
+    // Format date for the new server (dd/mm/yyyy)
+    const gameDate = new Date(gameState.wordDate + 'T12:00:00');
+    const formattedDate = `${gameDate.getDate().toString().padStart(2, '0')}/${(gameDate.getMonth() + 1).toString().padStart(2, '0')}/${gameDate.getFullYear()}`;
+    const encodedDate = encodeURIComponent(formattedDate);
 
-    if (error) {
-      console.error("Error calculating similarity:", error);
+    // Make both API calls in parallel
+    const [similarityResponse, rankResponse] = await Promise.allSettled([
+      // Call old server for similarity via edge function
+      supabase.functions.invoke("calculate-similarity", {
+        body: { 
+          guess: normalizedWord,
+          date: gameState.wordDate
+        }
+      }),
+      // Call new server for rank score directly
+      fetch(`https://hebrew-w2v-api.onrender.com/rank?word=${encodeURIComponent(normalizedWord)}&date=${encodedDate}`)
+    ]);
+
+    // Process similarity response
+    if (similarityResponse.status === 'rejected') {
+      console.error("Error calculating similarity:", similarityResponse.reason);
       throw new Error("שגיאה בחישוב הדמיון");
     }
 
-    if (data.error) {
-      console.error("API response error:", data.error);
-      throw new Error(data.error);
+    const { data: similarityData, error: similarityError } = similarityResponse.value;
+    if (similarityError) {
+      console.error("Error calculating similarity:", similarityError);
+      throw new Error("שגיאה בחישוב הדמיון");
     }
 
-    const { similarity, rank, isCorrect } = data;
+    if (similarityData.error) {
+      console.error("API response error:", similarityData.error);
+      throw new Error(similarityData.error);
+    }
+
+    // Process rank response
+    let rankScore: number | undefined;
+    if (rankResponse.status === 'fulfilled') {
+      try {
+        if (rankResponse.value.ok) {
+          const rankData = await rankResponse.value.json();
+          if (rankData.rank && rankData.rank > 0) {
+            rankScore = rankData.rank;
+          }
+        }
+      } catch (error) {
+        console.error("Error processing rank response:", error);
+        // Continue without rank score if there's an error
+      }
+    } else {
+      console.error("Error getting rank score:", rankResponse.reason);
+      // Continue without rank score if there's an error
+    }
+
+    const { similarity, rank, isCorrect } = similarityData;
     
     const newGuess: Guess = {
       word: normalizedWord,
       similarity,
       rank,
-      isCorrect
+      isCorrect,
+      rankScore: rankScore
     };
 
     const newGuesses = [...gameState.guesses, newGuess];

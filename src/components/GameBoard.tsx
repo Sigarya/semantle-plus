@@ -297,11 +297,32 @@ const GameBoard = () => {
               </span>
             </div>
             
+            {/* Old rank (from similarity calculation) */}
             {mostRecentGuess.rank && mostRecentGuess.rank <= 1000 && (
-              <Progress 
-                value={((1000 - mostRecentGuess.rank + 1) / 1000) * 100} 
-                className="h-2 bg-gray-200 dark:bg-slate-600"
-              />
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>דירוג דמיון</span>
+                  <span>#{mostRecentGuess.rank}/1000</span>
+                </div>
+                <Progress 
+                  value={((1000 - mostRecentGuess.rank + 1) / 1000) * 100} 
+                  className="h-2 bg-gray-200 dark:bg-slate-600"
+                />
+              </div>
+            )}
+            
+            {/* New rank score from the new server */}
+            {mostRecentGuess.rankScore && mostRecentGuess.rankScore > 0 && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>דירוג מילים</span>
+                  <span>{mostRecentGuess.rankScore}/1000</span>
+                </div>
+                <Progress 
+                  value={(mostRecentGuess.rankScore / 1000) * 100} 
+                  className="h-2 bg-gray-200 dark:bg-slate-600"
+                />
+              </div>
             )}
           </div>
         </div>
@@ -335,12 +356,32 @@ const GameBoard = () => {
                     </span>
                   </div>
                   
-                  {/* Progress bar for top 1000 rankings */}
+                  {/* Old rank (from similarity calculation) */}
                   {guess.rank && guess.rank <= 1000 && (
-                    <Progress 
-                      value={((1000 - guess.rank + 1) / 1000) * 100} 
-                      className="h-2 bg-gray-200 dark:bg-slate-600"
-                    />
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>דירוג דמיון</span>
+                        <span>#{guess.rank}/1000</span>
+                      </div>
+                      <Progress 
+                        value={((1000 - guess.rank + 1) / 1000) * 100} 
+                        className="h-2 bg-gray-200 dark:bg-slate-600"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* New rank score from the new server */}
+                  {guess.rankScore && guess.rankScore > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>דירוג מילים</span>
+                        <span>{guess.rankScore}/1000</span>
+                      </div>
+                      <Progress 
+                        value={(guess.rankScore / 1000) * 100} 
+                        className="h-2 bg-gray-200 dark:bg-slate-600"
+                      />
+                    </div>
                   )}
                 </div>
               );

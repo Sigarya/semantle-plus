@@ -10,6 +10,7 @@ import { useGame } from "@/context/GameContext";
 import { DailyWord } from "@/types/game";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatHebrewDate } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminPanel = () => {
   const { dailyWords, setWordForDate } = useGame();
@@ -21,7 +22,7 @@ const AdminPanel = () => {
     new Date().toISOString().split("T")[0]
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newWord.trim()) {
@@ -34,11 +35,34 @@ const AdminPanel = () => {
     }
 
     try {
-      setWordForDate(newWord, selectedDate);
+      // Format date for the new server (dd/mm/yyyy)
+      const dateObj = new Date(selectedDate + 'T12:00:00');
+      const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
+      
+      // Call the secure edge function instead of setting word directly
+      const { data, error } = await supabase.functions.invoke("set-daily-word", {
+        body: { 
+          date: formattedDate,
+          word: newWord.trim()
+        }
+      });
+
+      if (error) {
+        console.error("Error calling edge function:", error);
+        throw new Error("שגיאה בקשת השרת");
+      }
+
+      if (data?.error) {
+        console.error("Server error:", data.error);
+        throw new Error(data.error);
+      }
+      
+      // Also update the local Supabase database
+      await setWordForDate(newWord, selectedDate);
       
       toast({
         title: "הצלחה",
-        description: `המילה "${newWord}" נקבעה לתאריך ${formatHebrewDate(new Date(selectedDate))}`,
+        description: `המילה "${newWord}" נקבעה לתאריך ${formatHebrewDate(new Date(selectedDate))} בשני השרתים`,
       });
       
       setNewWord("");

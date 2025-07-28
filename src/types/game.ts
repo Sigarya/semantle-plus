@@ -4,6 +4,7 @@ export interface Guess {
   similarity: number;
   rank?: number;
   isCorrect: boolean;
+  rankScore?: number; // New rank score from 1-1000
 }
 
 export interface DailyWord {
