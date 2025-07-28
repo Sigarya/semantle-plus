@@ -253,12 +253,36 @@ serve(async (req) => {
     // Determine if this is the correct word (exact match or very high similarity)
     const isCorrect = guess === target || similarity > 0.99;
     
-    // Calculate rank (this is a placeholder - you may want to implement a more sophisticated ranking)
+    // Calculate more realistic rank based on similarity score
+    // Convert similarity (0-1) to rank (1-1000) with better distribution
     let rank = null;
-    if (similarity >= 0.7) rank = 10;
-    else if (similarity >= 0.5) rank = 100;
-    else if (similarity >= 0.3) rank = 1000;
-    else if (similarity >= 0.1) rank = 5000;
+    if (similarity >= 0.99) {
+      rank = 1; // Perfect or near-perfect match
+    } else if (similarity >= 0.9) {
+      // Very high similarity: ranks 2-10
+      rank = Math.ceil((1 - similarity) * 100) + 1;
+      rank = Math.min(rank, 10);
+    } else if (similarity >= 0.7) {
+      // High similarity: ranks 11-50
+      rank = Math.ceil((0.9 - similarity) * 200) + 11;
+      rank = Math.min(rank, 50);
+    } else if (similarity >= 0.5) {
+      // Medium-high similarity: ranks 51-200
+      rank = Math.ceil((0.7 - similarity) * 750) + 51;
+      rank = Math.min(rank, 200);
+    } else if (similarity >= 0.3) {
+      // Medium similarity: ranks 201-500
+      rank = Math.ceil((0.5 - similarity) * 1500) + 201;
+      rank = Math.min(rank, 500);
+    } else if (similarity >= 0.1) {
+      // Low similarity: ranks 501-800
+      rank = Math.ceil((0.3 - similarity) * 1500) + 501;
+      rank = Math.min(rank, 800);
+    } else {
+      // Very low similarity: ranks 801-1000
+      rank = Math.ceil((0.1 - similarity) * 2000) + 801;
+      rank = Math.min(rank, 1000);
+    }
     
     return new Response(
       JSON.stringify({
