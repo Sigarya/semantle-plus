@@ -91,7 +91,7 @@ serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${adminPassword}` // Using admin password for Bearer auth
+          "Authorization": `Basic ${btoa(`admin:${adminPassword}`)}`  // Using Basic auth instead of Bearer
         }
       });
       
