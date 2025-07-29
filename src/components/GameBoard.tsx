@@ -343,38 +343,39 @@ const GameBoard = () => {
         </Card>
       ) : (
         <>
-          {/* Reference Scores Display */}
-          {(referenceScores.rank1 !== null || referenceScores.rank990 !== null || referenceScores.rank999 !== null) && (
-            <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
-              {referenceScores.rank999 !== null && referenceScores.rank990 !== null && referenceScores.rank1 !== null && (
-                <span className="font-heebo">
-                  ציון הקרבה של המילה הכי קרובה (999/1000) למילה הסודית הוא {(referenceScores.rank999 * 100).toFixed(2)}, 
-                  ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא {(referenceScores.rank990 * 100).toFixed(2)}, 
-                  וציון הקרבה של המילה האלף הכי קרובה (1/1000) הוא {(referenceScores.rank1 * 100).toFixed(2)}.
-                </span>
-              )}
-            </div>
-          )}
-          
-          {/* Sample Ranks Display */}
-          {sampleRanksLoading && (
-            <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin"></div>
-                <span className="font-heebo">טוען פרטי משחק...</span>
-              </div>
-            </div>
-          )}
-          
-          {sampleRanks && sampleRanks.samples && !sampleRanksLoading && (
-            <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
-              <span className="font-heebo">
-                ציון הקרבה של המילה הכי קרובה (999/1000) למילה הסודית היום הוא {(sampleRanks.samples["999"] * 100).toFixed(2)}, 
-                ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא {(sampleRanks.samples["990"] * 100).toFixed(2)}, 
-                 וציון הקרבה של המילה האלף הכי קרובה (1/1000) הוא {(sampleRanks.samples["1"] * 100).toFixed(2)}.
-              </span>
-            </div>
-          )}
+         {/* Reference Scores Display */}
+{(referenceScores.rank1 !== null || referenceScores.rank990 !== null || referenceScores.rank999 !== null) && (
+  <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
+    {referenceScores.rank999 !== null && referenceScores.rank990 !== null && referenceScores.rank1 !== null && (
+      <span className="font-heebo">
+        ציון הקרבה של המילה הכי קרובה (999/1000) למילה הסודית הוא <strong>{(referenceScores.rank999 * 100).toFixed(2)}</strong>, 
+        ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא <strong>{(referenceScores.rank990 * 100).toFixed(2)}</strong>, 
+        וציון הקרבה של המילה האלף הכי קרובה (1/1000) הוא <strong>{(referenceScores.rank1 * 100).toFixed(2)}</strong>.
+      </span>
+    )}
+  </div>
+)}
+
+{/* Sample Ranks Display */}
+{sampleRanksLoading && (
+  <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
+    <div className="flex items-center justify-center gap-2">
+      <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin"></div>
+      <span className="font-heebo">טוען פרטי משחק...</span>
+    </div>
+  </div>
+)}
+
+{sampleRanks && sampleRanks.samples && !sampleRanksLoading && (
+  <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
+    <span className="font-heebo">
+      ציון הקרבה של המילה הכי קרובה (999/1000) למילה הסודית היום הוא <strong>{(sampleRanks.samples["999"] * 100).toFixed(2)}</strong>, 
+      ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא <strong>{(sampleRanks.samples["990"] * 100).toFixed(2)}</strong>, 
+      וציון הקרבה של המילה האלף הכי קרובה (1/1000) הוא <strong>{(sampleRanks.samples["1"] * 100).toFixed(2)}</strong>.
+    </span>
+  </div>
+)}
+
           
           <form onSubmit={handleGuessSubmit} className="space-y-4">
             <div className="flex gap-2">
