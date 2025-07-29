@@ -28,10 +28,45 @@ const GameBoard = () => {
     similarity: number;
     rank?: number;
   } | null>(null);
+  const [referenceScores, setReferenceScores] = useState<{
+    rank1: number | null;
+    rank990: number | null;
+    rank999: number | null;
+  }>({ rank1: null, rank990: null, rank999: null });
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // Fetch reference scores when component loads
+  useEffect(() => {
+    const fetchReferenceScores = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("get-reference-scores", {
+          body: { date: gameState.wordDate }
+        });
+
+        if (error) {
+          console.error("Error fetching reference scores:", error);
+          return;
+        }
+
+        if (data) {
+          setReferenceScores({
+            rank1: data.rank1 || null,
+            rank990: data.rank990 || null,
+            rank999: data.rank999 || null,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching reference scores:", error);
+      }
+    };
+
+    if (gameState.wordDate) {
+      fetchReferenceScores();
+    }
+  }, [gameState.wordDate]);
 
   // Keep focus on input field and ensure input stays visible after guessing
   useEffect(() => {
@@ -244,39 +279,53 @@ const GameBoard = () => {
           </CardContent>
         </Card>
       ) : (
-        <form onSubmit={handleGuessSubmit} className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              ref={inputRef}
-              type="text"
-              value={guessInput}
-              onChange={(e) => setGuessInput(e.target.value)}
-              className="text-lg"
-              placeholder="נחש מילה..."
-              disabled={isSubmitting}
-              dir="rtl"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck="false"
-              inputMode="text"
-            />
-            <Button
-              type="submit"
-              className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
-              disabled={isSubmitting || !guessInput.trim()}
-            >
-              נחש
-            </Button>
-          </div>
-          
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+        <>
+          {/* Reference Scores Display */}
+          {(referenceScores.rank1 !== null || referenceScores.rank990 !== null || referenceScores.rank999 !== null) && (
+            <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
+              {referenceScores.rank999 !== null && referenceScores.rank990 !== null && referenceScores.rank1 !== null && (
+                <span className="font-heebo">
+                  ציון הקרבה של המילה הכי קרובה (999/1000) למילה הסודית הוא {(referenceScores.rank999 * 100).toFixed(2)}, 
+                  ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא {(referenceScores.rank990 * 100).toFixed(2)} 
+                  וציון הקרבה של המילה האלף הכי קרובה (1/1000) הוא {(referenceScores.rank1 * 100).toFixed(2)}.
+                </span>
+              )}
+            </div>
           )}
           
-        </form>
+          <form onSubmit={handleGuessSubmit} className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                ref={inputRef}
+                type="text"
+                value={guessInput}
+                onChange={(e) => setGuessInput(e.target.value)}
+                className="text-lg"
+                placeholder="נחש מילה..."
+                disabled={isSubmitting}
+                dir="rtl"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
+                inputMode="text"
+              />
+              <Button
+                type="submit"
+                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
+                disabled={isSubmitting || !guessInput.trim()}
+              >
+                נחש
+              </Button>
+            </div>
+            
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+          </form>
+        </>
       )}
 
       {/* Last Guess Display (styled like table but highlighted) */}
