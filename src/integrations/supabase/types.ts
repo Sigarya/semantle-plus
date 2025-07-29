@@ -52,6 +52,36 @@ export type Database = {
           },
         ]
       }
+      daily_sample_ranks: {
+        Row: {
+          created_at: string
+          id: string
+          rank_1_score: number
+          rank_990_score: number
+          rank_999_score: number
+          updated_at: string
+          word_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rank_1_score: number
+          rank_990_score: number
+          rank_999_score: number
+          updated_at?: string
+          word_date: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rank_1_score?: number
+          rank_990_score?: number
+          rank_999_score?: number
+          updated_at?: string
+          word_date?: string
+        }
+        Relationships: []
+      }
       daily_scores: {
         Row: {
           completion_time: string

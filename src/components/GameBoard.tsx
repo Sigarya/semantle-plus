@@ -56,17 +56,45 @@ const GameBoard = () => {
     }
   }, [gameState.guesses]);
 
-  // Fetch sample ranks when game loads
+  // Fetch sample ranks when game loads - check Supabase first, then external API
   useEffect(() => {
     const fetchSampleRanks = async () => {
-      if (!gameState.wordDate) return;
+      if (!gameState.wordDate) {
+        console.log("No gameState.wordDate yet");
+        return;
+      }
       
       console.log("Fetching sample ranks for date:", gameState.wordDate);
       setSampleRanksLoading(true);
       setSampleRanks(null);
       
       try {
-        // Format date as dd/mm/yyyy and URL encode it
+        // First, check if we already have this data in Supabase
+        const { data: existingData, error: supabaseError } = await supabase
+          .from('daily_sample_ranks')
+          .select('*')
+          .eq('word_date', gameState.wordDate)
+          .maybeSingle();
+        
+        if (supabaseError) {
+          console.error("Error fetching from Supabase:", supabaseError);
+        }
+        
+        if (existingData) {
+          console.log("Found existing sample ranks in Supabase:", existingData);
+          setSampleRanks({
+            samples: {
+              "1": existingData.rank_1_score,
+              "990": existingData.rank_990_score,
+              "999": existingData.rank_999_score
+            }
+          });
+          setSampleRanksLoading(false);
+          return;
+        }
+        
+        // If not in Supabase, fetch from external API
+        console.log("Data not found in Supabase, fetching from external API");
         const date = new Date(gameState.wordDate);
         const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
         const encodedDate = encodeURIComponent(formattedDate);
@@ -80,11 +108,28 @@ const GameBoard = () => {
         
         if (response.ok) {
           const data = await response.json();
-          console.log("Sample ranks data:", data);
+          console.log("Sample ranks data from API:", data);
+          
+          // Store in Supabase for future use
+          const { error: insertError } = await supabase
+            .from('daily_sample_ranks')
+            .insert({
+              word_date: gameState.wordDate,
+              rank_1_score: data.samples["1"],
+              rank_990_score: data.samples["990"],
+              rank_999_score: data.samples["999"]
+            });
+          
+          if (insertError) {
+            console.error("Error storing sample ranks in Supabase:", insertError);
+          } else {
+            console.log("Successfully stored sample ranks in Supabase");
+          }
+          
           setSampleRanks(data);
         } else {
           const errorText = await response.text();
-          console.error("Failed to fetch sample ranks:", response.status, errorText);
+          console.error("Failed to fetch sample ranks from API:", response.status, errorText);
         }
       } catch (error) {
         console.error("Error fetching sample ranks:", error);
