@@ -282,13 +282,53 @@ const GameBoard = () => {
         </form>
       )}
 
-      {/* Guesses Table with Last Guess integrated */}
-      {(sortedGuesses.length > 0 || (mostRecentGuess && !gameState.isComplete)) && (
+      {/* Last Guess Display (only when game is not complete) */}
+      {mostRecentGuess && !gameState.isComplete && (
         <div className="space-y-4" ref={lastGuessRef}>
-          <h3 className="text-lg font-bold font-heebo">ניחושים</h3>
+          <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
+          <Card className="bg-primary-50 dark:bg-slate-700 border-primary-200 dark:border-slate-600">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div className="text-lg font-medium text-primary-700 dark:text-primary-300">
+                  {mostRecentGuess.word}
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-primary-600 dark:text-primary-400">
+                    {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? 
+                      `${(mostRecentGuess.similarity * 100).toFixed(2)}%` : 
+                      'לא במאגר'
+                    }
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (
+                      <>
+                        <div 
+                          className="h-4 bg-green-500 rounded-sm"
+                          style={{ width: `${Math.min(mostRecentGuess.rank / 10, 100)}px` }}
+                        />
+                        <span className="text-sm text-primary-600 dark:text-primary-400 font-heebo">
+                          {mostRecentGuess.rank}/1000
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-sm text-primary-600 dark:text-primary-400 font-heebo">רחוק</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Guesses Table (excluding the most recent guess when game is not complete) */}
+      {sortedGuesses.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold font-heebo">
+            {gameState.isComplete ? "ניחושים" : "ניחושים קודמים"}
+          </h3>
           <GuessTable 
-            guesses={sortedGuesses} 
-            lastGuess={mostRecentGuess && !gameState.isComplete ? mostRecentGuess : undefined}
+            guesses={gameState.isComplete ? sortedGuesses : (sortedGuesses.length > 1 ? sortedGuesses.slice(0, -1) : [])} 
           />
         </div>
       )}

@@ -5,76 +5,42 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 interface GuessTableProps {
   guesses: Guess[];
-  lastGuess?: Guess;
 }
 
-const GuessTable = ({ guesses, lastGuess }: GuessTableProps) => {
+const GuessTable = ({ guesses }: GuessTableProps) => {
   if (guesses.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        עדיין אין ניחושים. התחל לנחש!
+      <div className="text-center py-4 text-muted-foreground">
+        אין ניחושים קודמים
       </div>
     );
   }
 
   return (
-    <div className="overflow-auto max-h-[60vh] border rounded-md">
+    <div className="border rounded-md">
       <Table>
-        <TableHeader className="sticky top-0 bg-background z-10">
+        <TableHeader>
           <TableRow className="border-b">
-            <TableHead className="text-right w-8 py-2">#</TableHead>
-            <TableHead className="text-right w-16 py-2">מילה</TableHead>
-            <TableHead className="text-center w-16 py-2">דירוג</TableHead>
-            <TableHead className="text-center w-24 py-2">מתחמם?</TableHead>
+            <TableHead className="text-right w-12 py-2 px-2">#</TableHead>
+            <TableHead className="text-right py-2 px-2">מילה</TableHead>
+            <TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead>
+            <TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {/* Last guess - highlighted and separated */}
-          {lastGuess && (
-            <>
-              <TableRow className="h-8 border-b-2 border-primary-200 dark:border-primary-700">
-                <TableCell className="py-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
-                  {guesses.length + 1}
-                </TableCell>
-                <TableCell className="font-medium py-1 text-sm text-primary-600 dark:text-primary-400 truncate">
-                  {lastGuess.word}
-                </TableCell>
-                <TableCell className="text-center py-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
-                  {lastGuess.rank && lastGuess.rank > 0 ? `${(lastGuess.similarity * 100).toFixed(2)}%` : ''}
-                </TableCell>
-                <TableCell className="text-center py-1">
-                  {lastGuess.rank && lastGuess.rank > 0 ? (
-                    <div className="flex items-center gap-1">
-                      <div 
-                        className="h-6 bg-green-500 rounded-sm flex-shrink-0" 
-                        style={{ width: `${lastGuess.rank / 10}%` }}
-                      />
-                      <span className="text-xs text-primary-600 dark:text-primary-400 font-medium font-heebo">
-                        {lastGuess.rank}/1000
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-primary-600 dark:text-primary-400 font-heebo">רחוק</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            </>
-          )}
-          
-          {/* Regular guesses */}
           {guesses.map((guess, index) => (
-            <TableRow key={index} className={`h-8 ${guess.isCorrect ? "bg-green-500/20" : ""}`}>
-              <TableCell className="py-1 text-xs">{guesses.length - index}</TableCell>
-              <TableCell className="font-medium py-1 text-xs truncate">{guess.word}</TableCell>
-              <TableCell className="text-center py-1 text-xs">
+            <TableRow key={index} className={`${guess.isCorrect ? "bg-green-500/20" : ""}`}>
+              <TableCell className="py-1 px-2 text-xs">{index + 1}</TableCell>
+              <TableCell className="font-medium py-1 px-2 text-xs truncate">{guess.word}</TableCell>
+              <TableCell className="text-center py-1 px-2 text-xs">
                 {guess.rank && guess.rank > 0 ? `${(guess.similarity * 100).toFixed(2)}%` : ''}
               </TableCell>
-              <TableCell className="text-center py-1">
+              <TableCell className="text-center py-1 px-2">
                 {guess.rank && guess.rank > 0 ? (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 justify-center">
                     <div 
-                      className="h-6 bg-green-500 rounded-sm flex-shrink-0" 
-                      style={{ width: `${guess.rank / 10}%` }}
+                      className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
+                      style={{ width: `${Math.min(guess.rank / 10, 20)}px` }}
                     />
                     <span className="text-xs text-muted-foreground font-heebo">
                       {guess.rank}/1000
