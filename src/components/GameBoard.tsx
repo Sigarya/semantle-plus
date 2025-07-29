@@ -292,20 +292,50 @@ const GameBoard = () => {
               </form>
               
               {explorationResult && (
-                <div className="mt-4 p-3 rounded-md bg-primary-50 dark:bg-slate-700">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">{explorationResult.word}</span>
-                    <span className={`${getSimilarityClass(explorationResult.similarity)}`}>
-                      {(explorationResult.similarity * 100).toFixed(2)}%
-                    </span>
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium font-heebo mb-2">תוצאה:</h4>
+                  <div className="border rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b">
+                          <TableHead className="text-right w-12 py-2 px-2">#</TableHead>
+                          <TableHead className="text-right py-2 px-2">מילה</TableHead>
+                          <TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead>
+                          <TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow className="bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700">
+                          <TableCell className="py-1 px-2 text-xs font-medium text-blue-700 dark:text-blue-300">
+                            -
+                          </TableCell>
+                          <TableCell className="font-medium py-1 px-2 text-xs truncate text-blue-700 dark:text-blue-300">
+                            {explorationResult.word}
+                          </TableCell>
+                          <TableCell className="text-center py-1 px-2 text-xs text-blue-700 dark:text-blue-300">
+                            {`${(explorationResult.similarity * 100).toFixed(2)}%`}
+                          </TableCell>
+                          <TableCell className="text-center py-1 px-2">
+                            {explorationResult.rank && explorationResult.rank > 0 ? (
+                              <div className="flex items-center gap-1 justify-center">
+                                <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0">
+                                  <div 
+                                    className="absolute top-0 left-0 h-full bg-green-500 rounded-sm transition-all duration-200"
+                                    style={{ width: `${Math.min((explorationResult.rank / 1000) * 100, 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-blue-700 dark:text-blue-300 font-heebo whitespace-nowrap">
+                                  {explorationResult.rank}/1000
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-blue-700 dark:text-blue-300 font-heebo">רחוק</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
                   </div>
-                  
-                   {explorationResult.rank && explorationResult.rank <= 1000 && (
-                     <Progress 
-                       value={(explorationResult.rank / 1000) * 100} 
-                       className="h-2 mt-2 bg-gray-200 dark:bg-slate-600"
-                     />
-                   )}
                 </div>
               )}
             </div>
