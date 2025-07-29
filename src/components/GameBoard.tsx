@@ -290,7 +290,7 @@ const GameBoard = () => {
 
       {/* Last Guess Display (styled like table but highlighted) */}
       {mostRecentGuess && !gameState.isComplete && (
-        <div className="space-y-4" ref={lastGuessRef}>
+        <div className="space-y-2" ref={lastGuessRef}>
           <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
           <div className="border rounded-md">
             <Table>
@@ -316,10 +316,12 @@ const GameBoard = () => {
                   <TableCell className="text-center py-1 px-2">
                     {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (
                       <div className="flex items-center gap-1 justify-center">
-                        <div 
-                          className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
-                          style={{ width: `${Math.min(mostRecentGuess.rank / 10, 100)}px` }}
-                        />
+                        <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0">
+                          <div 
+                            className="absolute top-0 left-0 h-full bg-green-500 rounded-sm transition-all duration-200"
+                            style={{ width: `${Math.min((mostRecentGuess.rank / 1000) * 100, 100)}%` }}
+                          />
+                        </div>
                         <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">
                           {mostRecentGuess.rank}/1000
                         </span>
@@ -337,13 +339,11 @@ const GameBoard = () => {
 
       {/* Guesses Table (excluding the most recent guess when game is not complete, sorted by similarity) */}
       {sortedGuessesForTable.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold font-heebo">
-            {gameState.isComplete ? "ניחושים" : "ניחושים קודמים"}
-          </h3>
+        <div className="space-y-2">
           <GuessTable 
             guesses={sortedGuessesForTable}
             originalGuesses={gameState.guesses}
+            showHeader={false}
           />
         </div>
       )}

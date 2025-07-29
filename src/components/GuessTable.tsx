@@ -6,9 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface GuessTableProps {
   guesses: Guess[];
   originalGuesses: Guess[];
+  showHeader?: boolean;
 }
 
-const GuessTable = ({ guesses, originalGuesses }: GuessTableProps) => {
+const GuessTable = ({ guesses, originalGuesses, showHeader = true }: GuessTableProps) => {
   if (guesses.length === 0) {
     return (
       <div className="text-center py-4 text-muted-foreground">
@@ -20,14 +21,16 @@ const GuessTable = ({ guesses, originalGuesses }: GuessTableProps) => {
   return (
     <div className="border rounded-md">
       <Table>
-        <TableHeader>
-          <TableRow className="border-b">
-            <TableHead className="text-right w-12 py-2 px-2">#</TableHead>
-            <TableHead className="text-right py-2 px-2">מילה</TableHead>
-            <TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead>
-            <TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead>
-          </TableRow>
-        </TableHeader>
+        {showHeader && (
+          <TableHeader>
+            <TableRow className="border-b">
+              <TableHead className="text-right w-12 py-2 px-2">#</TableHead>
+              <TableHead className="text-right py-2 px-2">מילה</TableHead>
+              <TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead>
+              <TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead>
+            </TableRow>
+          </TableHeader>
+        )}
         <TableBody>
           {guesses.map((guess, index) => {
             // Find the original guess order in the chronological array
