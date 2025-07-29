@@ -40,14 +40,14 @@ const GuessTable = ({ guesses, lastGuess }: GuessTableProps) => {
                   {lastGuess.word}
                 </TableCell>
                 <TableCell className="text-center py-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
-                  {(lastGuess.similarity * 100).toFixed(2)}%
+                  {lastGuess.rank && lastGuess.rank > 0 ? `${(lastGuess.similarity * 100).toFixed(2)}%` : ''}
                 </TableCell>
                 <TableCell className="text-center py-1">
-                  {lastGuess.rank ? (
+                  {lastGuess.rank && lastGuess.rank > 0 ? (
                     <div className="flex items-center gap-1">
                       <div 
-                        className="h-4 bg-green-500 rounded-sm flex-shrink-0" 
-                        style={{ width: `${Math.max(((1000 - lastGuess.rank) / 1000) * 100, 5)}%` }}
+                        className="h-6 bg-green-500 rounded-sm flex-shrink-0" 
+                        style={{ width: `${lastGuess.rank / 10}%` }}
                       />
                       <span className="text-xs text-primary-600 dark:text-primary-400 font-medium font-heebo">
                         {lastGuess.rank}/1000
@@ -67,14 +67,14 @@ const GuessTable = ({ guesses, lastGuess }: GuessTableProps) => {
               <TableCell className="py-1 text-xs">{guesses.length - index}</TableCell>
               <TableCell className="font-medium py-1 text-xs truncate">{guess.word}</TableCell>
               <TableCell className="text-center py-1 text-xs">
-                {(guess.similarity * 100).toFixed(2)}%
+                {guess.rank && guess.rank > 0 ? `${(guess.similarity * 100).toFixed(2)}%` : ''}
               </TableCell>
               <TableCell className="text-center py-1">
-                {guess.rank ? (
+                {guess.rank && guess.rank > 0 ? (
                   <div className="flex items-center gap-1">
                     <div 
-                      className="h-4 bg-green-500 rounded-sm flex-shrink-0" 
-                      style={{ width: `${Math.max(((1000 - guess.rank) / 1000) * 100, 5)}%` }}
+                      className="h-6 bg-green-500 rounded-sm flex-shrink-0" 
+                      style={{ width: `${guess.rank / 10}%` }}
                     />
                     <span className="text-xs text-muted-foreground font-heebo">
                       {guess.rank}/1000

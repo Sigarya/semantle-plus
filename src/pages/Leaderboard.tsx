@@ -31,7 +31,7 @@ const Leaderboard = () => {
           <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-xl">
+                <CardTitle className="text-xl font-heebo">
                   {`תוצאות ל-${formatHebrewDate(new Date(gameState.wordDate))}`}
                 </CardTitle>
                 <div className="flex gap-2">
