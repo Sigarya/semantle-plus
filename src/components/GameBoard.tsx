@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import GuessTable from "@/components/GuessTable";
+import WelcomeDialog from "@/components/WelcomeDialog";
 
 const GameBoard = () => {
   const { gameState, currentWord, makeGuess, resetGame, isLoading, isHistoricalGame } = useGame();
@@ -31,18 +32,18 @@ const GameBoard = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Keep focus on input field and ensure visibility of last guess on mobile
+  // Keep focus on input field and ensure input stays visible after guessing
   useEffect(() => {
     if (!isLoading && !gameState.isComplete) {
       inputRef.current?.focus();
       
-      // For mobile devices, make sure the last guess is visible
-      if (isMobile && lastGuessRef.current && gameState.guesses.length > 0) {
+      // For mobile devices, make sure the input stays visible after making a guess
+      if (isMobile && inputRef.current && gameState.guesses.length > 0) {
         // Use a short timeout to ensure DOM is updated
         setTimeout(() => {
-          lastGuessRef.current?.scrollIntoView({ 
+          inputRef.current?.scrollIntoView({ 
             behavior: 'smooth', 
-            block: 'nearest'
+            block: 'center'
           });
         }, 100);
       }
@@ -160,6 +161,7 @@ const GameBoard = () => {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
+      <WelcomeDialog />
       <div className="text-center">
         <h2 className="text-2xl font-bold font-heebo">
           סמנטעל +
@@ -277,11 +279,6 @@ const GameBoard = () => {
             </Alert>
           )}
           
-          <div className="text-center p-4 bg-background dark:bg-slate-800 rounded-md border border-primary-200 dark:border-slate-700">
-             <p className="text-primary-600 dark:text-primary-400">
-               נחש את המילה! ככל שהניחוש שלך קרוב יותר למילה, כך המדד יהיה גבוה יותר.
-             </p>
-          </div>
         </form>
       )}
 
