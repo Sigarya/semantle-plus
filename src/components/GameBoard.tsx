@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress"; 
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { useGame } from "@/context/GameContext";
 import { getSimilarityClass, isValidHebrewWord } from "@/lib/utils";
@@ -282,42 +283,50 @@ const GameBoard = () => {
         </form>
       )}
 
-      {/* Last Guess Display (only when game is not complete) */}
+      {/* Last Guess Display (styled like table but highlighted) */}
       {mostRecentGuess && !gameState.isComplete && (
         <div className="space-y-4" ref={lastGuessRef}>
           <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
-          <Card className="bg-primary-50 dark:bg-slate-700 border-primary-200 dark:border-slate-600">
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
-                <div className="text-lg font-medium text-primary-700 dark:text-primary-300">
-                  {mostRecentGuess.word}
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-sm text-primary-600 dark:text-primary-400">
-                    {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? 
-                      `${(mostRecentGuess.similarity * 100).toFixed(2)}%` : 
-                      `${(mostRecentGuess.similarity * 100).toFixed(2)}%`
-                    }
-                  </div>
-                  <div className="flex items-center gap-2">
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b">
+                  <TableHead className="text-right w-12 py-2 px-2">#</TableHead>
+                  <TableHead className="text-right py-2 px-2">מילה</TableHead>
+                  <TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead>
+                  <TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700">
+                  <TableCell className="py-1 px-2 text-xs font-medium text-primary-700 dark:text-primary-300">
+                    {gameState.guesses.length}
+                  </TableCell>
+                  <TableCell className="font-medium py-1 px-2 text-xs truncate text-primary-700 dark:text-primary-300">
+                    {mostRecentGuess.word}
+                  </TableCell>
+                  <TableCell className="text-center py-1 px-2 text-xs text-primary-700 dark:text-primary-300">
+                    {`${(mostRecentGuess.similarity * 100).toFixed(2)}%`}
+                  </TableCell>
+                  <TableCell className="text-center py-1 px-2">
                     {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (
-                      <>
+                      <div className="flex items-center gap-1 justify-center">
                         <div 
-                          className="h-4 bg-green-500 rounded-sm"
-                          style={{ width: `${Math.min(mostRecentGuess.rank / 10, 100)}px` }}
+                          className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
+                          style={{ width: `${Math.min((1000 - mostRecentGuess.rank) / 10, 100)}px` }}
                         />
-                        <span className="text-sm text-primary-600 dark:text-primary-400 font-heebo">
+                        <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">
                           {mostRecentGuess.rank}/1000
                         </span>
-                      </>
+                      </div>
                     ) : (
-                      <span className="text-sm text-primary-600 dark:text-primary-400 font-heebo">רחוק</span>
+                      <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo">רחוק</span>
                     )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
