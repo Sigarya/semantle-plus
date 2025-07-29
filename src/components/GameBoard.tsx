@@ -58,92 +58,48 @@ const GameBoard = () => {
 
   // Fetch sample ranks when game loads - check Supabase first, then external API
   useEffect(() => {
-    // This is the new, robust function to get our sample ranks.
     const fetchAndSetSampleRanks = async () => {
       if (!gameState.wordDate) {
         console.log("No game date set yet, skipping fetch.");
         return;
       }
 
-      setSampleRanks(null); // Reset on new date
+      setSampleRanks(null);
       setSampleRanksLoading(true);
       console.log(`Starting fetch for date: ${gameState.wordDate}`);
 
       try {
-        // --- Step 1: Check Supabase cache first ---
-        const { data: cachedData, error: cacheError } = await supabase
-          .from('daily_sample_ranks')
-          .select('*')
-          .eq('word_date', gameState.wordDate)
-          .single();
+        // Use our edge function which handles caching and CORS properly
+        const { data, error } = await supabase.functions.invoke('get-sample-ranks', {
+          body: { 
+            date: gameState.wordDate
+          }
+        });
 
-        if (cacheError && cacheError.code !== 'PGRST116') { // Ignore 'no rows found' error
-          console.error("Error checking Supabase cache:", cacheError);
-        }
-        
-        if (cachedData) {
-          console.log("Found data in Supabase cache!", cachedData);
-          // Reconstruct the 'samples' object from the table columns
-          const samplesFromCache = {
-            '1': cachedData.rank_1_score,
-            '990': cachedData.rank_990_score,
-            '999': cachedData.rank_999_score,
-            '1000': 1.0
-          };
-          setSampleRanks({ samples: samplesFromCache });
-          return; // Success! We are done.
+        if (error) {
+          console.error("Error from edge function:", error);
+          throw new Error(error.message || 'Failed to fetch sample ranks');
         }
 
-        // --- Step 2: If not in cache, fetch from Render API ---
-        console.log("No cache found. Fetching from Render API.");
-
-        // This is the guaranteed correct date formatting logic.
-        // Input: "2025-07-29" -> Output: "29/07/2025"
-        const dateParts = gameState.wordDate.split('-');
-        const formattedDateForApi = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-        
-        console.log(`Formatted date for API call: ${formattedDateForApi}`);
-        
-        const response = await fetch(`https://hebrew-w2v.onrender.com/sample-ranks?date=${encodeURIComponent(formattedDateForApi)}`);
-
-        if (!response.ok) {
-          throw new Error(`Render API failed with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Successfully fetched data from Render API:", data.samples);
-        
-        setSampleRanks(data);
-
-        // --- Step 3: Save the new data back to Supabase for next time ---
-        console.log("Saving new data to Supabase cache...");
-        const { error: insertError } = await supabase
-          .from('daily_sample_ranks')
-          .insert({
-            word_date: gameState.wordDate,
-            rank_1_score: data.samples['1'],
-            rank_990_score: data.samples['990'],
-            rank_999_score: data.samples['999'],
-          });
-
-        if (insertError) {
-          console.error("Failed to save data to Supabase cache:", insertError);
+        if (data && data.samples) {
+          console.log("Successfully fetched sample ranks:", data.samples);
+          setSampleRanks(data);
         } else {
-          console.log("Successfully cached new data in Supabase.");
+          console.error("Invalid data format received:", data);
+          throw new Error('Invalid data format received');
         }
 
       } catch (error) {
         console.error("Error in fetchAndSetSampleRanks:", error);
-        setSampleRanks(null); // Ensure no old data is shown on error
+        setSampleRanks(null);
       } finally {
-        // This will run whether it succeeds or fails, ensuring the loading spinner always hides.
         setSampleRanksLoading(false);
         console.log("Fetch process finished.");
       }
     };
 
     fetchAndSetSampleRanks();
-  }, [gameState.wordDate, supabase]); // Rerun whenever the game date changes
+  }, [gameState.wordDate]);
 
   // Keep focus on input field and ensure input stays visible after guessing
   useEffect(() => {
