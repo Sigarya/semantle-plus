@@ -46,15 +46,15 @@ const GuessTable = ({ guesses, lastGuess }: GuessTableProps) => {
                   {lastGuess.rank ? (
                     <div className="flex items-center gap-1">
                       <div 
-                        className="h-3 bg-primary-500 rounded-sm flex-shrink-0" 
-                        style={{ width: `${Math.max((1000 - lastGuess.rank) / 1000 * 100, 2)}%` }}
+                        className="h-4 bg-green-500 rounded-sm flex-shrink-0" 
+                        style={{ width: `${Math.max(((1000 - lastGuess.rank) / 1000) * 100, 5)}%` }}
                       />
-                      <span className="text-xs text-primary-600 dark:text-primary-400 font-medium">
+                      <span className="text-xs text-primary-600 dark:text-primary-400 font-medium font-heebo">
                         {lastGuess.rank}/1000
                       </span>
                     </div>
                   ) : (
-                    <span className="text-xs text-primary-600 dark:text-primary-400">רחוק</span>
+                    <span className="text-xs text-primary-600 dark:text-primary-400 font-heebo">רחוק</span>
                   )}
                 </TableCell>
               </TableRow>
@@ -73,15 +73,15 @@ const GuessTable = ({ guesses, lastGuess }: GuessTableProps) => {
                 {guess.rank ? (
                   <div className="flex items-center gap-1">
                     <div 
-                      className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
-                      style={{ width: `${Math.max((1000 - guess.rank) / 1000 * 100, 2)}%` }}
+                      className="h-4 bg-green-500 rounded-sm flex-shrink-0" 
+                      style={{ width: `${Math.max(((1000 - guess.rank) / 1000) * 100, 5)}%` }}
                     />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground font-heebo">
                       {guess.rank}/1000
                     </span>
                   </div>
                 ) : (
-                  <span className="text-xs text-muted-foreground">רחוק</span>
+                  <span className="text-xs text-muted-foreground font-heebo">רחוק</span>
                 )}
               </TableCell>
             </TableRow>

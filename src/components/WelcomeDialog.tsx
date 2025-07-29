@@ -21,7 +21,7 @@ const WelcomeDialog = () => {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center">
+          <DialogTitle className="text-xl font-bold text-center font-heebo">
             נחשו את המילה הסודית
           </DialogTitle>
         </DialogHeader>
@@ -55,7 +55,7 @@ const WelcomeDialog = () => {
           </p>
           
           <div className="border-t pt-4 mt-6">
-            <h3 className="font-bold mb-2">מה שונה ב־סמנטעל +</h3>
+            <h3 className="font-bold mb-2 font-heebo">מה שונה ב־סמנטעל +</h3>
             <p>
               בדף הראשי תוכלו לשחק בכל יום במילה שהופיעה אתמול במשחק המקורי.
             </p>
@@ -64,7 +64,7 @@ const WelcomeDialog = () => {
             </p>
           </div>
           
-          <p className="font-bold text-center">בהצלחה!</p>
+          <p className="font-bold text-center font-heebo">בהצלחה!</p>
         </div>
         
         <div className="flex justify-center pt-4">
