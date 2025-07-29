@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import GuessTable from "@/components/GuessTable";
 
 const GameBoard = () => {
   const { gameState, currentWord, makeGuess, resetGame, isLoading, isHistoricalGame } = useGame();
@@ -255,6 +256,11 @@ const GameBoard = () => {
               placeholder="נחש מילה..."
               disabled={isSubmitting}
               dir="rtl"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              inputMode="text"
             />
             <Button
               type="submit"
@@ -325,65 +331,11 @@ const GameBoard = () => {
         </div>
       )}
 
-      {/* Guesses List - Sorted by similarity (highest to lowest) */}
+      {/* Guesses List - Compact table view */}
       {sortedGuesses.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-bold font-heebo">כל הניחושים</h3>
-          <div className="space-y-2">
-            {sortedGuesses.map((guess, index) => {
-              // Find the original guess index
-              const guessNumber = gameState.guesses.findIndex(g => g.word === guess.word && g.similarity === guess.similarity) + 1;
-              
-              return (
-                <div 
-                  key={`${guess.word}-${guessNumber}`}
-                  className={`flex flex-col gap-2 p-3 rounded-md ${
-                    guess.isCorrect 
-                      ? "bg-green-100 dark:bg-green-900/30" 
-                      : "bg-background dark:bg-slate-700"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-muted-foreground">{guessNumber}</span>
-                      <span className="font-medium">{guess.word}</span>
-                    </div>
-                    <span className={`${getSimilarityClass(guess.similarity)}`}>
-                      {(guess.similarity * 100).toFixed(2)}%
-                    </span>
-                  </div>
-                  
-                  {/* Old rank (from similarity calculation) */}
-                  {guess.rank && guess.rank <= 1000 && (
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>דירוג דמיון</span>
-                        <span>#{guess.rank}/1000</span>
-                      </div>
-                       <Progress 
-                         value={(guess.rank / 1000) * 100} 
-                         className="h-2 bg-gray-200 dark:bg-slate-600"
-                       />
-                    </div>
-                  )}
-                  
-                  {/* New rank score from the new server */}
-                  {guess.rankScore && guess.rankScore > 0 && (
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>דירוג מילים</span>
-                        <span>{guess.rankScore}/1,000</span>
-                      </div>
-                      <Progress 
-                        value={(guess.rankScore / 1000) * 100} 
-                        className="h-2 bg-gray-200 dark:bg-slate-600"
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <GuessTable guesses={sortedGuesses} />
         </div>
       )}
 
