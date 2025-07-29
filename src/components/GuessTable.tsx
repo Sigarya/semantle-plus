@@ -33,14 +33,14 @@ const GuessTable = ({ guesses }: GuessTableProps) => {
               <TableCell className="py-1 px-2 text-xs">{index + 1}</TableCell>
               <TableCell className="font-medium py-1 px-2 text-xs truncate">{guess.word}</TableCell>
               <TableCell className="text-center py-1 px-2 text-xs">
-                {guess.rank && guess.rank > 0 ? `${(guess.similarity * 100).toFixed(2)}%` : ''}
+                {`${(guess.similarity * 100).toFixed(2)}%`}
               </TableCell>
               <TableCell className="text-center py-1 px-2">
                 {guess.rank && guess.rank > 0 ? (
                   <div className="flex items-center gap-1 justify-center">
                     <div 
                       className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
-                      style={{ width: `${Math.min(guess.rank / 10, 20)}px` }}
+                      style={{ width: `${Math.min(guess.rank / 10, 100)}px` }}
                     />
                     <span className="text-xs text-muted-foreground font-heebo">
                       {guess.rank}/1000

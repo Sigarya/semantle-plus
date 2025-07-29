@@ -296,7 +296,7 @@ const GameBoard = () => {
                   <div className="text-sm text-primary-600 dark:text-primary-400">
                     {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? 
                       `${(mostRecentGuess.similarity * 100).toFixed(2)}%` : 
-                      'לא במאגר'
+                      `${(mostRecentGuess.similarity * 100).toFixed(2)}%`
                     }
                   </div>
                   <div className="flex items-center gap-2">
@@ -321,7 +321,7 @@ const GameBoard = () => {
         </div>
       )}
 
-      {/* Guesses Table (excluding the most recent guess when game is not complete) */}
+      {/* Guesses Table (excluding the most recent guess when game is not complete, sorted by similarity) */}
       {sortedGuesses.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-bold font-heebo">
