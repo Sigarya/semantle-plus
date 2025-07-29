@@ -49,10 +49,12 @@ const GuessTable = ({ guesses, originalGuesses }: GuessTableProps) => {
                 <TableCell className="text-center py-1 px-2">
                   {guess.rank && guess.rank > 0 ? (
                     <div className="flex items-center gap-1 justify-center">
-                      <div 
-                        className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
-                        style={{ width: `${Math.min(guess.rank / 10, 100)}px` }}
-                      />
+                      <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0">
+                        <div 
+                          className="absolute top-0 left-0 h-full bg-green-500 rounded-sm transition-all duration-200"
+                          style={{ width: `${Math.min((guess.rank / 1000) * 100, 100)}%` }}
+                        />
+                      </div>
                       <span className="text-xs text-muted-foreground font-heebo whitespace-nowrap">
                         {guess.rank}/1000
                       </span>
