@@ -5,9 +5,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 interface GuessTableProps {
   guesses: Guess[];
+  originalGuesses: Guess[];
 }
 
-const GuessTable = ({ guesses }: GuessTableProps) => {
+const GuessTable = ({ guesses, originalGuesses }: GuessTableProps) => {
   if (guesses.length === 0) {
     return (
       <div className="text-center py-4 text-muted-foreground">
@@ -28,30 +29,38 @@ const GuessTable = ({ guesses }: GuessTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {guesses.map((guess, index) => (
-            <TableRow key={index} className={`${guess.isCorrect ? "bg-green-500/20" : ""}`}>
-              <TableCell className="py-1 px-2 text-xs">{index + 1}</TableCell>
-              <TableCell className="font-medium py-1 px-2 text-xs truncate">{guess.word}</TableCell>
-              <TableCell className="text-center py-1 px-2 text-xs">
-                {`${(guess.similarity * 100).toFixed(2)}%`}
-              </TableCell>
-              <TableCell className="text-center py-1 px-2">
-                {guess.rank && guess.rank > 0 ? (
-                  <div className="flex items-center gap-1 justify-center">
-                    <div 
-                      className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
-                      style={{ width: `${Math.min(guess.rank / 10, 100)}px` }}
-                    />
-                    <span className="text-xs text-muted-foreground font-heebo whitespace-nowrap">
-                      {guess.rank}/1000
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground font-heebo">רחוק</span>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
+          {guesses.map((guess, index) => {
+            // Find the original guess order in the unsorted array
+            const originalIndex = originalGuesses.findIndex(g => 
+              g.word === guess.word && g.similarity === guess.similarity
+            );
+            const guessNumber = originalIndex + 1;
+            
+            return (
+              <TableRow key={`${guess.word}-${index}`} className={`${guess.isCorrect ? "bg-green-500/20" : ""}`}>
+                <TableCell className="py-1 px-2 text-xs">{guessNumber}</TableCell>
+                <TableCell className="font-medium py-1 px-2 text-xs truncate">{guess.word}</TableCell>
+                <TableCell className="text-center py-1 px-2 text-xs">
+                  {`${(guess.similarity * 100).toFixed(2)}%`}
+                </TableCell>
+                <TableCell className="text-center py-1 px-2">
+                  {guess.rank && guess.rank > 0 ? (
+                    <div className="flex items-center gap-1 justify-center">
+                      <div 
+                        className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
+                        style={{ width: `${Math.min(guess.rank / 10, 100)}px` }}
+                      />
+                      <span className="text-xs text-muted-foreground font-heebo whitespace-nowrap">
+                        {guess.rank}/1000
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground font-heebo">רחוק</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

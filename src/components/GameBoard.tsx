@@ -338,6 +338,7 @@ const GameBoard = () => {
           </h3>
           <GuessTable 
             guesses={gameState.isComplete ? sortedGuesses : (sortedGuesses.length > 1 ? sortedGuesses.slice(0, -1) : [])} 
+            originalGuesses={gameState.guesses}
           />
         </div>
       )}
