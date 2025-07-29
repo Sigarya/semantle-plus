@@ -61,6 +61,7 @@ const GameBoard = () => {
     const fetchSampleRanks = async () => {
       if (!gameState.wordDate) return;
       
+      console.log("Fetching sample ranks for date:", gameState.wordDate);
       setSampleRanksLoading(true);
       setSampleRanks(null);
       
@@ -69,14 +70,21 @@ const GameBoard = () => {
         const date = new Date(gameState.wordDate);
         const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
         const encodedDate = encodeURIComponent(formattedDate);
+        const url = `https://hebrew-w2v.onrender.com/sample-ranks?date=${encodedDate}`;
         
-        const response = await fetch(`https://hebrew-w2v.onrender.com/sample-ranks?date=${encodedDate}`);
+        console.log("Sample ranks URL:", url);
+        console.log("Formatted date:", formattedDate);
+        
+        const response = await fetch(url);
+        console.log("Sample ranks response status:", response.status);
         
         if (response.ok) {
           const data = await response.json();
+          console.log("Sample ranks data:", data);
           setSampleRanks(data);
         } else {
-          console.error("Failed to fetch sample ranks:", response.status);
+          const errorText = await response.text();
+          console.error("Failed to fetch sample ranks:", response.status, errorText);
         }
       } catch (error) {
         console.error("Error fetching sample ranks:", error);
