@@ -33,6 +33,14 @@ const GameBoard = () => {
     rank990: number | null;
     rank999: number | null;
   }>({ rank1: null, rank990: null, rank999: null });
+  const [sampleRanks, setSampleRanks] = useState<{
+    samples: {
+      "1": number;
+      "990": number;
+      "999": number;
+    };
+  } | null>(null);
+  const [sampleRanksLoading, setSampleRanksLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -47,6 +55,38 @@ const GameBoard = () => {
       }
     }
   }, [gameState.guesses]);
+
+  // Fetch sample ranks when game loads
+  useEffect(() => {
+    const fetchSampleRanks = async () => {
+      if (!gameState.wordDate) return;
+      
+      setSampleRanksLoading(true);
+      setSampleRanks(null);
+      
+      try {
+        // Format date as dd/mm/yyyy and URL encode it
+        const date = new Date(gameState.wordDate);
+        const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+        const encodedDate = encodeURIComponent(formattedDate);
+        
+        const response = await fetch(`https://hebrew-w2v.onrender.com/sample-ranks?date=${encodedDate}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSampleRanks(data);
+        } else {
+          console.error("Failed to fetch sample ranks:", response.status);
+        }
+      } catch (error) {
+        console.error("Error fetching sample ranks:", error);
+      } finally {
+        setSampleRanksLoading(false);
+      }
+    };
+
+    fetchSampleRanks();
+  }, [gameState.wordDate]);
 
   // Keep focus on input field and ensure input stays visible after guessing
   useEffect(() => {
@@ -270,6 +310,26 @@ const GameBoard = () => {
                   וציון הקרבה של המילה האלף הכי קרובה (1/1000) הוא {(referenceScores.rank1 * 100).toFixed(2)}.
                 </span>
               )}
+            </div>
+          )}
+          
+          {/* Sample Ranks Display */}
+          {sampleRanksLoading && (
+            <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin"></div>
+                <span className="font-heebo">טוען פרטי משחק...</span>
+              </div>
+            </div>
+          )}
+          
+          {sampleRanks && sampleRanks.samples && !sampleRanksLoading && (
+            <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
+              <span className="font-heebo">
+                ציון הקרבה של המילה הכי קרובה (999/1000) למילה הסודית היום הוא {(sampleRanks.samples["999"] * 100).toFixed(2)}, 
+                ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא {(sampleRanks.samples["990"] * 100).toFixed(2)} 
+                וציון הקרבה של המילה האלף הכי קרובה (1/1000) הוא {(sampleRanks.samples["1"] * 100).toFixed(2)}.
+              </span>
             </div>
           )}
           
