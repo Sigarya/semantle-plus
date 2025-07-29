@@ -69,29 +69,20 @@ const GameBoard = () => {
       const result = await makeGuess(guessInput);
       
       if (result.isCorrect) {
-        toast({
-          title: "כל הכבוד!",
-          description: `מצאת את המילה הנכונה: ${result.word}`,
-        });
         setExplorationMode(true);
-      } else if (result.similarity > 0.7) {
-        toast({
-          title: "מתקרב!",
-          description: `הניחוש שלך קרוב מאוד למילה הנכונה`,
-        });
       }
       
       setGuessInput("");
       
     } catch (error) {
-      setError(error instanceof Error ? error.message : "שגיאה בניחוש המילה");
+      const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
+      // If the error is about unknown word, customize the message
+      if (errorMessage.includes("שגיאה בחישוב הדמיון") || errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
+        setError(`אני לא מכיר את המילה ${guessInput}`);
+      } else {
+        setError(errorMessage);
+      }
       console.error("Guess error:", error);
-      
-      toast({
-        variant: "destructive",
-        title: "שגיאה",
-        description: error instanceof Error ? error.message : "שגיאה בניחוש המילה",
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -207,7 +198,7 @@ const GameBoard = () => {
             
             {/* Exploration mode for completed games */}
             <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-              <h3 className="text-lg font-medium mb-4">נסה מילים נוספות</h3>
+              <h3 className="text-lg font-medium font-heebo mb-4">נסה מילים נוספות</h3>
                <p className="text-sm text-muted-foreground mb-4">
                  נסה מילים אחרות לראות כמה הן קרובות למילה
                </p>
