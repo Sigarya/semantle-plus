@@ -313,7 +313,7 @@ const GameBoard = () => {
                       <div className="flex items-center gap-1 justify-center">
                         <div 
                           className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
-                          style={{ width: `${Math.min((1000 - mostRecentGuess.rank) / 10, 100)}px` }}
+                          style={{ width: `${Math.min(mostRecentGuess.rank / 10, 100)}px` }}
                         />
                         <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">
                           {mostRecentGuess.rank}/1000

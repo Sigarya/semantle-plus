@@ -40,7 +40,7 @@ const GuessTable = ({ guesses }: GuessTableProps) => {
                   <div className="flex items-center gap-1 justify-center">
                     <div 
                       className="h-3 bg-green-500 rounded-sm flex-shrink-0" 
-                      style={{ width: `${Math.min((1000 - guess.rank) / 10, 100)}px` }}
+                      style={{ width: `${Math.min(guess.rank / 10, 100)}px` }}
                     />
                     <span className="text-xs text-muted-foreground font-heebo whitespace-nowrap">
                       {guess.rank}/1000
