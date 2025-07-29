@@ -95,13 +95,17 @@ const GameBoard = () => {
         
         // If not in Supabase, fetch from external API
         console.log("Data not found in Supabase, fetching from external API");
-        const date = new Date(gameState.wordDate);
-        const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+        
+        // Format date correctly: convert yyyy-mm-dd to dd/mm/yyyy 
+        const dateParts = gameState.wordDate.split('-'); // ['2025', '07', '28']
+        const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`; // '28/07/2025'
         const encodedDate = encodeURIComponent(formattedDate);
         const url = `https://hebrew-w2v.onrender.com/sample-ranks?date=${encodedDate}`;
         
         console.log("Sample ranks URL:", url);
-        console.log("Formatted date:", formattedDate);
+        console.log("Original gameState.wordDate:", gameState.wordDate);
+        console.log("Formatted date for API:", formattedDate);
+        console.log("Encoded date:", encodedDate);
         
         const response = await fetch(url);
         console.log("Sample ranks response status:", response.status);
