@@ -30,9 +30,12 @@ const GuessTable = ({ guesses, originalGuesses }: GuessTableProps) => {
         </TableHeader>
         <TableBody>
           {guesses.map((guess, index) => {
-            // Find the original guess order in the unsorted array
-            const originalIndex = originalGuesses.findIndex(g => 
-              g.word === guess.word && g.similarity === guess.similarity
+            // Find the original guess order in the chronological array
+            const originalIndex = originalGuesses.findIndex((g, i) => 
+              g.word === guess.word && g.similarity === guess.similarity && 
+              // Handle duplicate words by checking if this is the same instance
+              originalGuesses.slice(0, i).filter(prev => prev.word === guess.word).length === 
+              guesses.slice(0, index).filter(prev => prev.word === guess.word).length
             );
             const guessNumber = originalIndex + 1;
             

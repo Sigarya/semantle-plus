@@ -157,8 +157,13 @@ const GameBoard = () => {
   const mostRecentGuess = gameState.guesses.length > 0 ? 
     gameState.guesses[gameState.guesses.length - 1] : null;
 
-  // Sort guesses by similarity (highest to lowest)
-  const sortedGuesses = [...gameState.guesses].sort((a, b) => b.similarity - a.similarity);
+  // For the table: exclude the most recent guess BEFORE sorting (only when game is not complete)
+  const guessesForTable = gameState.isComplete ? 
+    gameState.guesses : 
+    gameState.guesses.slice(0, -1);
+  
+  // Sort guesses by similarity (highest to lowest) for display in table
+  const sortedGuessesForTable = [...guessesForTable].sort((a, b) => b.similarity - a.similarity);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -331,13 +336,13 @@ const GameBoard = () => {
       )}
 
       {/* Guesses Table (excluding the most recent guess when game is not complete, sorted by similarity) */}
-      {sortedGuesses.length > 0 && (
+      {sortedGuessesForTable.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-bold font-heebo">
             {gameState.isComplete ? "ניחושים" : "ניחושים קודמים"}
           </h3>
           <GuessTable 
-            guesses={gameState.isComplete ? sortedGuesses : (sortedGuesses.length > 1 ? sortedGuesses.slice(0, -1) : [])} 
+            guesses={sortedGuessesForTable}
             originalGuesses={gameState.guesses}
           />
         </div>
