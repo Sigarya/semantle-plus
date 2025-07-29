@@ -340,7 +340,7 @@ const GameBoard = () => {
             <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4">
               <span className="font-heebo">
                 ציון הקרבה של המילה הכי קרובה (999/1000) למילה הסודית היום הוא {(sampleRanks.samples["999"] * 100).toFixed(2)}, 
-                ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא {(sampleRanks.samples["990"] * 100).toFixed(2)} 
+                ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא {(sampleRanks.samples["990"] * 100).toFixed(2)}, 
                  וציון הקרבה של המילה האלף הכי קרובה (1/1000) הוא {(sampleRanks.samples["1"] * 100).toFixed(2)}.
               </span>
             </div>
