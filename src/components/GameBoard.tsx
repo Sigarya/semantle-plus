@@ -319,7 +319,7 @@ const GameBoard = () => {
               {referenceScores.rank999 !== null && referenceScores.rank990 !== null && referenceScores.rank1 !== null && (
                 <span className="font-heebo">
                   ציון הקרבה של המילה הכי קרובה (999/1000) למילה הסודית הוא {(referenceScores.rank999 * 100).toFixed(2)}, 
-                  ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא {(referenceScores.rank990 * 100).toFixed(2)} 
+                  ציון הקרבה של המילה העשירית הכי קרובה (990/1000) הוא {(referenceScores.rank990 * 100).toFixed(2)}, 
                   וציון הקרבה של המילה האלף הכי קרובה (1/1000) הוא {(referenceScores.rank1 * 100).toFixed(2)}.
                 </span>
               )}
