@@ -285,57 +285,14 @@ const GameBoard = () => {
         </form>
       )}
 
-      {/* Last Guess - Show the most recent guess */}
-      {mostRecentGuess && !gameState.isComplete && (
-        <div className="border-b border-primary-200 dark:border-slate-700 pb-4" ref={lastGuessRef}>
-          <h3 className="text-lg font-bold font-heebo mb-2">הניחוש האחרון</h3>
-          <div className="flex flex-col gap-2 p-3 rounded-md bg-primary-50 dark:bg-slate-700">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">{gameState.guesses.length}</span>
-                <span className="font-medium">{mostRecentGuess.word}</span>
-              </div>
-              <span className={`${getSimilarityClass(mostRecentGuess.similarity)}`}>
-                {(mostRecentGuess.similarity * 100).toFixed(2)}%
-              </span>
-            </div>
-            
-            {/* Old rank (from similarity calculation) */}
-            {mostRecentGuess.rank && mostRecentGuess.rank <= 1000 && (
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>דירוג דמיון</span>
-                  <span>#{mostRecentGuess.rank}/1000</span>
-                </div>
-                 <Progress 
-                   value={(mostRecentGuess.rank / 1000) * 100} 
-                   className="h-2 bg-gray-200 dark:bg-slate-600"
-                 />
-              </div>
-            )}
-            
-            {/* New rank score from the new server */}
-            {mostRecentGuess.rankScore && mostRecentGuess.rankScore > 0 && (
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>דירוג מילים</span>
-                  <span>{mostRecentGuess.rankScore}/1,000</span>
-                </div>
-                <Progress 
-                  value={(mostRecentGuess.rankScore / 1000) * 100} 
-                  className="h-2 bg-gray-200 dark:bg-slate-600"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Guesses List - Compact table view */}
-      {sortedGuesses.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold font-heebo">כל הניחושים</h3>
-          <GuessTable guesses={sortedGuesses} />
+      {/* Guesses Table with Last Guess integrated */}
+      {(sortedGuesses.length > 0 || (mostRecentGuess && !gameState.isComplete)) && (
+        <div className="space-y-4" ref={lastGuessRef}>
+          <h3 className="text-lg font-bold font-heebo">ניחושים</h3>
+          <GuessTable 
+            guesses={sortedGuesses} 
+            lastGuess={mostRecentGuess && !gameState.isComplete ? mostRecentGuess : undefined}
+          />
         </div>
       )}
 
