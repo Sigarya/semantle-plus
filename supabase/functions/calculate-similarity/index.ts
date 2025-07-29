@@ -232,13 +232,43 @@ serve(async (req) => {
       // Determine if this is the correct word (exact match or very high similarity)
       const isCorrect = guess === target || similarity > 0.99;
       
+      // Get reference scores for ranks 1, 990, and 999
+      let referenceScores = null;
+      try {
+        const referenceResults = await Promise.all([
+          fetch(`${RANKING_API_URL}?rank=1&date=${encodeURIComponent(formattedDate)}`),
+          fetch(`${RANKING_API_URL}?rank=990&date=${encodeURIComponent(formattedDate)}`),
+          fetch(`${RANKING_API_URL}?rank=999&date=${encodeURIComponent(formattedDate)}`)
+        ]);
+        
+        const [rank1Response, rank990Response, rank999Response] = referenceResults;
+        
+        if (rank1Response.ok && rank990Response.ok && rank999Response.ok) {
+          const [rank1Data, rank990Data, rank999Data] = await Promise.all([
+            rank1Response.json(),
+            rank990Response.json(), 
+            rank999Response.json()
+          ]);
+          
+          referenceScores = {
+            rank1: rank1Data.similarity || null,
+            rank990: rank990Data.similarity || null, 
+            rank999: rank999Data.similarity || null
+          };
+        }
+      } catch (error) {
+        console.error("Error fetching reference scores:", error);
+        // Continue without reference scores if there's an error
+      }
+      
       return new Response(
         JSON.stringify({
           word: guess,
           similarity,
           rank, // Only include rank if > 0 from ranking API
           isCorrect,
-          date: targetDate // Return the date used for this guess
+          date: targetDate, // Return the date used for this guess
+          referenceScores // Include reference scores if available
         }),
         { 
           headers: { 

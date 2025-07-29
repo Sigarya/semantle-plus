@@ -38,35 +38,15 @@ const GameBoard = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Fetch reference scores when component loads
+  // Update reference scores from guess results
   useEffect(() => {
-    const fetchReferenceScores = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke("get-reference-scores", {
-          body: { date: gameState.wordDate }
-        });
-
-        if (error) {
-          console.error("Error fetching reference scores:", error);
-          return;
-        }
-
-        if (data) {
-          setReferenceScores({
-            rank1: data.rank1 || null,
-            rank990: data.rank990 || null,
-            rank999: data.rank999 || null,
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching reference scores:", error);
+    if (gameState.guesses.length > 0) {
+      const lastGuess = gameState.guesses[gameState.guesses.length - 1];
+      if (lastGuess.referenceScores) {
+        setReferenceScores(lastGuess.referenceScores);
       }
-    };
-
-    if (gameState.wordDate) {
-      fetchReferenceScores();
     }
-  }, [gameState.wordDate]);
+  }, [gameState.guesses]);
 
   // Keep focus on input field and ensure input stays visible after guessing
   useEffect(() => {

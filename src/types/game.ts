@@ -5,6 +5,11 @@ export interface Guess {
   rank?: number;
   isCorrect: boolean;
   rankScore?: number; // New rank score from 1-1000
+  referenceScores?: {
+    rank1: number | null;
+    rank990: number | null;
+    rank999: number | null;
+  };
 }
 
 export interface DailyWord {
