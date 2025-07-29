@@ -46,8 +46,8 @@ const GuessTable = ({ guesses, lastGuess }: GuessTableProps) => {
                   {lastGuess.rank ? (
                     <div className="flex items-center gap-1">
                       <div 
-                        className="h-6 bg-green-500 rounded-sm flex-shrink-0" 
-                        style={{ width: `${Math.max((lastGuess.rank / 10), 1)}%` }}
+                        className="h-4 bg-green-500 rounded-sm flex-shrink-0" 
+                        style={{ width: `${Math.max(((1000 - lastGuess.rank) / 1000) * 100, 5)}%` }}
                       />
                       <span className="text-xs text-primary-600 dark:text-primary-400 font-medium font-heebo">
                         {lastGuess.rank}/1000
@@ -73,8 +73,8 @@ const GuessTable = ({ guesses, lastGuess }: GuessTableProps) => {
                 {guess.rank ? (
                   <div className="flex items-center gap-1">
                     <div 
-                      className="h-6 bg-green-500 rounded-sm flex-shrink-0" 
-                      style={{ width: `${Math.max((guess.rank / 10), 1)}%` }}
+                      className="h-4 bg-green-500 rounded-sm flex-shrink-0" 
+                      style={{ width: `${Math.max(((1000 - guess.rank) / 1000) * 100, 5)}%` }}
                     />
                     <span className="text-xs text-muted-foreground font-heebo">
                       {guess.rank}/1000
