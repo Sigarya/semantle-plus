@@ -108,24 +108,12 @@ const GameBoard = () => {
     }
   }, [isLoading, gameState.isComplete]);
 
-  // Scroll input to top with 5px padding after making a guess
+  // Initial focus only
   useEffect(() => {
-    if (!isLoading && !gameState.isComplete && gameState.guesses.length > 0 && inputRef.current) {
-      setTimeout(() => {
-        const inputElement = inputRef.current;
-        if (inputElement) {
-          const inputRect = inputElement.getBoundingClientRect();
-          const currentScrollTop = window.pageYOffset;
-          const targetScrollTop = currentScrollTop + inputRect.top - 5;
-          
-          window.scrollTo({
-            top: targetScrollTop,
-            behavior: 'smooth'
-          });
-        }
-      }, 200);
+    if (!isLoading && !gameState.isComplete && gameState.guesses.length === 0) {
+      inputRef.current?.focus();
     }
-  }, [gameState.guesses.length, isLoading, gameState.isComplete]);
+  }, [isLoading, gameState.isComplete]);
 
   const handleGuessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,24 +138,29 @@ const GameBoard = () => {
       
       setGuessInput("");
       
-      // This block goes inside handleGuessSubmit, right after setGuessInput('');
+      // Comprehensive scroll and focus solution
       if (inputRef.current) {
-        // Use a small timeout to allow the UI to update before we scroll
         setTimeout(() => {
-          // This is the most reliable way to calculate the correct scroll position
-          const inputTopPosition = inputRef.current.getBoundingClientRect().top;
-          const currentScrollY = window.scrollY;
-          const padding = 5; // The 5 pixels you requested
+          if (inputRef.current) {
+            // Calculate precise scroll position for 5px margin
+            const inputTopPosition = inputRef.current.getBoundingClientRect().top;
+            const currentScrollY = window.scrollY;
+            const targetScrollY = currentScrollY + inputTopPosition - 5;
 
-          // Calculate where to scroll to
-          const targetScrollY = currentScrollY + inputTopPosition - padding;
+            // Perform smooth scroll
+            window.scrollTo({
+              top: targetScrollY,
+              behavior: 'smooth'
+            });
 
-          // Perform the elegant, smooth scroll
-          window.scrollTo({
-            top: targetScrollY,
-            behavior: 'smooth'
-          });
-        }, 100); // 100ms delay is usually enough
+            // Return focus after scroll completes
+            setTimeout(() => {
+              if (inputRef.current && !gameState.isComplete) {
+                inputRef.current.focus();
+              }
+            }, 300);
+          }
+        }, 100);
       }
       
     } catch (error) {
@@ -416,12 +409,15 @@ const GameBoard = () => {
       placeholder="נחש מילה..."
       disabled={isSubmitting}
       dir="rtl"
-      // --- This is the key to a clean keyboard ---
-      autoComplete="off"
-      autoCorrect="off"
+      // Comprehensive mobile keyboard fix
+      autoComplete="new-password"
+      autoCorrect="on"
       autoCapitalize="none"
-      spellCheck="false"
-      // ------------------------------------------
+      spellCheck="true"
+      inputMode="text"
+      data-form-type="other"
+      data-lpignore="true"
+      data-1p-ignore
       // Use the existing, working className for styling
       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
     />
