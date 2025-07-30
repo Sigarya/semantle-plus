@@ -227,7 +227,7 @@ const GameBoard = () => {
       {mostRecentGuess && !gameState.isComplete && (
         <div className="space-y-2" ref={lastGuessRef}>
           <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
-          <div className="border rounded-md rounded-b-none">
+          <div className="border rounded-md">
             <Table>
               <TableHeader>
                 <TableRow className="border-b"><TableHead className="text-right w-12 py-2 px-2">#</TableHead><TableHead className="text-right w-24 py-2 px-2">מילה</TableHead><TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead><TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead></TableRow>
@@ -241,8 +241,11 @@ const GameBoard = () => {
       )}
 
       {sortedGuessesForTable.length > 0 && (
-        <div className={mostRecentGuess && !gameState.isComplete ? "-mt-2" : "space-y-2"}>
-          <GuessTable guesses={sortedGuessesForTable} originalGuesses={gameState.guesses} showHeader={false}/>
+        <div className={mostRecentGuess && !gameState.isComplete ? "mt-2" : "space-y-2"}>
+          {(mostRecentGuess && !gameState.isComplete) && (
+            <h3 className="text-lg font-bold font-heebo">ניחושים קודמים</h3>
+          )}
+          <GuessTable guesses={sortedGuessesForTable} originalGuesses={gameState.guesses} showHeader={!mostRecentGuess || gameState.isComplete}/>
         </div>
       )}
 

@@ -19,7 +19,7 @@ const GuessTable = ({ guesses, originalGuesses, showHeader = true }: GuessTableP
   }
 
   return (
-    <div className={`border ${showHeader ? 'rounded-md' : 'rounded-t-none border-t-0'}`}>
+    <div className="border rounded-md">
       <Table>
         {showHeader && (
           <TableHeader>
