@@ -51,7 +51,7 @@ const GameBoard = () => {
   }, [gameState.wordDate]);
 
   const handleGuessSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+    if (e) e.preventDefault(); // עדיין נשתמש בזה למקרה של לחיצה על Enter
     if (!guessInput.trim() || isSubmitting) return;
 
     if (!isValidHebrewWord(guessInput)) {
@@ -61,33 +61,23 @@ const GameBoard = () => {
 
     setError(null);
     setIsSubmitting(true);
+    
+    const wordToGuess = guessInput;
+    setGuessInput(""); // מנקים את התיבה *לפני* הקריאה לשרת לתגובה מהירה יותר
 
     try {
-      await makeGuess(guessInput);
-      setGuessInput("");
-
-      // ===================================================================
-      // === THIS IS THE FINAL, CORRECTED LOGIC ==========================
-      // ===================================================================
-      // We removed ALL scrolling logic.
-      // Now, it only returns focus to the input box after each guess,
-      // ensuring the keyboard stays up and the user can keep typing.
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 100);
-      // ===================================================================
-
+      await makeGuess(wordToGuess);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
-        setError(`אני לא מכיר את המילה ${guessInput}`);
+        setError(`אני לא מכיר את המילה ${wordToGuess}`);
       } else {
         setError(errorMessage);
       }
     } finally {
       setIsSubmitting(false);
+      // הפוקוס נשאר באופן טבעי, אין צורך להחזיר אותו באופן מלאכותי
+      // ואין צורך בגלילה.
     }
   };
   
@@ -175,6 +165,12 @@ const GameBoard = () => {
           )}
           
           <div className="space-y-4">
+            {/* =================================================================== */}
+            {/* === THIS IS THE FINAL, CORRECTED LOGIC ========================== */}
+            {/* =================================================================== */}
+            {/* We keep the <form> tag to allow 'Enter' to work, but the button */}
+            {/* is now a simple button, not a submit button. This prevents the */}
+            {/* default browser behavior that causes focus loss. */}
             <form onSubmit={handleGuessSubmit} className="flex gap-2">
               <input type="password" name="password" autoComplete="new-password" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
               <input
@@ -191,8 +187,16 @@ const GameBoard = () => {
                 spellCheck="false"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
               />
-              <Button type="submit" className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" disabled={isSubmitting || !guessInput.trim()}>נחש</Button>
+              <Button 
+                type="button" // Changed from "submit" to "button"
+                onClick={() => handleGuessSubmit()} // Direct function call
+                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" 
+                disabled={isSubmitting || !guessInput.trim()}
+              >
+                נחש
+              </Button>
             </form>
+            {/* =================================================================== */}
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           </div>
         </>
