@@ -122,8 +122,8 @@ const GameBoard = () => {
     setError(null);
     setIsSubmitting(true);
     
-    // Calculate scroll position BEFORE processing the guess
-    const targetScrollPosition = inputRef.current ? inputRef.current.offsetTop - 5 : 0;
+    // Calculate scroll position BEFORE processing the guess (10px margin above input)
+    const targetScrollPosition = inputRef.current ? inputRef.current.offsetTop - 10 : 0;
     
     try {
       const result = await makeGuess(guessInput);
@@ -479,10 +479,11 @@ const GameBoard = () => {
       {/* Guesses Table (excluding the most recent guess when game is not complete, sorted by similarity) */}
       {sortedGuessesForTable.length > 0 && (
         <div className="space-y-2">
+          <h3 className="text-lg font-bold font-heebo">ניחושים קודמים</h3>
           <GuessTable 
             guesses={sortedGuessesForTable}
             originalGuesses={gameState.guesses}
-            showHeader={false}
+            showHeader={true}
           />
         </div>
       )}
