@@ -43,13 +43,13 @@ const GuessTable = ({ guesses, originalGuesses, showHeader = true }: GuessTableP
             const guessNumber = originalIndex + 1;
             
             return (
-              <TableRow key={`${guess.word}-${index}`} className={`${guess.isCorrect ? "bg-green-500/20" : ""}`}>
-                <TableCell className="py-1 px-2 text-xs">{guessNumber}</TableCell>
-                <TableCell className="font-medium py-1 px-2 text-xs truncate">{guess.word}</TableCell>
-                <TableCell className="text-center py-1 px-2 text-xs">
-                  {`${(guess.similarity * 100).toFixed(2)}%`}
-                </TableCell>
-                <TableCell className="text-center py-1 px-2">
+               <TableRow key={`${guess.word}-${index}`} className={`${guess.isCorrect ? "bg-green-500/20" : ""}`}>
+                 <TableCell className="py-1 px-2 text-xs w-12">{guessNumber}</TableCell>
+                 <TableCell className="font-medium py-1 px-2 text-xs truncate w-24">{guess.word}</TableCell>
+                 <TableCell className="text-center py-1 px-2 text-xs w-20">
+                   {`${(guess.similarity * 100).toFixed(2)}%`}
+                 </TableCell>
+                 <TableCell className="text-center py-1 px-2 w-28">
                   {guess.rank && guess.rank > 0 ? (
                     <div className="flex items-center gap-1 justify-center">
                       <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0">
