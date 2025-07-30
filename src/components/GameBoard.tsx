@@ -150,6 +150,26 @@ const GameBoard = () => {
       
       setGuessInput("");
       
+      // This block goes inside handleGuessSubmit, right after setGuessInput('');
+      if (inputRef.current) {
+        // Use a small timeout to allow the UI to update before we scroll
+        setTimeout(() => {
+          // This is the most reliable way to calculate the correct scroll position
+          const inputTopPosition = inputRef.current.getBoundingClientRect().top;
+          const currentScrollY = window.scrollY;
+          const padding = 5; // The 5 pixels you requested
+
+          // Calculate where to scroll to
+          const targetScrollY = currentScrollY + inputTopPosition - padding;
+
+          // Perform the elegant, smooth scroll
+          window.scrollTo({
+            top: targetScrollY,
+            behavior: 'smooth'
+          });
+        }, 100); // 100ms delay is usually enough
+      }
+      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       // If the error is about unknown word, customize the message
@@ -387,23 +407,23 @@ const GameBoard = () => {
           
    <form onSubmit={handleGuessSubmit} className="space-y-4">
   <div className="flex gap-2">
-    <Input
+    <input
       ref={inputRef}
       type="text"
+      name="guess"
       value={guessInput}
       onChange={(e) => setGuessInput(e.target.value)}
-      className="text-lg"
       placeholder="נחש מילה..."
       disabled={isSubmitting}
       dir="rtl"
+      // --- This is the key to a clean keyboard ---
       autoComplete="off"
       autoCorrect="off"
-      autoCapitalize="off"
-      spellCheck={false}
-      data-form-type="other"
-      data-1p-ignore="true"
-      data-lpignore="true"
-      data-bwignore="true"
+      autoCapitalize="none"
+      spellCheck="false"
+      // ------------------------------------------
+      // Use the existing, working className for styling
+      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
     />
     <Button
       type="submit"
