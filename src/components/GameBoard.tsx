@@ -101,23 +101,23 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
-  // Keep focus on input field and ensure input stays visible after guessing
+  // Keep focus on input field and scroll to optimal position after guessing
   useEffect(() => {
     if (!isLoading && !gameState.isComplete) {
       inputRef.current?.focus();
       
-      // For mobile devices, make sure the input stays visible after making a guess
-      if (isMobile && inputRef.current && gameState.guesses.length > 0) {
+      // After making a guess, scroll to position the input at the top with guess table visible
+      if (inputRef.current && gameState.guesses.length > 0) {
         // Use a short timeout to ensure DOM is updated
         setTimeout(() => {
           inputRef.current?.scrollIntoView({ 
             behavior: 'smooth', 
-            block: 'center'
+            block: 'start'
           });
         }, 100);
       }
     }
-  }, [isLoading, gameState.isComplete, gameState.guesses.length, isMobile]);
+  }, [isLoading, gameState.isComplete, gameState.guesses.length]);
 
   const handleGuessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,15 +272,20 @@ const GameBoard = () => {
                </p>
               <form onSubmit={handleExplorationSubmit} className="space-y-4">
                 <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    value={explorationInput}
-                    onChange={(e) => setExplorationInput(e.target.value)}
-                    className="text-lg"
-                    placeholder="נסה מילה..."
-                    disabled={isSubmitting}
-                    dir="rtl"
-                  />
+                   <Input
+                     type="text"
+                     value={explorationInput}
+                     onChange={(e) => setExplorationInput(e.target.value)}
+                     className="text-lg"
+                     placeholder="נסה מילה..."
+                     disabled={isSubmitting}
+                     dir="rtl"
+                     autoComplete="off"
+                     autoCorrect="off"
+                     autoCapitalize="off"
+                     spellCheck="false"
+                     inputMode="text"
+                   />
                   <Button
                     type="submit"
                     className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
