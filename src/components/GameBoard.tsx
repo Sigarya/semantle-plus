@@ -21,6 +21,7 @@ const GameBoard = () => {
   const [explorationResult, setExplorationResult] = useState<{ word: string; similarity: number; rank?: number; } | null>(null);
   const [sampleRanks, setSampleRanks] = useState<any>(null);
   const [loadingSampleRanks, setLoadingSampleRanks] = useState(false);
+  const [shouldMaintainFocus, setShouldMaintainFocus] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
 
@@ -50,11 +51,26 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
+  // Focus preservation useEffect - ensures input focus is maintained after React re-renders
+  useEffect(() => {
+    if (shouldMaintainFocus && inputRef.current && !gameState.isComplete) {
+      // Use requestAnimationFrame to ensure this happens after React finishes DOM updates
+      requestAnimationFrame(() => {
+        if (inputRef.current && document.activeElement !== inputRef.current) {
+          inputRef.current.focus();
+          setShouldMaintainFocus(false);
+        }
+      });
+    }
+  }, [gameState.guesses.length, shouldMaintainFocus, gameState.isComplete]);
+
   const handleGuessSubmit = async () => {
     if (!guessInput.trim() || isSubmitting) return;
 
     if (!isValidHebrewWord(guessInput)) {
       setError("אנא הזן מילה בעברית בלבד");
+      // Set focus preservation flag even for invalid words
+      setShouldMaintainFocus(true);
       return;
     }
 
@@ -65,6 +81,8 @@ const GameBoard = () => {
     
     try {
       await makeGuess(wordToGuess);
+      // Set flag to maintain focus after successful guess (React will re-render)
+      setShouldMaintainFocus(true);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
@@ -72,12 +90,14 @@ const GameBoard = () => {
       } else {
         setError(errorMessage);
       }
+      // Set focus preservation flag even for failed guesses
+      setShouldMaintainFocus(true);
     } finally {
       setIsSubmitting(false);
       setGuessInput("");
       
-      // Critical: Immediately refocus to prevent keyboard from closing
-      if (inputRef.current) {
+      // Immediate focus strategy - this handles the synchronous case
+      if (inputRef.current && document.activeElement !== inputRef.current) {
         inputRef.current.focus();
       }
     }
