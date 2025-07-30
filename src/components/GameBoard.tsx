@@ -1,6 +1,6 @@
-// GameBoard.tsx
+// GameBoard.tsx - גרסה מתוקנת
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,6 +23,38 @@ const GameBoard = () => {
   const [loadingSampleRanks, setLoadingSampleRanks] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
+
+  // פונקציה להחזרת פוקוס מיידי וחזק
+  const ensureFocus = useCallback(() => {
+    if (inputRef.current && !gameState.isComplete) {
+      inputRef.current.focus();
+      const length = inputRef.current.value.length;
+      inputRef.current.setSelectionRange(length, length);
+    }
+  }, [gameState.isComplete]);
+
+  // פונקציה להחזרת פוקוס עם כמה ניסיונות
+  const maintainFocus = useCallback(() => {
+    if (gameState.isComplete) return;
+    
+    // ניסיון מיידי
+    ensureFocus();
+    
+    // ניסיון נוסף אחרי frame אחד
+    requestAnimationFrame(() => {
+      ensureFocus();
+      
+      // ניסיון נוסף אחרי עיכוב קטן
+      setTimeout(() => {
+        ensureFocus();
+      }, 50);
+      
+      // ניסיון אחרון אחרי עיכוב ארוך יותר
+      setTimeout(() => {
+        ensureFocus();
+      }, 200);
+    });
+  }, [ensureFocus, gameState.isComplete]);
 
   useEffect(() => {
     const fetchAndSetSampleRanks = async () => {
@@ -50,25 +82,40 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
+  // שמירת פוקוס כל הזמן - אחרי כל שינוי
+  useEffect(() => {
+    maintainFocus();
+  }, [gameState.guesses, isSubmitting, guessInput, maintainFocus]);
+
+  // שמירת פוקוס כשהקומפוננטה נטענת
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      maintainFocus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [maintainFocus]);
+
   const handleGuessSubmit = async (e: React.FormEvent) => {
-    // Step 1: Prevent the browser's default page reload behavior. This is critical.
     e.preventDefault();
-    
     if (!guessInput.trim() || isSubmitting) return;
 
     if (!isValidHebrewWord(guessInput)) {
       setError("אנא הזן מילה בעברית בלבד");
+      // החזרת פוקוס גם במקרה של שגיאה
+      restoreFocusDelayed();
       return;
     }
 
     setError(null);
     setIsSubmitting(true);
-    
     const wordToGuess = guessInput;
     
+    // ניקוי הטקסט מיד כדי שהמשתמש יראה שהפעולה החלה
+    setGuessInput("");
+    
     try {
-      // Step 2: Make the async guess.
       await makeGuess(wordToGuess);
+      // אחרי ניחוש מוצלח, הפוקוס יחזור דרך useEffect
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
@@ -77,16 +124,8 @@ const GameBoard = () => {
         setError(errorMessage);
       }
     } finally {
-      // Step 3: This 'finally' block runs instantly after the guess is complete.
       setIsSubmitting(false);
-      setGuessInput(""); // Clear the input for the next guess.
-      
-      // Step 4: The magic. Immediately and synchronously return focus to the input.
-      // This is so fast, the browser doesn't have time to process the "blur" event
-      // that hides the mobile keyboard. No timeouts, no workarounds.
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
+      // הפוקוס יחזור דרך useEffect כשisSubmitting ישתנה לfalse
     }
   };
   
@@ -109,6 +148,14 @@ const GameBoard = () => {
       setError(error instanceof Error ? error.message : "שגיאה בבדיקת דמיון");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // טיפול במקש Enter
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isSubmitting) {
+      e.preventDefault();
+      handleGuessSubmit(e as any);
     }
   };
 
@@ -175,12 +222,14 @@ const GameBoard = () => {
           
           <div className="space-y-4">
             <form onSubmit={handleGuessSubmit} className="flex gap-2">
+              {/* Hidden password field לשיפור האוטו-קומפליט */}
               <input type="password" name="password" autoComplete="new-password" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
               <input
                 ref={inputRef}
                 type="text"
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="נחש מילה..."
                 disabled={isSubmitting}
                 dir="rtl"
@@ -188,9 +237,28 @@ const GameBoard = () => {
                 autoCorrect="off"
                 autoCapitalize="none"
                 spellCheck="false"
+                // מניעת התנהגויות לא רצויות
+                onBlur={(e) => {
+                  // אם המשתמש עדיין במשחק ולא לחץ על כפתור אחר, החזר פוקוס
+                  if (!gameState.isComplete && document.activeElement?.tagName !== 'BUTTON') {
+                    setTimeout(() => {
+                      if (inputRef.current && !document.activeElement?.closest('button')) {
+                        inputRef.current.focus();
+                      }
+                    }, 100);
+                  }
+                }}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
               />
-              <Button type="submit" className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" disabled={isSubmitting || !guessInput.trim()}>נחש</Button>
+              <Button 
+                type="submit" 
+                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" 
+                disabled={isSubmitting || !guessInput.trim()}
+                // מניעת גלילה או שינוי מיקום בעת לחיצה
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                {isSubmitting ? "..." : "נחש"}
+              </Button>
             </form>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           </div>
