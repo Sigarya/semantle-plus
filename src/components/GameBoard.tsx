@@ -138,29 +138,27 @@ const GameBoard = () => {
       
       setGuessInput("");
       
-      // Comprehensive scroll and focus solution
+      // Fixed scrolling and focus solution
       if (inputRef.current) {
         setTimeout(() => {
           if (inputRef.current) {
-            // Calculate precise scroll position for 5px margin
-            const inputTopPosition = inputRef.current.getBoundingClientRect().top;
-            const currentScrollY = window.scrollY;
-            const targetScrollY = currentScrollY + inputTopPosition - 5;
+            // Calculate the exact position to scroll to (input at top with 5px margin)
+            const targetScrollY = window.scrollY + inputRef.current.getBoundingClientRect().top - 5;
 
             // Perform smooth scroll
             window.scrollTo({
-              top: targetScrollY,
+              top: Math.max(0, targetScrollY),
               behavior: 'smooth'
             });
 
-            // Return focus after scroll completes
+            // Return focus after scroll animation completes
             setTimeout(() => {
               if (inputRef.current && !gameState.isComplete) {
                 inputRef.current.focus();
               }
-            }, 300);
+            }, 400);
           }
-        }, 100);
+        }, 50);
       }
       
     } catch (error) {
@@ -403,21 +401,26 @@ const GameBoard = () => {
     <input
       ref={inputRef}
       type="text"
-      name="guess"
+      name="semantle-guess-input"
       value={guessInput}
       onChange={(e) => setGuessInput(e.target.value)}
       placeholder="נחש מילה..."
       disabled={isSubmitting}
       dir="rtl"
-      // Comprehensive mobile keyboard fix
-      autoComplete="new-password"
-      autoCorrect="on"
+      // Aggressive password/autofill blocking
+      autoComplete="off"
+      autoCorrect="off"
       autoCapitalize="none"
-      spellCheck="true"
+      spellCheck="false"
       inputMode="text"
       data-form-type="other"
       data-lpignore="true"
-      data-1p-ignore
+      data-1p-ignore="true"
+      data-bwignore="true"
+      data-1password-ignore="true"
+      data-lastpass-ignore="true"
+      data-bitwarden-ignore="true"
+      role="textbox"
       // Use the existing, working className for styling
       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
     />
