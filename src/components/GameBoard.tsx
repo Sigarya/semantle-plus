@@ -241,10 +241,7 @@ const GameBoard = () => {
       )}
 
       {sortedGuessesForTable.length > 0 && (
-        <div className={mostRecentGuess && !gameState.isComplete ? "mt-2" : "space-y-2"}>
-          {(mostRecentGuess && !gameState.isComplete) && (
-            <h3 className="text-lg font-bold font-heebo">ניחושים קודמים</h3>
-          )}
+        <div className={mostRecentGuess && !gameState.isComplete ? "mt-1" : "space-y-2"}>
           <GuessTable guesses={sortedGuessesForTable} originalGuesses={gameState.guesses} showHeader={!mostRecentGuess || gameState.isComplete}/>
         </div>
       )}
