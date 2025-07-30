@@ -136,6 +136,25 @@ const GameBoard = React.memo(() => {
     setError(null);
     const wordToGuess = guessInput.trim();
     
+    // Check if word was already guessed - if so, show it again instead of error
+    const existingGuess = gameState.guesses.find(g => g.word === wordToGuess);
+    if (existingGuess) {
+      // Clear input and show brief loading state for UX consistency
+      setGuessInput("");
+      isSubmittingRef.current = true;
+      setIsSubmitting(true);
+      
+      // Brief delay to show loading, then reset
+      setTimeout(() => {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+        // The existing guess will appear in the "mostRecentGuess" display
+        // since it's the same word that was just "submitted"
+      }, 200);
+      
+      return;
+    }
+    
     // CRITICAL: Clear input IMMEDIATELY and set submission state
     setGuessInput("");
     isSubmittingRef.current = true;
@@ -207,7 +226,8 @@ const GameBoard = React.memo(() => {
     return <div className="flex justify-center items-center h-64"><div className="text-xl">טוען משחק...</div></div>;
   }
   
-  const mostRecentGuess = gameState.guesses[gameState.guesses.length - 1];
+  // For duplicate guesses, we want to show the most recent submission in the "recent guess" panel
+  const mostRecentGuess = gameState.guesses.find(g => g.word === guessInput.trim()) || gameState.guesses[gameState.guesses.length - 1];
   const sortedGuessesForTable = (gameState.isComplete ? gameState.guesses : gameState.guesses.slice(0, -1)).sort((a, b) => b.similarity - a.similarity);
 
   return (

@@ -171,9 +171,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("המילה מכילה תווים לא חוקיים");
     }
     
-    // Check if word was already guessed
-    if (gameState.guesses.some(g => g.word === normalizedWord)) {
-      throw new Error("כבר ניחשת את המילה הזאת");
+    // Check if word was already guessed - return the existing guess instead of error
+    const existingGuess = gameState.guesses.find(g => g.word === normalizedWord);
+    if (existingGuess) {
+      return existingGuess;
     }
 
     // Check rate limit if user is authenticated
