@@ -377,38 +377,32 @@ const GameBoard = () => {
 )}
 
           
-          <form onSubmit={handleGuessSubmit} className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                type="text"
-                value={guessInput}
-                onChange={(e) => setGuessInput(e.target.value)}
-                className="text-lg"
-                placeholder="נחש מילה..."
-                disabled={isSubmitting}
-                dir="rtl"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck="false"
-                inputMode="text"
-              />
-              <Button
-                type="submit"
-                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
-                disabled={isSubmitting || !guessInput.trim()}
-              >
-                נחש
-              </Button>
-            </div>
-            
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-          </form>
+   <form onSubmit={handleGuessSubmit} className="space-y-4">
+  <div className="flex gap-2">
+    <input
+      ref={inputRef}
+      type="text"
+      value={guessInput}
+      onChange={(e) => setGuessInput(e.target.value)}
+      className="text-lg border px-3 py-2 rounded-md flex-1"
+      placeholder="נחש מילה..."
+      disabled={isSubmitting}
+      dir="rtl"
+      autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="off"
+      spellCheck={false}
+      inputMode="text"
+    />
+    <Button
+      type="submit"
+      className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
+      disabled={isSubmitting || !guessInput.trim()}
+    >
+      נחש
+    </Button>
+  </div>
+</form>
         </>
       )}
 
