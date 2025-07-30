@@ -227,10 +227,10 @@ const GameBoard = () => {
       {mostRecentGuess && !gameState.isComplete && (
         <div className="space-y-2" ref={lastGuessRef}>
           <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
-          <div className="border rounded-md">
+          <div className="border rounded-md rounded-b-none">
             <Table>
               <TableHeader>
-                <TableRow className="border-b"><TableHead className="text-right w-12 py-2 px-2">#</TableHead><TableHead className="text-right py-2 px-2">מילה</TableHead><TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead><TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead></TableRow>
+                <TableRow className="border-b"><TableHead className="text-right w-12 py-2 px-2">#</TableHead><TableHead className="text-right w-24 py-2 px-2">מילה</TableHead><TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead><TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead></TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700"><TableCell className="py-1 px-2 text-xs font-medium text-primary-700 dark:text-primary-300">{gameState.guesses.length}</TableCell><TableCell className="font-medium py-1 px-2 text-xs truncate text-primary-700 dark:text-primary-300">{mostRecentGuess.word}</TableCell><TableCell className="text-center py-1 px-2 text-xs text-primary-700 dark:text-primary-300">{`${(mostRecentGuess.similarity * 100).toFixed(2)}%`}</TableCell><TableCell className="text-center py-1 px-2">{mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (<div className="flex items-center gap-1 justify-center"><div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0"><div className="absolute top-0 left-0 h-full bg-green-500 rounded-sm" style={{ width: `${Math.min((mostRecentGuess.rank / 1000) * 100, 100)}%` }}/></div><span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">{mostRecentGuess.rank}/1000</span></div>) : (<span className="text-xs text-primary-700 dark:text-primary-300 font-heebo">רחוק</span>)}</TableCell></TableRow>
@@ -241,9 +241,8 @@ const GameBoard = () => {
       )}
 
       {sortedGuessesForTable.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold font-heebo">ניחושים קודמים</h3>
-          <GuessTable guesses={sortedGuessesForTable} originalGuesses={gameState.guesses} showHeader={true}/>
+        <div className={mostRecentGuess && !gameState.isComplete ? "-mt-2" : "space-y-2"}>
+          <GuessTable guesses={sortedGuessesForTable} originalGuesses={gameState.guesses} showHeader={false}/>
         </div>
       )}
 
