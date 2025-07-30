@@ -259,11 +259,11 @@ const GameBoard = React.memo(() => {
           <div className="space-y-4">
             <form 
               onSubmit={handleGuessSubmit} 
-              className="flex flex-col sm:flex-row gap-2" 
+              className="flex flex-row gap-2" 
               autoComplete="off"
               style={{
                 // Prevent form from shifting during submission
-                minHeight: '60px'
+                minHeight: '50px'
               }}
             >
               <input
@@ -283,7 +283,7 @@ const GameBoard = React.memo(() => {
               />
               <Button 
                 type="submit"
-                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6 w-full sm:w-auto" 
+                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-4 py-2 text-sm font-medium whitespace-nowrap flex items-center justify-center min-w-[70px] h-10" 
                 disabled={!guessInput.trim()}
                 onMouseDown={(e) => {
                   // Prevent button from stealing focus from input
@@ -294,7 +294,11 @@ const GameBoard = React.memo(() => {
                   e.preventDefault();
                 }}
               >
-                נחש
+                {isSubmitting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  "נחש"
+                )}
               </Button>
             </form>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
