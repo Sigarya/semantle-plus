@@ -393,18 +393,19 @@ const GameBoard = () => {
       placeholder="נחש מילה..."
       disabled={isSubmitting}
       dir="rtl"
-      name="word-guess"
-      autoComplete="one-time-code"
+      autoComplete="new-password"
       autoCorrect="off"
       autoCapitalize="none"
       spellCheck={false}
       inputMode="text"
-      data-form-type="other"
+      name="fake-search-field"
+      data-form-type="search"
       data-lpignore="true"
       data-1p-ignore="true"
       data-bwignore="true"
-      role="textbox"
-      aria-autocomplete="none"
+      data-bitwarden-ignore="true"
+      data-dashlane-rid=""
+      data-lastpass-ignore="true"
     />
     <Button
       type="submit"
@@ -414,6 +415,12 @@ const GameBoard = () => {
       נחש
     </Button>
   </div>
+  
+  {error && (
+    <Alert variant="destructive">
+      <AlertDescription>{error}</AlertDescription>
+    </Alert>
+  )}
 </form>
         </>
       )}
