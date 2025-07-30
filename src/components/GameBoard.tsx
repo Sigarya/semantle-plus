@@ -110,13 +110,10 @@ const GameBoard = () => {
       if (inputRef.current && gameState.guesses.length > 0) {
         // Use a short timeout to ensure DOM is updated
         setTimeout(() => {
-          // Scroll to show input field with some padding above it
-          const inputElement = inputRef.current;
-          if (inputElement) {
-            const rect = inputElement.getBoundingClientRect();
-            const offset = window.pageYOffset + rect.top - 20; // 20px padding above input
-            window.scrollTo({ top: offset, behavior: 'smooth' });
-          }
+          inputRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start'
+          });
         }, 100);
       }
     }
@@ -396,12 +393,11 @@ const GameBoard = () => {
                 placeholder="נחש מילה..."
                 disabled={isSubmitting}
                 dir="rtl"
-                autoComplete="none"
+                autoComplete="off"
                 autoCorrect="off"
-                autoCapitalize="none"
+                autoCapitalize="off"
                 spellCheck={false}
                 inputMode="text"
-                data-form-type="other"
               />
               <Button
                 type="submit"
