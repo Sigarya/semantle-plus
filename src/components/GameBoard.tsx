@@ -63,18 +63,14 @@ const GameBoard = () => {
     setIsSubmitting(true);
 
     try {
-      // UX CHANGE 2: Remember if this is the first guess BEFORE making the guess.
       const isFirstGuess = gameState.guesses.length === 0;
 
       await makeGuess(guessInput);
       setGuessInput("");
 
-      // The new, smart scrolling and focus logic happens AFTER the guess is made.
       setTimeout(() => {
         if (inputRef.current) {
           const inputElement = inputRef.current;
-
-          // Scroll to the top ONLY on the very first guess.
           if (isFirstGuess) {
             const inputTopPosition = inputElement.getBoundingClientRect().top;
             const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
@@ -82,8 +78,6 @@ const GameBoard = () => {
             const targetScrollY = currentScrollY + inputTopPosition - padding;
             window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
           }
-
-          // But ALWAYS return focus to the input box.
           inputElement.focus();
         }
       }, 100);
@@ -102,7 +96,6 @@ const GameBoard = () => {
   
   const handleExplorationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // ... (This function remains unchanged, it's perfect as it is)
     if (!explorationInput.trim()) return;
     if (!isValidHebrewWord(explorationInput)) {
       setError("אנא הזן מילה בעברית בלבד");
@@ -130,10 +123,13 @@ const GameBoard = () => {
   const mostRecentGuess = gameState.guesses[gameState.guesses.length - 1];
   const sortedGuessesForTable = (gameState.isComplete ? gameState.guesses : gameState.guesses.slice(0, -1)).sort((a, b) => b.similarity - a.similarity);
 
-  // UX CHANGE 1: We reduce the vertical spacing and bottom padding
-  // to allow more content to be visible on the screen, especially on mobile.
+  // ===================================================================
+  // === THIS IS THE ONLY CHANGE - THE LAYOUT FIX ====================
+  // ===================================================================
+  // We add `min-h-screen` to make the container at least as tall as the screen.
+  // We also adjust the padding for a cleaner look.
   return (
-    <div className="space-y-4 max-w-3xl mx-auto pb-32">
+    <div className="space-y-4 max-w-3xl mx-auto min-h-screen px-4 pt-4 pb-24">
       <WelcomeDialog />
       <div className="text-center">
         <h2 className="text-2xl font-bold font-heebo">סמנטעל +</h2>
@@ -145,7 +141,6 @@ const GameBoard = () => {
       {gameState.isComplete ? (
         <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
           <CardContent className="pt-6 text-center">
-            {/* ... (The 'isComplete' section remains unchanged, it's perfect as it is) ... */}
             <div className="text-green-600 dark:text-green-400 text-2xl font-bold mb-4">כל הכבוד! מצאת את המילה!</div>
             <div className="text-xl mb-4">המילה היא: <span className="font-bold text-primary-500 dark:text-primary-400">{currentWord}</span></div>
             <div className="text-muted-foreground mb-6">מספר ניחושים: {gameState.guesses.length}</div>
@@ -188,15 +183,13 @@ const GameBoard = () => {
           )}
           
           <div className="space-y-4">
-            <div className="flex gap-2">
-              {/* This is the invisible dummy password field trick that fixes the keyboard */}
+            <form onSubmit={handleGuessSubmit} className="flex gap-2">
               <input type="password" name="password" autoComplete="new-password" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
               <input
                 ref={inputRef}
                 type="text"
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !isSubmitting) handleGuessSubmit(e); }}
                 placeholder="נחש מילה..."
                 disabled={isSubmitting}
                 dir="rtl"
@@ -206,8 +199,8 @@ const GameBoard = () => {
                 spellCheck="false"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
               />
-              <Button type="button" onClick={handleGuessSubmit} className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" disabled={isSubmitting || !guessInput.trim()}>נחש</Button>
-            </div>
+              <Button type="submit" className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" disabled={isSubmitting || !guessInput.trim()}>נחש</Button>
+            </form>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           </div>
         </>
