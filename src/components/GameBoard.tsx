@@ -21,7 +21,6 @@ const GameBoard = () => {
   const [explorationResult, setExplorationResult] = useState<{ word: string; similarity: number; rank?: number; } | null>(null);
   const [sampleRanks, setSampleRanks] = useState<any>(null);
   const [loadingSampleRanks, setLoadingSampleRanks] = useState(false);
-  const [shouldMaintainFocus, setShouldMaintainFocus] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
 
@@ -51,26 +50,14 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
-  // Focus preservation useEffect - ensures input focus is maintained after React re-renders
-  useEffect(() => {
-    if (shouldMaintainFocus && inputRef.current && !gameState.isComplete) {
-      // Use requestAnimationFrame to ensure this happens after React finishes DOM updates
-      requestAnimationFrame(() => {
-        if (inputRef.current && document.activeElement !== inputRef.current) {
-          inputRef.current.focus();
-          setShouldMaintainFocus(false);
-        }
-      });
-    }
-  }, [gameState.guesses.length, shouldMaintainFocus, gameState.isComplete]);
-
-  const handleGuessSubmit = async () => {
+  const handleGuessSubmit = async (e: React.FormEvent) => {
+    // Step 1: Prevent the browser's default page reload behavior. This is critical.
+    e.preventDefault();
+    
     if (!guessInput.trim() || isSubmitting) return;
 
     if (!isValidHebrewWord(guessInput)) {
       setError("אנא הזן מילה בעברית בלבד");
-      // Set focus preservation flag even for invalid words
-      setShouldMaintainFocus(true);
       return;
     }
 
@@ -80,9 +67,8 @@ const GameBoard = () => {
     const wordToGuess = guessInput;
     
     try {
+      // Step 2: Make the async guess.
       await makeGuess(wordToGuess);
-      // Set flag to maintain focus after successful guess (React will re-render)
-      setShouldMaintainFocus(true);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
@@ -90,14 +76,15 @@ const GameBoard = () => {
       } else {
         setError(errorMessage);
       }
-      // Set focus preservation flag even for failed guesses
-      setShouldMaintainFocus(true);
     } finally {
+      // Step 3: This 'finally' block runs instantly after the guess is complete.
       setIsSubmitting(false);
-      setGuessInput("");
+      setGuessInput(""); // Clear the input for the next guess.
       
-      // Immediate focus strategy - this handles the synchronous case
-      if (inputRef.current && document.activeElement !== inputRef.current) {
+      // Step 4: The magic. Immediately and synchronously return focus to the input.
+      // This is so fast, the browser doesn't have time to process the "blur" event
+      // that hides the mobile keyboard.
+      if (inputRef.current) {
         inputRef.current.focus();
       }
     }
@@ -187,34 +174,24 @@ const GameBoard = () => {
           )}
           
           <div className="space-y-4">
-            <div className="flex gap-2">
+            <form onSubmit={handleGuessSubmit} className="flex gap-2">
+              <input type="password" name="password" autoComplete="new-password" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
               <input
                 ref={inputRef}
                 type="text"
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleGuessSubmit();
-                  }
-                }}
                 placeholder="נחש מילה..."
                 disabled={isSubmitting}
                 dir="rtl"
                 autoComplete="off"
-                inputMode="text"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck="false"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
               />
-              <Button 
-                type="button" 
-                onClick={handleGuessSubmit}
-                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" 
-                disabled={isSubmitting || !guessInput.trim()}
-              >
-                נחש
-              </Button>
-            </div>
+              <Button type="submit" className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" disabled={isSubmitting || !guessInput.trim()}>נחש</Button>
+            </form>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           </div>
         </>
