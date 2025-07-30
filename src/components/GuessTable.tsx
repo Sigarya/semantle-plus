@@ -1,6 +1,6 @@
 
+import React from "react";
 import { Guess } from "@/types/game";
-import { getSimilarityClass } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface GuessTableProps {
@@ -9,7 +9,7 @@ interface GuessTableProps {
   showHeader?: boolean;
 }
 
-const GuessTable = ({ guesses, originalGuesses, showHeader = true }: GuessTableProps) => {
+const GuessTable = React.memo(({ guesses, originalGuesses, showHeader = true }: GuessTableProps) => {
   if (guesses.length === 0) {
     return (
       <div className="text-center py-4 text-muted-foreground">
@@ -19,7 +19,7 @@ const GuessTable = ({ guesses, originalGuesses, showHeader = true }: GuessTableP
   }
 
   return (
-    <div className="border rounded-md">
+    <div className="border rounded-md overflow-x-auto">
       <Table>
         {showHeader && (
           <TableHeader>
@@ -73,6 +73,8 @@ const GuessTable = ({ guesses, originalGuesses, showHeader = true }: GuessTableP
       </Table>
     </div>
   );
-};
+});
+
+GuessTable.displayName = 'GuessTable';
 
 export default GuessTable;

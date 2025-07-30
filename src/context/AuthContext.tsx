@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .from('profiles')
           .insert({
             id: user.id,
-            username: username
+            username
           })
           .select()
           .single();

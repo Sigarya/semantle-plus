@@ -1,15 +1,11 @@
 
-console.log("START of main.tsx: Script is starting to execute.");
-
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-console.log("main.tsx: Imports completed.");
-
-// Add global error handler
+// Set up global error handlers for better debugging
 window.addEventListener('error', (event) => {
-  console.error('Global error caught:', event.error);
+  console.error('Global error:', event.error);
 });
 
 window.addEventListener('unhandledrejection', (event) => {
@@ -17,18 +13,13 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 const rootElement = document.getElementById("root");
-console.log("main.tsx: rootElement found:", rootElement);
 
 if (rootElement) {
-  console.log("main.tsx: Attempting to createRoot and render...");
   try {
     const root = createRoot(rootElement);
-    console.log("main.tsx: Root created successfully");
-    
     root.render(<App />);
-    console.log("main.tsx: render() called successfully.");
   } catch (error) {
-    console.error("main.tsx: Error during createRoot or render:", error);
+    console.error("Error during app initialization:", error);
     
     // Fallback error display
     rootElement.innerHTML = `
@@ -65,7 +56,7 @@ if (rootElement) {
     `;
   }
 } else {
-  console.error("main.tsx: CRITICAL ERROR - Root element with id 'root' not found in the DOM.");
+  console.error("CRITICAL ERROR - Root element with id 'root' not found in the DOM.");
   
   // Create fallback content if root element is missing
   document.body.innerHTML = `
@@ -85,5 +76,3 @@ if (rootElement) {
     </div>
   `;
 }
-
-console.log("END of main.tsx: Script execution finished (or an error occurred).");

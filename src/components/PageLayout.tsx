@@ -1,7 +1,6 @@
 
 import { ReactNode } from "react";
 import Header from "@/components/Header";
-import { useTheme } from "@/context/ThemeContext";
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -9,7 +8,6 @@ interface PageLayoutProps {
 }
 
 const PageLayout = ({ children, title }: PageLayoutProps) => {
-  const { theme } = useTheme();
   
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900">

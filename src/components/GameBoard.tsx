@@ -1,6 +1,6 @@
 // GameBoard.tsx
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,7 +19,7 @@ const getProgressBarWidth = (rank: number): string => {
   return `${percentage}%`;
 };
 
-const GameBoard = () => {
+const GameBoard = React.memo(() => {
   const { gameState, currentWord, makeGuess, resetGame, isLoading } = useGame();
   const [guessInput, setGuessInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -202,21 +202,21 @@ const GameBoard = () => {
     }
   };
 
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-64"><div className="text-xl">טוען משחק...</div></div>;
-  }
-  
-  const mostRecentGuess = gameState.guesses[gameState.guesses.length - 1];
-  const sortedGuessesForTable = (gameState.isComplete ? gameState.guesses : gameState.guesses.slice(0, -1)).sort((a, b) => b.similarity - a.similarity);
-  
   // Memoize the formatted date to avoid recalculation on every render
   const formattedGameDate = useMemo(() => 
     new Date(gameState.wordDate).toLocaleDateString('he-IL'), 
     [gameState.wordDate]
   );
 
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64"><div className="text-xl">טוען משחק...</div></div>;
+  }
+  
+  const mostRecentGuess = gameState.guesses[gameState.guesses.length - 1];
+  const sortedGuessesForTable = (gameState.isComplete ? gameState.guesses : gameState.guesses.slice(0, -1)).sort((a, b) => b.similarity - a.similarity);
+
   return (
-    <div className="space-y-4 max-w-3xl mx-auto min-h-screen px-4 pt-4 pb-24">
+    <div className="space-y-4 max-w-3xl mx-auto min-h-screen px-2 sm:px-4 pt-4 pb-20 sm:pb-24">
       <WelcomeDialog />
       <div className="text-center">
         <h2 className="text-2xl font-bold font-heebo">סמנטעל +</h2>
@@ -231,23 +231,23 @@ const GameBoard = () => {
             <div className="text-green-600 dark:text-green-400 text-2xl font-bold mb-4">כל הכבוד! מצאת את המילה!</div>
             <div className="text-xl mb-4">המילה היא: <span className="font-bold text-primary-500 dark:text-primary-400">{currentWord}</span></div>
             <div className="text-muted-foreground mb-6">מספר ניחושים: {gameState.guesses.length}</div>
-            <div className="flex flex-col gap-4 items-center">
-              <Button onClick={resetGame} className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600">שחק שוב</Button>
-              <Link to="/history" className="block"><Button variant="outline">משחק מיום אחר</Button></Link>
-            </div>
+                          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+                <Button onClick={resetGame} className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 w-full sm:w-auto">שחק שוב</Button>
+                <Link to="/history" className="block w-full sm:w-auto"><Button variant="outline" className="w-full sm:w-auto">משחק מיום אחר</Button></Link>
+              </div>
             <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-medium font-heebo mb-4">נסה מילים נוספות</h3>
               <p className="text-sm text-muted-foreground mb-4">נסה מילים אחרות לראות כמה הן קרובות למילה</p>
               <form onSubmit={handleExplorationSubmit} className="space-y-4">
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input type="text" value={explorationInput} onChange={(e) => setExplorationInput(e.target.value)} className="text-lg flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" placeholder="נסה מילה..." disabled={isSubmitting} dir="rtl" />
-                  <Button type="submit" className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" disabled={isSubmitting || !explorationInput.trim()}>בדוק</Button>
+                  <Button type="submit" className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6 w-full sm:w-auto" disabled={isSubmitting || !explorationInput.trim()}>בדוק</Button>
                 </div>
               </form>
               {explorationResult && (
                 <div className="mt-4">
                   <h4 className="text-sm font-medium font-heebo mb-2">תוצאה:</h4>
-                  <div className="border rounded-md">
+                  <div className="border rounded-md overflow-x-auto">
                     <Table>
                       <TableHeader><TableRow><TableHead>#</TableHead><TableHead>מילה</TableHead><TableHead>קרבה</TableHead><TableHead>מתחמם?</TableHead></TableRow></TableHeader>
                       <TableBody><TableRow><TableCell>{'-'}</TableCell><TableCell>{explorationResult.word}</TableCell><TableCell>{`${(explorationResult.similarity * 100).toFixed(2)}%`}</TableCell><TableCell>{explorationResult.rank && explorationResult.rank > 0 ? <div>{explorationResult.rank}/1000</div> : <span>רחוק</span>}</TableCell></TableRow></TableBody>
@@ -270,7 +270,7 @@ const GameBoard = () => {
           )}
           
           <div className="space-y-4">
-            <form onSubmit={handleGuessSubmit} className="flex gap-2" autoComplete="off">
+            <form onSubmit={handleGuessSubmit} className="flex flex-col sm:flex-row gap-2" autoComplete="off">
               <input
                 ref={inputRef}
                 type="search"
@@ -287,7 +287,7 @@ const GameBoard = () => {
               />
               <Button 
                 type="submit"
-                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" 
+                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6 w-full sm:w-auto" 
                 disabled={isSubmitting || !guessInput.trim()}
               >
                 נחש
@@ -301,7 +301,7 @@ const GameBoard = () => {
       {mostRecentGuess && !gameState.isComplete && (
         <div className="space-y-2" ref={lastGuessRef}>
           <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
-          <div className="border rounded-md">
+          <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-b"><TableHead className="text-right w-12 py-2 px-2">#</TableHead><TableHead className="text-right w-24 py-2 px-2">מילה</TableHead><TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead><TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead></TableRow>
@@ -356,6 +356,8 @@ const GameBoard = () => {
       )}
     </div>
   );
-};
+});
+
+GameBoard.displayName = 'GameBoard';
 
 export default GameBoard;

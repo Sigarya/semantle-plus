@@ -24,13 +24,24 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    // Ensure proper file naming for GitHub Pages
+    // Optimize bundle size and performance
+    target: 'esnext',
+    minify: 'terser',
+    sourcemap: mode === 'development',
     rollupOptions: {
       output: {
         assetFileNames: 'assets/[name].[hash][extname]',
         chunkFileNames: 'assets/[name].[hash].js',
-        entryFileNames: 'assets/[name].[hash].js'
+        entryFileNames: 'assets/[name].[hash].js',
+        // Split vendor chunks for better caching
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-toast', '@radix-ui/react-tabs'],
+          utils: ['date-fns', 'clsx', 'tailwind-merge']
+        }
       }
-    }
+    },
+    // Optimize chunk size warnings
+    chunkSizeWarningLimit: 1000
   }
 }));
