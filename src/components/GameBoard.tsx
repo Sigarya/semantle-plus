@@ -69,8 +69,9 @@ const GameBoard = () => {
       // ===================================================================
       // === THIS IS THE FINAL, CORRECTED LOGIC ==========================
       // ===================================================================
-      // We removed the scrolling logic completely.
-      // Now, it only returns the focus to the input box after each guess.
+      // We removed ALL scrolling logic.
+      // Now, it only returns focus to the input box after each guess,
+      // ensuring the keyboard stays up and the user can keep typing.
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
