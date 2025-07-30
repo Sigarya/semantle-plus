@@ -17,12 +17,14 @@ const GameBoard = () => {
   const [guessInput, setGuessInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [explorationInput, setExplorationInput] = useState("");
+  const [explorationResult, setExplorationResult] = useState<{ word: string; similarity: number; rank?: number; } | null>(null);
   const [sampleRanks, setSampleRanks] = useState<any>(null);
   const [loadingSampleRanks, setLoadingSampleRanks] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
 
-  // Fetch sample ranks (This part is working well)
+  // Fetch sample ranks
   useEffect(() => {
     const fetchAndSetSampleRanks = async () => {
       if (!gameState.wordDate) return;
@@ -47,7 +49,7 @@ const GameBoard = () => {
       }
     };
     fetchAndSetSampleRanks();
-  }, [gameState.wordDate, supabase]);
+  }, [gameState.wordDate]);
 
   const handleGuessSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -63,7 +65,7 @@ const GameBoard = () => {
 
     try {
       await makeGuess(guessInput);
-      setGuessInput(""); // Clear input on success
+      setGuessInput("");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
@@ -74,32 +76,42 @@ const GameBoard = () => {
     } finally {
       setIsSubmitting(false);
 
-      // ===================================================================
-      // === THIS IS THE NEW, ROBUST SCROLL AND FOCUS LOGIC ================
-      // ===================================================================
-      // We use a small timeout to ensure the DOM has updated with the new guess.
+      // New, robust scroll and focus logic
       setTimeout(() => {
         if (inputRef.current) {
           const inputElement = inputRef.current;
-          
-          // 1. Precise Scrolling Calculation
           const inputTopPosition = inputElement.getBoundingClientRect().top;
           const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
-          const padding = 5; // The 5 pixels you requested
+          const padding = 5;
           const targetScrollY = currentScrollY + inputTopPosition - padding;
 
-          // 2. Perform the Smooth Scroll
-          window.scrollTo({
-            top: targetScrollY,
-            behavior: 'smooth'
-          });
-
-          // 3. Restore Focus
-          // This happens right after the scroll starts, ensuring a seamless experience.
+          window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
           inputElement.focus();
         }
-      }, 100); // 100ms is a safe delay for the UI to re-render.
-      // ===================================================================
+      }, 100);
+    }
+  };
+  
+  const handleExplorationSubmit = async (e: React.FormEvent) => {
+    // This is your original, working exploration submit logic.
+    e.preventDefault();
+    if (!explorationInput.trim()) return;
+    if (!isValidHebrewWord(explorationInput)) {
+      setError("אנא הזן מילה בעברית בלבד");
+      return;
+    }
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("calculate-similarity", { body: { guess: explorationInput, date: gameState.wordDate } });
+      if (error) throw new Error("שגיאה בחישוב הדמיון");
+      if (data.error) throw new Error(data.error);
+      setExplorationResult({ word: explorationInput, similarity: data.similarity, rank: data.rank });
+      setExplorationInput("");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "שגיאה בבדיקת דמיון");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -121,11 +133,41 @@ const GameBoard = () => {
       </div>
       
       {gameState.isComplete ? (
-        // --- Completion Card (No changes needed here) ---
-        <Card>...</Card>
+        // This is your original, working completion card.
+        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+          <CardContent className="pt-6 text-center">
+            <div className="text-green-600 dark:text-green-400 text-2xl font-bold mb-4">כל הכבוד! מצאת את המילה!</div>
+            <div className="text-xl mb-4">המילה היא: <span className="font-bold text-primary-500 dark:text-primary-400">{currentWord}</span></div>
+            <div className="text-muted-foreground mb-6">מספר ניחושים: {gameState.guesses.length}</div>
+            <div className="flex flex-col gap-4 items-center">
+              <Button onClick={resetGame} className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600">שחק שוב</Button>
+              <Link to="/history" className="block"><Button variant="outline">משחק מיום אחר</Button></Link>
+            </div>
+            <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-lg font-medium font-heebo mb-4">נסה מילים נוספות</h3>
+              <p className="text-sm text-muted-foreground mb-4">נסה מילים אחרות לראות כמה הן קרובות למילה</p>
+              <form onSubmit={handleExplorationSubmit} className="space-y-4">
+                <div className="flex gap-2">
+                  <input type="text" value={explorationInput} onChange={(e) => setExplorationInput(e.target.value)} className="text-lg flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" placeholder="נסה מילה..." disabled={isSubmitting} dir="rtl" />
+                  <Button type="submit" className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" disabled={isSubmitting || !explorationInput.trim()}>בדוק</Button>
+                </div>
+              </form>
+              {explorationResult && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium font-heebo mb-2">תוצאה:</h4>
+                  <div className="border rounded-md">
+                    <Table>
+                      <TableHeader><TableRow><TableHead>#</TableHead><TableHead>מילה</TableHead><TableHead>קרבה</TableHead><TableHead>מתחמם?</TableHead></TableRow></TableHeader>
+                      <TableBody><TableRow><TableCell>{'-'}</TableCell><TableCell>{explorationResult.word}</TableCell><TableCell>{`${(explorationResult.similarity * 100).toFixed(2)}%`}</TableCell><TableCell>{explorationResult.rank && explorationResult.rank > 0 ? <div>{explorationResult.rank}/1000</div> : <span>רחוק</span>}</TableCell></TableRow></TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          {/* --- Sample Ranks Display (No changes needed here) --- */}
           {loadingSampleRanks && <div className="text-center text-sm p-3">טוען פרטי משחק...</div>}
           {sampleRanks && (
              <div className="text-center text-sm text-muted-foreground bg-muted/30 rounded-md p-3 mb-4 font-heebo">
@@ -135,9 +177,6 @@ const GameBoard = () => {
              </div>
           )}
           
-          {/* =================================================================== */}
-          {/* === THIS IS THE NEW, BULLETPROOF INPUT FORM ======================= */}
-          {/* =================================================================== */}
           <div className="space-y-4">
             <div className="flex gap-2">
               <input
@@ -149,26 +188,16 @@ const GameBoard = () => {
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !isSubmitting) handleGuessSubmit(e); }}
-                
-                // --- The "ReadOnly" Trick: The most powerful technique ---
-                // It's readonly until you click it, which fools the password manager.
                 readOnly 
                 onFocus={(e) => e.target.removeAttribute('readOnly')}
-
-                // --- Secondary Layer of Defense ---
-                // "new-password" is a well-known trick to tell password managers to back off.
                 autoComplete="new-password" 
-                
-                // --- Standard text input hints ---
                 autoCorrect="on"
                 spellCheck="true"
                 inputMode="text"
-                
-                // --- Styling (This is the same as your working <Input /> component) ---
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
               />
               <Button
-                type="button" // Important: not "submit"
+                type="button"
                 onClick={handleGuessSubmit}
                 className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
                 disabled={isSubmitting || !guessInput.trim()}
@@ -178,13 +207,51 @@ const GameBoard = () => {
             </div>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           </div>
-          {/* =================================================================== */}
         </>
       )}
 
-      {/* --- Guesses Display (No changes needed here) --- */}
-      {mostRecentGuess && !gameState.isComplete && <div ref={lastGuessRef}>...</div>}
-      {sortedGuessesForTable.length > 0 && <div><GuessTable ... /></div>}
+      {/* This is your original, working guesses display */}
+      {mostRecentGuess && !gameState.isComplete && (
+        <div className="space-y-2" ref={lastGuessRef}>
+          <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b">
+                  <TableHead className="text-right w-12 py-2 px-2">#</TableHead>
+                  <TableHead className="text-right py-2 px-2">מילה</TableHead>
+                  <TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead>
+                  <TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700">
+                  <TableCell className="py-1 px-2 text-xs font-medium text-primary-700 dark:text-primary-300">{gameState.guesses.length}</TableCell>
+                  <TableCell className="font-medium py-1 px-2 text-xs truncate text-primary-700 dark:text-primary-300">{mostRecentGuess.word}</TableCell>
+                  <TableCell className="text-center py-1 px-2 text-xs text-primary-700 dark:text-primary-300">{`${(mostRecentGuess.similarity * 100).toFixed(2)}%`}</TableCell>
+                  <TableCell className="text-center py-1 px-2">
+                    {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (
+                      <div className="flex items-center gap-1 justify-center">
+                        <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0"><div className="absolute top-0 left-0 h-full bg-green-500 rounded-sm" style={{ width: `${Math.min((mostRecentGuess.rank / 1000) * 100, 100)}%` }}/></div>
+                        <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">{mostRecentGuess.rank}/1000</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo">רחוק</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {sortedGuessesForTable.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold font-heebo">ניחושים קודמים</h3>
+          <GuessTable guesses={sortedGuessesForTable} originalGuesses={gameState.guesses} showHeader={true}/>
+        </div>
+      )}
     </div>
   );
 };
