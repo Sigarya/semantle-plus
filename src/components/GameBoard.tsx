@@ -1,6 +1,6 @@
 // GameBoard.tsx
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,65 +12,133 @@ import { Link } from "react-router-dom";
 import GuessTable from "@/components/GuessTable";
 import WelcomeDialog from "@/components/WelcomeDialog";
 
+// Utility function for progress bar width calculation
+const getProgressBarWidth = (rank: number): string => {
+  if (!rank || rank <= 0) return '0%';
+  const percentage = Math.min((rank / 1000) * 100, 100);
+  return `${percentage}%`;
+};
+
 const GameBoard = () => {
   const { gameState, currentWord, makeGuess, resetGame, isLoading } = useGame();
   const [guessInput, setGuessInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldRestoreFocus, setShouldRestoreFocus] = useState(false);
+  const animationFrameRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [explorationInput, setExplorationInput] = useState("");
-  const [explorationResult, setExplorationResult] = useState<{ word: string; similarity: number; rank?: number; } | null>(null);
-  const [sampleRanks, setSampleRanks] = useState<any>(null);
+  const [explorationResult, setExplorationResult] = useState<{ word: string; similarity: number; rank?: number } | null>(null);
+  const [sampleRanks, setSampleRanks] = useState<{ '1': number; '990': number; '999': number } | null>(null);
   const [loadingSampleRanks, setLoadingSampleRanks] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchAndSetSampleRanks = async () => {
-      if (!gameState.wordDate) return;
-      setLoadingSampleRanks(true);
-      try {
-        const { data: cachedData } = await supabase.from('daily_sample_ranks').select('*').eq('word_date', gameState.wordDate).single();
-        if (cachedData) {
-          setSampleRanks({ '1': cachedData.rank_1_score, '990': cachedData.rank_990_score, '999': cachedData.rank_999_score });
-        } else {
-          const dateParts = gameState.wordDate.split('-');
-          const formattedDateForApi = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-          const response = await fetch(`https://hebrew-w2v.onrender.com/sample-ranks?date=${encodeURIComponent(formattedDateForApi)}`);
-          if (!response.ok) throw new Error("API failed");
-          const data = await response.json();
-          setSampleRanks(data.samples);
-          await supabase.from('daily_sample_ranks').insert({ word_date: gameState.wordDate, rank_1_score: data.samples['1'], rank_990_score: data.samples['990'], rank_999_score: data.samples['999'] });
-        }
-      } catch (error) {
-        console.error("Error fetching sample ranks:", error);
-      } finally {
-        setLoadingSampleRanks(false);
+  const fetchAndSetSampleRanks = useCallback(async () => {
+    if (!gameState.wordDate) return;
+    setLoadingSampleRanks(true);
+    try {
+      const { data: cachedData, error: fetchError } = await supabase
+        .from('daily_sample_ranks')
+        .select('*')
+        .eq('word_date', gameState.wordDate)
+        .single();
+      
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw new Error('שגיאה בטעינת נתונים מהמאגר');
       }
-    };
-    fetchAndSetSampleRanks();
+      
+      if (cachedData) {
+        setSampleRanks({ 
+          '1': cachedData.rank_1_score, 
+          '990': cachedData.rank_990_score, 
+          '999': cachedData.rank_999_score 
+        });
+      } else {
+        const dateParts = gameState.wordDate.split('-');
+        if (dateParts.length !== 3) {
+          throw new Error('פורמט תאריך לא תקין');
+        }
+        
+        const formattedDateForApi = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        const response = await fetch(`https://hebrew-w2v.onrender.com/sample-ranks?date=${encodeURIComponent(formattedDateForApi)}`);
+        
+        if (!response.ok) {
+          throw new Error(`שגיאה בקבלת נתונים מהשרת: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.samples || typeof data.samples !== 'object') {
+          throw new Error('פורמט תגובה לא תקין מהשרת');
+        }
+        
+        setSampleRanks(data.samples);
+        
+        // Try to cache the result, but don't fail if it doesn't work
+        try {
+          await supabase.from('daily_sample_ranks').insert({ 
+            word_date: gameState.wordDate, 
+            rank_1_score: data.samples['1'], 
+            rank_990_score: data.samples['990'], 
+            rank_999_score: data.samples['999'] 
+          });
+        } catch (insertError) {
+          console.warn('לא ניתן לשמור במאגר:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error('שגיאה בטעינת נתוני דירוג:', error);
+    } finally {
+      setLoadingSampleRanks(false);
+    }
   }, [gameState.wordDate]);
+  
+  useEffect(() => {
+    fetchAndSetSampleRanks();
+  }, [fetchAndSetSampleRanks]);
 
   // Focus restoration after React re-renders from new guesses
   useEffect(() => {
     if (shouldRestoreFocus && inputRef.current && !gameState.isComplete) {
+      // Clean up any existing timers
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
       // Use requestAnimationFrame to ensure this happens after React finishes DOM updates
-      requestAnimationFrame(() => {
+      animationFrameRef.current = requestAnimationFrame(() => {
         if (inputRef.current && !gameState.isComplete) {
           inputRef.current.focus();
           setShouldRestoreFocus(false);
         }
+        animationFrameRef.current = null;
       });
       
       // Mobile fallback - some mobile browsers need extra time
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         if (inputRef.current && shouldRestoreFocus && !gameState.isComplete) {
           inputRef.current.focus();
           setShouldRestoreFocus(false);
         }
+        timeoutRef.current = null;
       }, 100);
     }
+    
+    // Cleanup on unmount or dependency change
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
   }, [gameState.guesses.length, shouldRestoreFocus, gameState.isComplete]);
 
   const handleGuessSubmit = async (e?: React.FormEvent) => {
@@ -98,8 +166,8 @@ const GameBoard = () => {
       setGuessInput("");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
-      if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
-        setError(`אני לא מכיר את המילה ${wordToGuess}`);
+      if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא") || errorMessage.includes("not in vocabulary")) {
+        setError(`אני לא מכיר את המילה "${wordToGuess}"`);
       } else {
         setError(errorMessage);
       }
@@ -140,6 +208,12 @@ const GameBoard = () => {
   
   const mostRecentGuess = gameState.guesses[gameState.guesses.length - 1];
   const sortedGuessesForTable = (gameState.isComplete ? gameState.guesses : gameState.guesses.slice(0, -1)).sort((a, b) => b.similarity - a.similarity);
+  
+  // Memoize the formatted date to avoid recalculation on every render
+  const formattedGameDate = useMemo(() => 
+    new Date(gameState.wordDate).toLocaleDateString('he-IL'), 
+    [gameState.wordDate]
+  );
 
   return (
     <div className="space-y-4 max-w-3xl mx-auto min-h-screen px-4 pt-4 pb-24">
@@ -147,7 +221,7 @@ const GameBoard = () => {
       <div className="text-center">
         <h2 className="text-2xl font-bold font-heebo">סמנטעל +</h2>
         <div className="text-sm text-muted-foreground mt-2">
-          משחק מיום {new Date(gameState.wordDate).toLocaleDateString('he-IL')}
+          משחק מיום {formattedGameDate}
         </div>
       </div>
       
@@ -233,7 +307,36 @@ const GameBoard = () => {
                 <TableRow className="border-b"><TableHead className="text-right w-12 py-2 px-2">#</TableHead><TableHead className="text-right w-24 py-2 px-2">מילה</TableHead><TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead><TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead></TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700"><TableCell className="w-12 py-1 px-2 text-xs font-medium text-primary-700 dark:text-primary-300">{gameState.guesses.length}</TableCell><TableCell className="w-24 font-medium py-1 px-2 text-xs truncate text-primary-700 dark:text-primary-300">{mostRecentGuess.word}</TableCell><TableCell className="w-20 text-center py-1 px-2 text-xs text-primary-700 dark:text-primary-300">{`${(mostRecentGuess.similarity * 100).toFixed(2)}%`}</TableCell><TableCell className="w-28 text-center py-1 px-2">{mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (<div className="flex items-center gap-1 justify-center"><div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0"><div className="absolute top-0 left-0 h-full bg-green-500 rounded-sm" style={{ width: `${Math.min((mostRecentGuess.rank / 1000) * 100, 100)}%` }}/></div><span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">{mostRecentGuess.rank}/1000</span></div>) : (<span className="text-xs text-primary-700 dark:text-primary-300 font-heebo">רחוק</span>)}</TableCell></TableRow>
+                <TableRow className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700">
+                  <TableCell className="w-12 py-1 px-2 text-xs font-medium text-primary-700 dark:text-primary-300">
+                    {gameState.guesses.length}
+                  </TableCell>
+                  <TableCell className="w-24 font-medium py-1 px-2 text-xs truncate text-primary-700 dark:text-primary-300">
+                    {mostRecentGuess.word}
+                  </TableCell>
+                  <TableCell className="w-20 text-center py-1 px-2 text-xs text-primary-700 dark:text-primary-300">
+                    {`${(mostRecentGuess.similarity * 100).toFixed(2)}%`}
+                  </TableCell>
+                  <TableCell className="w-28 text-center py-1 px-2">
+                    {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (
+                      <div className="flex items-center gap-1 justify-center">
+                        <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0">
+                          <div 
+                            className="absolute top-0 left-0 h-full bg-green-500 rounded-sm min-w-[2px]" 
+                            style={{ width: getProgressBarWidth(mostRecentGuess.rank) }}
+                          />
+                        </div>
+                        <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">
+                          {mostRecentGuess.rank}/1000
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo">
+                        רחוק
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </div>
