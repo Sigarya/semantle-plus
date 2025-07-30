@@ -50,10 +50,7 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
-  const handleGuessSubmit = async (e: React.FormEvent) => {
-    // Step 1: Prevent the browser's default page reload behavior. This is critical.
-    e.preventDefault();
-    
+  const handleGuessSubmit = async () => {
     if (!guessInput.trim() || isSubmitting) return;
 
     if (!isValidHebrewWord(guessInput)) {
@@ -67,7 +64,6 @@ const GameBoard = () => {
     const wordToGuess = guessInput;
     
     try {
-      // Step 2: Make the async guess.
       await makeGuess(wordToGuess);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
@@ -77,13 +73,10 @@ const GameBoard = () => {
         setError(errorMessage);
       }
     } finally {
-      // Step 3: This 'finally' block runs instantly after the guess is complete.
       setIsSubmitting(false);
-      setGuessInput(""); // Clear the input for the next guess.
+      setGuessInput("");
       
-      // Step 4: The magic. Immediately and synchronously return focus to the input.
-      // This is so fast, the browser doesn't have time to process the "blur" event
-      // that hides the mobile keyboard. No timeouts, no workarounds.
+      // Critical: Immediately refocus to prevent keyboard from closing
       if (inputRef.current) {
         inputRef.current.focus();
       }
@@ -174,24 +167,34 @@ const GameBoard = () => {
           )}
           
           <div className="space-y-4">
-            <form onSubmit={handleGuessSubmit} className="flex gap-2">
-              <input type="password" name="password" autoComplete="new-password" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
+            <div className="flex gap-2">
               <input
                 ref={inputRef}
                 type="text"
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleGuessSubmit();
+                  }
+                }}
                 placeholder="נחש מילה..."
                 disabled={isSubmitting}
                 dir="rtl"
                 autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck="false"
+                inputMode="text"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
               />
-              <Button type="submit" className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" disabled={isSubmitting || !guessInput.trim()}>נחש</Button>
-            </form>
+              <Button 
+                type="button" 
+                onClick={handleGuessSubmit}
+                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" 
+                disabled={isSubmitting || !guessInput.trim()}
+              >
+                נחש
+              </Button>
+            </div>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           </div>
         </>
