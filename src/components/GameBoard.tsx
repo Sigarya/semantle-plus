@@ -106,18 +106,23 @@ const GameBoard = () => {
     if (!isLoading && !gameState.isComplete) {
       inputRef.current?.focus();
       
-      // For mobile devices, make sure the input stays visible after making a guess
-      if (isMobile && inputRef.current && gameState.guesses.length > 0) {
-        // Use a short timeout to ensure DOM is updated
+      // Scroll to position input at top with 5px padding when a guess is made
+      if (inputRef.current && gameState.guesses.length > 0) {
         setTimeout(() => {
-          inputRef.current?.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center'
-          });
+          const inputElement = inputRef.current;
+          if (inputElement) {
+            const inputRect = inputElement.getBoundingClientRect();
+            const scrollTop = window.pageYOffset + inputRect.top - 5;
+            
+            window.scrollTo({
+              top: scrollTop,
+              behavior: 'smooth'
+            });
+          }
         }, 100);
       }
     }
-  }, [isLoading, gameState.isComplete, gameState.guesses.length, isMobile]);
+  }, [isLoading, gameState.isComplete, gameState.guesses.length]);
 
   const handleGuessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -388,11 +393,18 @@ const GameBoard = () => {
       placeholder="נחש מילה..."
       disabled={isSubmitting}
       dir="rtl"
-      autoComplete="off"
+      name="word-guess"
+      autoComplete="one-time-code"
       autoCorrect="off"
-      autoCapitalize="off"
+      autoCapitalize="none"
       spellCheck={false}
       inputMode="text"
+      data-form-type="other"
+      data-lpignore="true"
+      data-1p-ignore="true"
+      data-bwignore="true"
+      role="textbox"
+      aria-autocomplete="none"
     />
     <Button
       type="submit"
