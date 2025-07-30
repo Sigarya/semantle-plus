@@ -101,29 +101,23 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
-  // Keep focus on input field and scroll to optimal position after guessing
+  // Keep focus on input field and ensure input stays visible after guessing
   useEffect(() => {
     if (!isLoading && !gameState.isComplete) {
       inputRef.current?.focus();
       
-      // After making a guess, scroll to position the input with some padding above
-      if (inputRef.current && gameState.guesses.length > 0) {
+      // For mobile devices, make sure the input stays visible after making a guess
+      if (isMobile && inputRef.current && gameState.guesses.length > 0) {
         // Use a short timeout to ensure DOM is updated
         setTimeout(() => {
-          const inputElement = inputRef.current;
-          if (inputElement) {
-            const inputRect = inputElement.getBoundingClientRect();
-            const scrollOffset = window.pageYOffset + inputRect.top - 5; // 5px padding above
-            
-            window.scrollTo({
-              top: scrollOffset,
-              behavior: 'smooth'
-            });
-          }
+          inputRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center'
+          });
         }, 100);
       }
     }
-  }, [isLoading, gameState.isComplete, gameState.guesses.length]);
+  }, [isLoading, gameState.isComplete, gameState.guesses.length, isMobile]);
 
   const handleGuessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,27 +272,15 @@ const GameBoard = () => {
                </p>
               <form onSubmit={handleExplorationSubmit} className="space-y-4">
                 <div className="flex gap-2">
-                   <Input
-                     type="text"
-                     value={explorationInput}
-                     onChange={(e) => setExplorationInput(e.target.value)}
-                     className="text-lg"
-                     placeholder="נסה מילה..."
-                     disabled={isSubmitting}
-                     dir="rtl"
-                     autoComplete="off"
-                     autoCorrect="off"
-                     autoCapitalize="none"
-                     spellCheck={false}
-                     inputMode="none"
-                     data-form-type="other"
-                     data-lpignore="true"
-                     data-1p-ignore="true"
-                     data-bwignore="true"
-                     name="search-exploration"
-                     role="textbox"
-                     aria-autocomplete="none"
-                   />
+                  <Input
+                    type="text"
+                    value={explorationInput}
+                    onChange={(e) => setExplorationInput(e.target.value)}
+                    className="text-lg"
+                    placeholder="נסה מילה..."
+                    disabled={isSubmitting}
+                    dir="rtl"
+                  />
                   <Button
                     type="submit"
                     className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
@@ -408,16 +390,9 @@ const GameBoard = () => {
                 dir="rtl"
                 autoComplete="off"
                 autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                inputMode="none"
-                data-form-type="other"
-                data-lpignore="true"
-                data-1p-ignore="true"
-                data-bwignore="true"
-                name="search-query"
-                role="textbox"
-                aria-autocomplete="none"
+                autoCapitalize="off"
+                spellCheck="false"
+                inputMode="text"
               />
               <Button
                 type="submit"
