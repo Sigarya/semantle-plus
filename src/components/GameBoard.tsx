@@ -24,7 +24,7 @@ const GameBoard = React.memo(() => {
   const [guessInput, setGuessInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [shouldRestoreFocus, setShouldRestoreFocus] = useState(false);
+
   const animationFrameRef = useRef<number | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSubmittingRef = useRef(false);
@@ -99,38 +99,22 @@ const GameBoard = React.memo(() => {
     fetchAndSetSampleRanks();
   }, [fetchAndSetSampleRanks]);
 
-  // Enhanced focus management for zero-interruption guessing
-  useEffect(() => {
-    if (shouldRestoreFocus && inputRef.current && !gameState.isComplete) {
-      // Clean up any existing timers
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      
-      // Immediate focus restoration for seamless experience
-      animationFrameRef.current = requestAnimationFrame(() => {
-        if (inputRef.current && !gameState.isComplete) {
-          inputRef.current.focus();
-          setShouldRestoreFocus(false);
-        }
-        animationFrameRef.current = null;
-      });
+  // Aggressive focus protection - prevent ANY focus loss
+  const handleInputBlur = useCallback((e: React.FocusEvent) => {
+    // NEVER allow the input to lose focus during gameplay
+    if (!gameState.isComplete && inputRef.current) {
+      e.preventDefault();
+      // Immediately refocus without any delay
+      inputRef.current.focus();
     }
-    
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
-  }, [gameState.guesses.length, shouldRestoreFocus, gameState.isComplete]);
+  }, [gameState.isComplete]);
+
+  // Ensure input is always focused when the game is active
+  useEffect(() => {
+    if (!isLoading && !gameState.isComplete && inputRef.current && document.activeElement !== inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isLoading, gameState.isComplete, gameState.guesses.length]);
 
 
 
@@ -150,20 +134,13 @@ const GameBoard = React.memo(() => {
     setError(null);
     const wordToGuess = guessInput.trim();
     
-    // CRITICAL: Clear input and maintain focus IMMEDIATELY for zero interruption
+    // CRITICAL: Clear input IMMEDIATELY and set submission state
     setGuessInput("");
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     
-    // Keep focus active during submission - no tricks, just maintain focus
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-    
     try {
       await makeGuess(wordToGuess);
-      // Success: input is already cleared, just ensure focus is maintained
-      setShouldRestoreFocus(true);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא") || errorMessage.includes("not in vocabulary")) {
@@ -174,11 +151,6 @@ const GameBoard = React.memo(() => {
     } finally {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
-      
-      // Ensure focus returns to input for continuous typing
-      if (inputRef.current && !gameState.isComplete) {
-        inputRef.current.focus();
-      }
     }
   };
   
@@ -210,17 +182,10 @@ const GameBoard = React.memo(() => {
     [gameState.wordDate]
   );
 
-  // Auto-focus input when component mounts for immediate interaction
+  // Auto-focus input when component mounts and keep it focused
   useEffect(() => {
     if (!isLoading && !gameState.isComplete && inputRef.current) {
-      // Delayed focus to ensure page is fully loaded
-      const focusTimer = setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 100);
-      
-      return () => clearTimeout(focusTimer);
+      inputRef.current.focus();
     }
   }, [isLoading, gameState.isComplete]);
 
@@ -306,8 +271,9 @@ const GameBoard = React.memo(() => {
                 type="search"
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
+                onBlur={handleInputBlur}
                 placeholder="נחש מילה..."
-                disabled={isSubmitting}
+                disabled={false}
                 dir="rtl"
                 autoComplete="off"
                 autoCorrect="on"
@@ -318,9 +284,13 @@ const GameBoard = React.memo(() => {
               <Button 
                 type="submit"
                 className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6 w-full sm:w-auto" 
-                disabled={isSubmitting || !guessInput.trim()}
+                disabled={!guessInput.trim()}
                 onMouseDown={(e) => {
-                  // Prevent button from stealing focus
+                  // Prevent button from stealing focus from input
+                  e.preventDefault();
+                }}
+                onTouchStart={(e) => {
+                  // Prevent button from stealing focus on mobile
                   e.preventDefault();
                 }}
               >
