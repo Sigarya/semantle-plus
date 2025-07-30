@@ -387,21 +387,23 @@ const GameBoard = () => {
           
    <form onSubmit={handleGuessSubmit} className="space-y-4">
   <div className="flex gap-2">
-    <input
+    <Input
       ref={inputRef}
       type="text"
       value={guessInput}
       onChange={(e) => setGuessInput(e.target.value)}
-      className="text-lg border px-3 py-2 rounded-md flex-1"
+      className="text-lg"
       placeholder="נחש מילה..."
       disabled={isSubmitting}
       dir="rtl"
       autoComplete="off"
       autoCorrect="off"
       autoCapitalize="off"
-      spellCheck="false"
-      inputMode="text"
-      name="word-game-input"
+      spellCheck={false}
+      data-form-type="other"
+      data-1p-ignore="true"
+      data-lpignore="true"
+      data-bwignore="true"
     />
     <Button
       type="submit"
