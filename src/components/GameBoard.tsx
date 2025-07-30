@@ -150,24 +150,29 @@ const GameBoard = () => {
       
       setGuessInput("");
       
-      // This block goes inside handleGuessSubmit, right after setGuessInput('');
+      // Comprehensive scroll and focus fix
       if (inputRef.current) {
-        // Use a small timeout to allow the UI to update before we scroll
+        // Wait for UI update and DOM reflow
         setTimeout(() => {
-          // This is the most reliable way to calculate the correct scroll position
-          const inputTopPosition = inputRef.current.getBoundingClientRect().top;
-          const currentScrollY = window.scrollY;
-          const padding = 5; // The 5 pixels you requested
-
-          // Calculate where to scroll to
-          const targetScrollY = currentScrollY + inputTopPosition - padding;
-
-          // Perform the elegant, smooth scroll
-          window.scrollTo({
-            top: targetScrollY,
-            behavior: 'smooth'
-          });
-        }, 100); // 100ms delay is usually enough
+          if (inputRef.current) {
+            // Calculate precise scroll position
+            const inputRect = inputRef.current.getBoundingClientRect();
+            const targetScrollY = window.scrollY + inputRect.top - 5; // 5px margin above input
+            
+            // Perform smooth scroll
+            window.scrollTo({
+              top: targetScrollY,
+              behavior: 'smooth'
+            });
+            
+            // Return focus after scroll animation completes
+            setTimeout(() => {
+              if (inputRef.current) {
+                inputRef.current.focus();
+              }
+            }, 300); // Wait for smooth scroll to complete
+          }
+        }, 150); // Allow DOM updates
       }
       
     } catch (error) {
@@ -410,18 +415,21 @@ const GameBoard = () => {
     <input
       ref={inputRef}
       type="text"
-      name="guess"
+      name="semantic-game-input"
       value={guessInput}
       onChange={(e) => setGuessInput(e.target.value)}
       placeholder="נחש מילה..."
       disabled={isSubmitting}
       dir="rtl"
-      // --- This is the key to a clean keyboard ---
-      autoComplete="off"
-      autoCorrect="off"
+      // Mobile keyboard optimization - most effective combination
+      autoComplete="new-password"
+      autoCorrect="on"
       autoCapitalize="none"
-      spellCheck="false"
-      // ------------------------------------------
+      spellCheck="true"
+      inputMode="text"
+      data-form-type="other"
+      data-lpignore="true"
+      data-1p-ignore="true"
       // Use the existing, working className for styling
       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
     />
