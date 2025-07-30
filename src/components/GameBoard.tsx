@@ -286,14 +286,18 @@ const GameBoard = () => {
                      placeholder="נסה מילה..."
                      disabled={isSubmitting}
                      dir="rtl"
-                     autoComplete="new-password"
+                     autoComplete="off"
                      autoCorrect="off"
                      autoCapitalize="none"
                      spellCheck={false}
-                     inputMode="text"
+                     inputMode="none"
                      data-form-type="other"
                      data-lpignore="true"
-                     name="word-exploration"
+                     data-1p-ignore="true"
+                     data-bwignore="true"
+                     name="search-exploration"
+                     role="textbox"
+                     aria-autocomplete="none"
                    />
                   <Button
                     type="submit"
@@ -402,14 +406,18 @@ const GameBoard = () => {
                 placeholder="נחש מילה..."
                 disabled={isSubmitting}
                 dir="rtl"
-                autoComplete="new-password"
+                autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="none"
                 spellCheck={false}
-                inputMode="text"
+                inputMode="none"
                 data-form-type="other"
                 data-lpignore="true"
-                name="word-guess"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                name="search-query"
+                role="textbox"
+                aria-autocomplete="none"
               />
               <Button
                 type="submit"
