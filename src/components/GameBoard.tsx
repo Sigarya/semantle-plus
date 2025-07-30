@@ -63,24 +63,20 @@ const GameBoard = () => {
     setIsSubmitting(true);
 
     try {
-      const isFirstGuess = gameState.guesses.length === 0;
-
       await makeGuess(guessInput);
       setGuessInput("");
 
+      // ===================================================================
+      // === THIS IS THE FINAL, CORRECTED LOGIC ==========================
+      // ===================================================================
+      // We removed the scrolling logic completely.
+      // Now, it only returns the focus to the input box after each guess.
       setTimeout(() => {
         if (inputRef.current) {
-          const inputElement = inputRef.current;
-          if (isFirstGuess) {
-            const inputTopPosition = inputElement.getBoundingClientRect().top;
-            const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
-            const padding = 5;
-            const targetScrollY = currentScrollY + inputTopPosition - padding;
-            window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
-          }
-          inputElement.focus();
+          inputRef.current.focus();
         }
       }, 100);
+      // ===================================================================
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
@@ -123,11 +119,6 @@ const GameBoard = () => {
   const mostRecentGuess = gameState.guesses[gameState.guesses.length - 1];
   const sortedGuessesForTable = (gameState.isComplete ? gameState.guesses : gameState.guesses.slice(0, -1)).sort((a, b) => b.similarity - a.similarity);
 
-  // ===================================================================
-  // === THIS IS THE ONLY CHANGE - THE LAYOUT FIX ====================
-  // ===================================================================
-  // We add `min-h-screen` to make the container at least as tall as the screen.
-  // We also adjust the padding for a cleaner look.
   return (
     <div className="space-y-4 max-w-3xl mx-auto min-h-screen px-4 pt-4 pb-24">
       <WelcomeDialog />
