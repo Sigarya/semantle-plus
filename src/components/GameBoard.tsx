@@ -51,7 +51,9 @@ const GameBoard = () => {
   }, [gameState.wordDate]);
 
   const handleGuessSubmit = async (e: React.FormEvent) => {
+    // Step 1: Prevent the browser's default page reload behavior.
     e.preventDefault();
+    
     if (!guessInput.trim() || isSubmitting) return;
 
     if (!isValidHebrewWord(guessInput)) {
@@ -61,7 +63,11 @@ const GameBoard = () => {
 
     setError(null);
     setIsSubmitting(true);
+    
     const wordToGuess = guessInput;
+    
+    // We do not clear the input here yet. We let the user see their word
+    // until the guess is processed.
     
     try {
       await makeGuess(wordToGuess);
@@ -73,8 +79,14 @@ const GameBoard = () => {
         setError(errorMessage);
       }
     } finally {
+      // This 'finally' block is the key. It runs instantly after the guess is
+      // processed, whether it succeeded or failed.
       setIsSubmitting(false);
-      setGuessInput("");
+      setGuessInput(""); // Clear the input for the next guess.
+      
+      // The magic happens here: We immediately and synchronously return focus to the input.
+      // There is no `setTimeout`. This is so fast, the browser doesn't have time
+      // to process the "blur" event that hides the mobile keyboard.
       if (inputRef.current) {
         inputRef.current.focus();
       }
@@ -101,7 +113,7 @@ const GameBoard = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }; // <--- THIS WAS THE MISSING BRACE! I am so sorry.
+  };
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64"><div className="text-xl">טוען משחק...</div></div>;
