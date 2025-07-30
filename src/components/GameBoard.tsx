@@ -51,25 +51,12 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
-  // Focus preservation useEffect - maintains focus after React re-renders from new guesses
-  useEffect(() => {
-    if (!gameState.isComplete && inputRef.current && document.activeElement !== inputRef.current) {
-      // Use requestAnimationFrame to ensure this happens after React finishes DOM updates
-      requestAnimationFrame(() => {
-        if (inputRef.current && document.activeElement !== inputRef.current) {
-          inputRef.current.focus();
-        }
-      });
+  const handleGuessSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
     }
-  }, [gameState.guesses.length, gameState.isComplete]);
-
-  const handleGuessSubmit = async () => {
+    
     if (!guessInput.trim() || isSubmitting) return;
-
-    // Ensure input has focus and keep it focused throughout the process
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
 
     if (!isValidHebrewWord(guessInput)) {
       setError("אנא הזן מילה בעברית בלבד");
@@ -80,11 +67,11 @@ const GameBoard = () => {
     setIsSubmitting(true);
     
     const wordToGuess = guessInput;
-    // Clear input immediately to provide instant feedback
-    setGuessInput("");
     
     try {
       await makeGuess(wordToGuess);
+      // Only clear input after successful submission - this maintains natural form behavior
+      setGuessInput("");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
@@ -94,11 +81,6 @@ const GameBoard = () => {
       }
     } finally {
       setIsSubmitting(false);
-      
-      // Keep focus locked on input - this is critical for seamless experience
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
     }
   };
   
@@ -186,50 +168,29 @@ const GameBoard = () => {
           )}
           
           <div className="space-y-4">
-            <div className="flex gap-2">
+            <form onSubmit={handleGuessSubmit} className="flex gap-2" autoComplete="off">
               <input
                 ref={inputRef}
-                type="text"
+                type="search"
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleGuessSubmit();
-                  }
-                }}
-                onBlur={(e) => {
-                  // Prevent blur events during guess submission to maintain focus
-                  if (isSubmitting) {
-                    e.preventDefault();
-                    if (inputRef.current) {
-                      inputRef.current.focus();
-                    }
-                  }
-                }}
                 placeholder="נחש מילה..."
                 disabled={isSubmitting}
                 dir="rtl"
                 autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
                 inputMode="text"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
               />
-               <Button 
-                type="button" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleGuessSubmit();
-                }}
-                onMouseDown={(e) => {
-                  // Prevent button from stealing focus
-                  e.preventDefault();
-                }}
+              <Button 
+                type="submit"
                 className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" 
                 disabled={isSubmitting || !guessInput.trim()}
               >
                 נחש
               </Button>
-            </div>
+            </form>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           </div>
         </>
