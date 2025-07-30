@@ -21,7 +21,7 @@ const GameBoard = () => {
   const [explorationResult, setExplorationResult] = useState<{ word: string; similarity: number; rank?: number; } | null>(null);
   const [sampleRanks, setSampleRanks] = useState<any>(null);
   const [loadingSampleRanks, setLoadingSampleRanks] = useState(false);
-  const [shouldMaintainFocus, setShouldMaintainFocus] = useState(false);
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
 
@@ -51,26 +51,28 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
-  // Focus preservation useEffect - ensures input focus is maintained after React re-renders
+  // Focus preservation useEffect - maintains focus after React re-renders from new guesses
   useEffect(() => {
-    if (shouldMaintainFocus && inputRef.current && !gameState.isComplete) {
+    if (!gameState.isComplete && inputRef.current && document.activeElement !== inputRef.current) {
       // Use requestAnimationFrame to ensure this happens after React finishes DOM updates
       requestAnimationFrame(() => {
         if (inputRef.current && document.activeElement !== inputRef.current) {
           inputRef.current.focus();
-          setShouldMaintainFocus(false);
         }
       });
     }
-  }, [gameState.guesses.length, shouldMaintainFocus, gameState.isComplete]);
+  }, [gameState.guesses.length, gameState.isComplete]);
 
   const handleGuessSubmit = async () => {
     if (!guessInput.trim() || isSubmitting) return;
 
+    // Ensure input has focus and keep it focused throughout the process
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+
     if (!isValidHebrewWord(guessInput)) {
       setError("אנא הזן מילה בעברית בלבד");
-      // Set focus preservation flag even for invalid words
-      setShouldMaintainFocus(true);
       return;
     }
 
@@ -78,11 +80,11 @@ const GameBoard = () => {
     setIsSubmitting(true);
     
     const wordToGuess = guessInput;
+    // Clear input immediately to provide instant feedback
+    setGuessInput("");
     
     try {
       await makeGuess(wordToGuess);
-      // Set flag to maintain focus after successful guess (React will re-render)
-      setShouldMaintainFocus(true);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
@@ -90,14 +92,11 @@ const GameBoard = () => {
       } else {
         setError(errorMessage);
       }
-      // Set focus preservation flag even for failed guesses
-      setShouldMaintainFocus(true);
     } finally {
       setIsSubmitting(false);
-      setGuessInput("");
       
-      // Immediate focus strategy - this handles the synchronous case
-      if (inputRef.current && document.activeElement !== inputRef.current) {
+      // Keep focus locked on input - this is critical for seamless experience
+      if (inputRef.current) {
         inputRef.current.focus();
       }
     }
@@ -199,6 +198,15 @@ const GameBoard = () => {
                     handleGuessSubmit();
                   }
                 }}
+                onBlur={(e) => {
+                  // Prevent blur events during guess submission to maintain focus
+                  if (isSubmitting) {
+                    e.preventDefault();
+                    if (inputRef.current) {
+                      inputRef.current.focus();
+                    }
+                  }
+                }}
                 placeholder="נחש מילה..."
                 disabled={isSubmitting}
                 dir="rtl"
@@ -206,9 +214,16 @@ const GameBoard = () => {
                 inputMode="text"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
               />
-              <Button 
+               <Button 
                 type="button" 
-                onClick={handleGuessSubmit}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleGuessSubmit();
+                }}
+                onMouseDown={(e) => {
+                  // Prevent button from stealing focus
+                  e.preventDefault();
+                }}
                 className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" 
                 disabled={isSubmitting || !guessInput.trim()}
               >
