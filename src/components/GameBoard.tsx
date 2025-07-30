@@ -63,8 +63,31 @@ const GameBoard = () => {
     setIsSubmitting(true);
 
     try {
+      // UX CHANGE 2: Remember if this is the first guess BEFORE making the guess.
+      const isFirstGuess = gameState.guesses.length === 0;
+
       await makeGuess(guessInput);
       setGuessInput("");
+
+      // The new, smart scrolling and focus logic happens AFTER the guess is made.
+      setTimeout(() => {
+        if (inputRef.current) {
+          const inputElement = inputRef.current;
+
+          // Scroll to the top ONLY on the very first guess.
+          if (isFirstGuess) {
+            const inputTopPosition = inputElement.getBoundingClientRect().top;
+            const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
+            const padding = 5;
+            const targetScrollY = currentScrollY + inputTopPosition - padding;
+            window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
+          }
+
+          // But ALWAYS return focus to the input box.
+          inputElement.focus();
+        }
+      }, 100);
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
@@ -74,24 +97,12 @@ const GameBoard = () => {
       }
     } finally {
       setIsSubmitting(false);
-      
-      setTimeout(() => {
-        if (inputRef.current) {
-          const inputElement = inputRef.current;
-          const inputTopPosition = inputElement.getBoundingClientRect().top;
-          const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
-          const padding = 5;
-          const targetScrollY = currentScrollY + inputTopPosition - padding;
-
-          window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
-          inputElement.focus();
-        }
-      }, 100);
     }
   };
   
   const handleExplorationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // ... (This function remains unchanged, it's perfect as it is)
     if (!explorationInput.trim()) return;
     if (!isValidHebrewWord(explorationInput)) {
       setError("אנא הזן מילה בעברית בלבד");
@@ -119,8 +130,10 @@ const GameBoard = () => {
   const mostRecentGuess = gameState.guesses[gameState.guesses.length - 1];
   const sortedGuessesForTable = (gameState.isComplete ? gameState.guesses : gameState.guesses.slice(0, -1)).sort((a, b) => b.similarity - a.similarity);
 
+  // UX CHANGE 1: We reduce the vertical spacing and bottom padding
+  // to allow more content to be visible on the screen, especially on mobile.
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-96">
+    <div className="space-y-4 max-w-3xl mx-auto pb-32">
       <WelcomeDialog />
       <div className="text-center">
         <h2 className="text-2xl font-bold font-heebo">סמנטעל +</h2>
@@ -132,6 +145,7 @@ const GameBoard = () => {
       {gameState.isComplete ? (
         <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
           <CardContent className="pt-6 text-center">
+            {/* ... (The 'isComplete' section remains unchanged, it's perfect as it is) ... */}
             <div className="text-green-600 dark:text-green-400 text-2xl font-bold mb-4">כל הכבוד! מצאת את המילה!</div>
             <div className="text-xl mb-4">המילה היא: <span className="font-bold text-primary-500 dark:text-primary-400">{currentWord}</span></div>
             <div className="text-muted-foreground mb-6">מספר ניחושים: {gameState.guesses.length}</div>
@@ -175,42 +189,24 @@ const GameBoard = () => {
           
           <div className="space-y-4">
             <div className="flex gap-2">
-              {/* THIS IS THE INVISIBLE DUMMY PASSWORD FIELD TRICK */}
-              <input 
-                type="password" 
-                name="password"
-                autoComplete="new-password"
-                style={{ display: 'none' }} 
-                aria-hidden="true"
-                tabIndex={-1} // Prevent tabbing to it
-              />
-
-              {/* This is our clean, real input field */}
+              {/* This is the invisible dummy password field trick that fixes the keyboard */}
+              <input type="password" name="password" autoComplete="new-password" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="נחש מילה..."
-                disabled={isSubmitting}
-                dir="rtl"
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !isSubmitting) handleGuessSubmit(e); }}
+                placeholder="נחש מילה..."
+                disabled={isSubmitting}
+                dir="rtl"
                 autoComplete="off"
                 autoCorrect="off"
-                autocapitalize="none"
-                type="search"
-                id="guess"
-                
+                autoCapitalize="none"
+                spellCheck="false"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
               />
-              <Button
-                type="button"
-                onClick={handleGuessSubmit}
-                className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
-                disabled={isSubmitting || !guessInput.trim()}
-              >
-                נחש
-              </Button>
+              <Button type="button" onClick={handleGuessSubmit} className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6" disabled={isSubmitting || !guessInput.trim()}>נחש</Button>
             </div>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           </div>
@@ -223,29 +219,10 @@ const GameBoard = () => {
           <div className="border rounded-md">
             <Table>
               <TableHeader>
-                <TableRow className="border-b">
-                  <TableHead className="text-right w-12 py-2 px-2">#</TableHead>
-                  <TableHead className="text-right py-2 px-2">מילה</TableHead>
-                  <TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead>
-                  <TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead>
-                </TableRow>
+                <TableRow className="border-b"><TableHead className="text-right w-12 py-2 px-2">#</TableHead><TableHead className="text-right py-2 px-2">מילה</TableHead><TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead><TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead></TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700">
-                  <TableCell className="py-1 px-2 text-xs font-medium text-primary-700 dark:text-primary-300">{gameState.guesses.length}</TableCell>
-                  <TableCell className="font-medium py-1 px-2 text-xs truncate text-primary-700 dark:text-primary-300">{mostRecentGuess.word}</TableCell>
-                  <TableCell className="text-center py-1 px-2 text-xs text-primary-700 dark:text-primary-300">{`${(mostRecentGuess.similarity * 100).toFixed(2)}%`}</TableCell>
-                  <TableCell className="text-center py-1 px-2">
-                    {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (
-                      <div className="flex items-center gap-1 justify-center">
-                        <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0"><div className="absolute top-0 left-0 h-full bg-green-500 rounded-sm" style={{ width: `${Math.min((mostRecentGuess.rank / 1000) * 100, 100)}%` }}/></div>
-                        <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">{mostRecentGuess.rank}/1000</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo">רחוק</span>
-                    )}
-                  </TableCell>
-                </TableRow>
+                <TableRow className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700"><TableCell className="py-1 px-2 text-xs font-medium text-primary-700 dark:text-primary-300">{gameState.guesses.length}</TableCell><TableCell className="font-medium py-1 px-2 text-xs truncate text-primary-700 dark:text-primary-300">{mostRecentGuess.word}</TableCell><TableCell className="text-center py-1 px-2 text-xs text-primary-700 dark:text-primary-300">{`${(mostRecentGuess.similarity * 100).toFixed(2)}%`}</TableCell><TableCell className="text-center py-1 px-2">{mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (<div className="flex items-center gap-1 justify-center"><div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0"><div className="absolute top-0 left-0 h-full bg-green-500 rounded-sm" style={{ width: `${Math.min((mostRecentGuess.rank / 1000) * 100, 100)}%` }}/></div><span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">{mostRecentGuess.rank}/1000</span></div>) : (<span className="text-xs text-primary-700 dark:text-primary-300 font-heebo">רחוק</span>)}</TableCell></TableRow>
               </TableBody>
             </Table>
           </div>
