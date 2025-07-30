@@ -101,22 +101,15 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
-  // Keep focus on input field and scroll input to top after guessing
-  useEffect(() => {
-    if (!isLoading && !gameState.isComplete) {
-      inputRef.current?.focus();
-    }
-  }, [isLoading, gameState.isComplete]);
-
-  // Initial focus only
+  // Simplified focus logic - only focus when game initially loads
   useEffect(() => {
     if (!isLoading && !gameState.isComplete && gameState.guesses.length === 0) {
       inputRef.current?.focus();
     }
   }, [isLoading, gameState.isComplete]);
 
-  const handleGuessSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGuessSubmit = async (e?: React.FormEvent | React.KeyboardEvent) => {
+    if (e) e.preventDefault();
     
     if (!guessInput.trim()) return;
     
@@ -129,6 +122,9 @@ const GameBoard = () => {
     setError(null);
     setIsSubmitting(true);
     
+    // Calculate scroll position BEFORE processing the guess
+    const targetScrollPosition = inputRef.current ? inputRef.current.offsetTop - 5 : 0;
+    
     try {
       const result = await makeGuess(guessInput);
       
@@ -138,27 +134,22 @@ const GameBoard = () => {
       
       setGuessInput("");
       
-      // Fixed scrolling and focus solution
+      // Perfect scrolling and focus solution
       if (inputRef.current) {
+        // Wait for DOM to update, then scroll to calculated position
         setTimeout(() => {
-          if (inputRef.current) {
-            // Calculate the exact position to scroll to (input at top with 5px margin)
-            const targetScrollY = window.scrollY + inputRef.current.getBoundingClientRect().top - 5;
-
-            // Perform smooth scroll
-            window.scrollTo({
-              top: Math.max(0, targetScrollY),
-              behavior: 'smooth'
-            });
-
-            // Return focus after scroll animation completes
-            setTimeout(() => {
-              if (inputRef.current && !gameState.isComplete) {
-                inputRef.current.focus();
-              }
-            }, 400);
-          }
-        }, 50);
+          window.scrollTo({
+            top: Math.max(0, targetScrollPosition),
+            behavior: 'smooth'
+          });
+          
+          // Return focus after scroll completes
+          setTimeout(() => {
+            if (inputRef.current && !gameState.isComplete) {
+              inputRef.current.focus();
+            }
+          }, 300);
+        }, 100);
       }
       
     } catch (error) {
@@ -396,36 +387,30 @@ const GameBoard = () => {
 )}
 
           
-   <form onSubmit={handleGuessSubmit} className="space-y-4">
+   <div className="space-y-4">
   <div className="flex gap-2">
     <input
       ref={inputRef}
       type="text"
-      name="semantle-guess-input"
       value={guessInput}
       onChange={(e) => setGuessInput(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          handleGuessSubmit(e);
+        }
+      }}
       placeholder="נחש מילה..."
       disabled={isSubmitting}
       dir="rtl"
-      // Aggressive password/autofill blocking
       autoComplete="off"
-      autoCorrect="off"
-      autoCapitalize="none"
-      spellCheck="false"
+      autoCorrect="on"
+      spellCheck="true"
       inputMode="text"
-      data-form-type="other"
-      data-lpignore="true"
-      data-1p-ignore="true"
-      data-bwignore="true"
-      data-1password-ignore="true"
-      data-lastpass-ignore="true"
-      data-bitwarden-ignore="true"
-      role="textbox"
-      // Use the existing, working className for styling
       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-lg"
     />
     <Button
-      type="submit"
+      type="button"
+      onClick={() => handleGuessSubmit()}
       className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600 px-6"
       disabled={isSubmitting || !guessInput.trim()}
     >
@@ -438,7 +423,7 @@ const GameBoard = () => {
       <AlertDescription>{error}</AlertDescription>
     </Alert>
   )}
-</form>
+</div>
         </>
       )}
 
