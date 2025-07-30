@@ -32,6 +32,8 @@ const GameBoard = React.memo(() => {
   const [explorationResult, setExplorationResult] = useState<{ word: string; similarity: number; rank?: number } | null>(null);
   const [sampleRanks, setSampleRanks] = useState<{ '1': number; '990': number; '999': number } | null>(null);
   const [loadingSampleRanks, setLoadingSampleRanks] = useState(false);
+  const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
+  const timeoutMessageRef = useRef<NodeJS.Timeout | null>(null);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
@@ -139,6 +141,11 @@ const GameBoard = React.memo(() => {
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     
+    // Start timeout message timer
+    timeoutMessageRef.current = setTimeout(() => {
+      setShowTimeoutMessage(true);
+    }, 8000);
+    
     try {
       await makeGuess(wordToGuess);
     } catch (error) {
@@ -149,6 +156,13 @@ const GameBoard = React.memo(() => {
         setError(errorMessage);
       }
     } finally {
+      // Clear timeout message and timer
+      if (timeoutMessageRef.current) {
+        clearTimeout(timeoutMessageRef.current);
+        timeoutMessageRef.current = null;
+      }
+      setShowTimeoutMessage(false);
+      
       isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
@@ -257,6 +271,19 @@ const GameBoard = React.memo(() => {
           )}
           
           <div className="space-y-4">
+            {/* Timeout message with fade animation */}
+            {showTimeoutMessage && (
+              <div className="animate-in fade-in duration-500 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4 text-center">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    לא נתקענו, פשוט לוקח לנו קצת זמן לחשב את הניחוש הראשון לפעמים :)<br/>
+                    אל דאגה, מהניחוש הבא הכול יזרום הרבה יותר מהר
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <form 
               onSubmit={handleGuessSubmit} 
               className="flex flex-row gap-2" 
