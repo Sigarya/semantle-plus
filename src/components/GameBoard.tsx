@@ -106,14 +106,20 @@ const GameBoard = () => {
     if (!isLoading && !gameState.isComplete) {
       inputRef.current?.focus();
       
-      // After making a guess, scroll to position the input at the top with guess table visible
+      // After making a guess, scroll to position the input with some padding above
       if (inputRef.current && gameState.guesses.length > 0) {
         // Use a short timeout to ensure DOM is updated
         setTimeout(() => {
-          inputRef.current?.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start'
-          });
+          const inputElement = inputRef.current;
+          if (inputElement) {
+            const inputRect = inputElement.getBoundingClientRect();
+            const scrollOffset = window.pageYOffset + inputRect.top - 5; // 5px padding above
+            
+            window.scrollTo({
+              top: scrollOffset,
+              behavior: 'smooth'
+            });
+          }
         }, 100);
       }
     }
@@ -280,11 +286,14 @@ const GameBoard = () => {
                      placeholder="נסה מילה..."
                      disabled={isSubmitting}
                      dir="rtl"
-                     autoComplete="off"
+                     autoComplete="new-password"
                      autoCorrect="off"
-                     autoCapitalize="off"
-                     spellCheck="false"
+                     autoCapitalize="none"
+                     spellCheck={false}
                      inputMode="text"
+                     data-form-type="other"
+                     data-lpignore="true"
+                     name="word-exploration"
                    />
                   <Button
                     type="submit"
@@ -384,20 +393,23 @@ const GameBoard = () => {
           
           <form onSubmit={handleGuessSubmit} className="space-y-4">
             <div className="flex gap-2">
-              <input
+              <Input
                 ref={inputRef}
                 type="text"
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-lg ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="text-lg"
                 placeholder="נחש מילה..."
                 disabled={isSubmitting}
                 dir="rtl"
-                autoComplete="off"
+                autoComplete="new-password"
                 autoCorrect="off"
-                autoCapitalize="off"
+                autoCapitalize="none"
                 spellCheck={false}
                 inputMode="text"
+                data-form-type="other"
+                data-lpignore="true"
+                name="word-guess"
               />
               <Button
                 type="submit"
