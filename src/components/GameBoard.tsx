@@ -101,28 +101,31 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
-  // Keep focus on input field and ensure input stays visible after guessing
+  // Keep focus on input field and scroll input to top after guessing
   useEffect(() => {
     if (!isLoading && !gameState.isComplete) {
       inputRef.current?.focus();
-      
-      // Scroll to position input at top with 5px padding when a guess is made
-      if (inputRef.current && gameState.guesses.length > 0) {
-        setTimeout(() => {
-          const inputElement = inputRef.current;
-          if (inputElement) {
-            const inputRect = inputElement.getBoundingClientRect();
-            const scrollTop = window.pageYOffset + inputRect.top - 5;
-            
-            window.scrollTo({
-              top: scrollTop,
-              behavior: 'smooth'
-            });
-          }
-        }, 100);
-      }
     }
-  }, [isLoading, gameState.isComplete, gameState.guesses.length]);
+  }, [isLoading, gameState.isComplete]);
+
+  // Scroll input to top with 5px padding after making a guess
+  useEffect(() => {
+    if (!isLoading && !gameState.isComplete && gameState.guesses.length > 0 && inputRef.current) {
+      setTimeout(() => {
+        const inputElement = inputRef.current;
+        if (inputElement) {
+          const inputRect = inputElement.getBoundingClientRect();
+          const currentScrollTop = window.pageYOffset;
+          const targetScrollTop = currentScrollTop + inputRect.top - 5;
+          
+          window.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+          });
+        }
+      }, 200);
+    }
+  }, [gameState.guesses.length, isLoading, gameState.isComplete]);
 
   const handleGuessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -393,19 +396,12 @@ const GameBoard = () => {
       placeholder="נחש מילה..."
       disabled={isSubmitting}
       dir="rtl"
-      autoComplete="new-password"
+      autoComplete="off"
       autoCorrect="off"
-      autoCapitalize="none"
-      spellCheck={false}
+      autoCapitalize="off"
+      spellCheck="false"
       inputMode="text"
-      name="fake-search-field"
-      data-form-type="search"
-      data-lpignore="true"
-      data-1p-ignore="true"
-      data-bwignore="true"
-      data-bitwarden-ignore="true"
-      data-dashlane-rid=""
-      data-lastpass-ignore="true"
+      name="word-game-input"
     />
     <Button
       type="submit"
