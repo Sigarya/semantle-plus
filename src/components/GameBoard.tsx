@@ -134,24 +134,6 @@ const GameBoard = () => {
       
       setGuessInput("");
       
-      // Perfect scrolling and focus solution
-      if (inputRef.current) {
-        // Wait for DOM to update, then scroll to calculated position
-        setTimeout(() => {
-          window.scrollTo({
-            top: Math.max(0, targetScrollPosition),
-            behavior: 'smooth'
-          });
-          
-          // Return focus after scroll completes
-          setTimeout(() => {
-            if (inputRef.current && !gameState.isComplete) {
-              inputRef.current.focus();
-            }
-          }, 300);
-        }, 100);
-      }
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       // If the error is about unknown word, customize the message
@@ -161,8 +143,30 @@ const GameBoard = () => {
         setError(errorMessage);
       }
       console.error("Guess error:", error);
+      setGuessInput("");
     } finally {
       setIsSubmitting(false);
+      
+      // Always scroll and focus after guess attempt (success or failure)
+      if (inputRef.current) {
+        setTimeout(() => {
+          // Scroll so input is at top with 5px margin
+          const rect = inputRef.current!.getBoundingClientRect();
+          const scrollTop = window.pageYOffset + rect.top - 5;
+          
+          window.scrollTo({
+            top: Math.max(0, scrollTop),
+            behavior: 'smooth'
+          });
+          
+          // Return focus after scroll
+          setTimeout(() => {
+            if (inputRef.current && !gameState.isComplete) {
+              inputRef.current.focus();
+            }
+          }, 300);
+        }, 100);
+      }
     }
   };
 
@@ -235,7 +239,7 @@ const GameBoard = () => {
   const sortedGuessesForTable = [...guessesForTable].sort((a, b) => b.similarity - a.similarity);
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6 max-w-3xl mx-auto pb-96">
       <WelcomeDialog />
       <div className="text-center">
         <h2 className="text-2xl font-bold font-heebo">
