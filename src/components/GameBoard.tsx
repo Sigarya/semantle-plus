@@ -23,36 +23,57 @@ const GameBoard = () => {
   const [loadingSampleRanks, setLoadingSampleRanks] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    // This is the new, super-simple logic.
-    const fetchSampleRanks = async () => {
-      if (!gameState.wordDate) return;
-      
-      setLoadingSampleRanks(true);
-      setSampleRanks(null);
-      
-      try {
-        console.log(`Invoking Supabase function 'get-sample-ranks' for date: ${gameState.wordDate}`);
-        // We make one simple call to our new, smart Edge Function.
-        const { data, error } = await supabase.functions.invoke("get-sample-ranks", {
-          body: { date: gameState.wordDate },
-        });
+// In GameBoard.tsx, replace the existing useEffect
 
-        if (error) throw error;
-        
-        console.log("✅ Success! Received sample ranks:", data.samples);
-        setSampleRanks(data.samples);
+useEffect(() => {
+  const fetchSampleRanks = async () => {
+    console.log("--- DIAGNOSTIC: fetchSampleRanks function has started. ---");
 
-      } catch (error) {
-        console.error("Error invoking get-sample-ranks function:", error);
-      } finally {
-        setLoadingSampleRanks(false);
-      }
-    };
+    if (!gameState.wordDate) {
+      console.error("DIAGNOSTIC FAILURE: The function is stopping because gameState.wordDate is missing or null. This is a critical problem in the GameContext.");
+      setLoadingSampleRanks(false);
+      return;
+    }
     
-    fetchSampleRanks();
-  }, [gameState.wordDate]);
+    console.log(`Step 1: Game date is valid: ${gameState.wordDate}`);
+    
+    setLoadingSampleRanks(true);
+    setSampleRanks(null);
+    
+    try {
+      console.log("Step 2: Preparing to invoke Supabase function 'get-sample-ranks'.");
+      
+      const { data, error } = await supabase.functions.invoke("get-sample-ranks", {
+        body: { date: gameState.wordDate },
+      });
 
+      console.log("Step 3: Supabase function invocation has completed.");
+
+      if (error) {
+        // This will catch network errors or if the function itself can't be found.
+        console.error("DIAGNOSTIC FAILURE: The .invoke() call returned a direct error.", error);
+        throw error;
+      }
+      
+      if (data.error) {
+        // This will catch errors from *inside* the Supabase function (like a 500 error).
+        console.error("DIAGNOSTIC FAILURE: The function's response body contained an error message.", data.error);
+        throw new Error(data.error);
+      }
+      
+      console.log("Step 4: Successfully received data from function:", data);
+      setSampleRanks(data.samples);
+
+    } catch (error) {
+      console.error("Step 5 (FAILURE): The process failed inside the catch block.", error);
+    } finally {
+      console.log("Step 6: The 'finally' block has run. Hiding loading spinner.");
+      setLoadingSampleRanks(false);
+    }
+  };
+  
+  fetchSampleRanks();
+}, [gameState.wordDate, supabase]);
   const handleGuessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guessInput.trim() || isSubmitting) return;
