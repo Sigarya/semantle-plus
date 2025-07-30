@@ -24,7 +24,6 @@ const GameBoard = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
 
-  // Fetch sample ranks
   useEffect(() => {
     const fetchAndSetSampleRanks = async () => {
       if (!gameState.wordDate) return;
@@ -75,8 +74,7 @@ const GameBoard = () => {
       }
     } finally {
       setIsSubmitting(false);
-
-      // New, robust scroll and focus logic
+      
       setTimeout(() => {
         if (inputRef.current) {
           const inputElement = inputRef.current;
@@ -93,7 +91,6 @@ const GameBoard = () => {
   };
   
   const handleExplorationSubmit = async (e: React.FormEvent) => {
-    // This is your original, working exploration submit logic.
     e.preventDefault();
     if (!explorationInput.trim()) return;
     if (!isValidHebrewWord(explorationInput)) {
@@ -116,7 +113,7 @@ const GameBoard = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center p-8">טוען משחק...</div>;
+    return <div className="flex justify-center items-center h-64"><div className="text-xl">טוען משחק...</div></div>;
   }
   
   const mostRecentGuess = gameState.guesses[gameState.guesses.length - 1];
@@ -133,7 +130,6 @@ const GameBoard = () => {
       </div>
       
       {gameState.isComplete ? (
-        // This is your original, working completion card.
         <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
           <CardContent className="pt-6 text-center">
             <div className="text-green-600 dark:text-green-400 text-2xl font-bold mb-4">כל הכבוד! מצאת את המילה!</div>
@@ -179,6 +175,17 @@ const GameBoard = () => {
           
           <div className="space-y-4">
             <div className="flex gap-2">
+              {/* THIS IS THE INVISIBLE DUMMY PASSWORD FIELD TRICK */}
+              <input 
+                type="password" 
+                name="password"
+                autoComplete="new-password"
+                style={{ display: 'none' }} 
+                aria-hidden="true"
+                tabIndex={-1} // Prevent tabbing to it
+              />
+
+              {/* This is our clean, real input field */}
               <input
                 ref={inputRef}
                 type="text"
@@ -188,9 +195,7 @@ const GameBoard = () => {
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !isSubmitting) handleGuessSubmit(e); }}
-                readOnly 
-                onFocus={(e) => e.target.removeAttribute('readOnly')}
-                autoComplete="new-password" 
+                autoComplete="off"
                 autoCorrect="on"
                 spellCheck="true"
                 inputMode="text"
@@ -210,7 +215,6 @@ const GameBoard = () => {
         </>
       )}
 
-      {/* This is your original, working guesses display */}
       {mostRecentGuess && !gameState.isComplete && (
         <div className="space-y-2" ref={lastGuessRef}>
           <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
@@ -250,6 +254,12 @@ const GameBoard = () => {
         <div className="space-y-2">
           <h3 className="text-lg font-bold font-heebo">ניחושים קודמים</h3>
           <GuessTable guesses={sortedGuessesForTable} originalGuesses={gameState.guesses} showHeader={true}/>
+        </div>
+      )}
+
+      {gameState.guesses.length === 0 && !gameState.isComplete && (
+        <div className="text-center py-8 text-muted-foreground">
+          עדיין אין ניחושים. התחל לנחש!
         </div>
       )}
     </div>
