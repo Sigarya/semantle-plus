@@ -17,6 +17,7 @@ const GameBoard = () => {
   const [guessInput, setGuessInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shouldRestoreFocus, setShouldRestoreFocus] = useState(false);
   const [explorationInput, setExplorationInput] = useState("");
   const [explorationResult, setExplorationResult] = useState<{ word: string; similarity: number; rank?: number; } | null>(null);
   const [sampleRanks, setSampleRanks] = useState<any>(null);
@@ -51,6 +52,27 @@ const GameBoard = () => {
     fetchAndSetSampleRanks();
   }, [gameState.wordDate]);
 
+  // Focus restoration after React re-renders from new guesses
+  useEffect(() => {
+    if (shouldRestoreFocus && inputRef.current && !gameState.isComplete) {
+      // Use requestAnimationFrame to ensure this happens after React finishes DOM updates
+      requestAnimationFrame(() => {
+        if (inputRef.current && !gameState.isComplete) {
+          inputRef.current.focus();
+          setShouldRestoreFocus(false);
+        }
+      });
+      
+      // Mobile fallback - some mobile browsers need extra time
+      setTimeout(() => {
+        if (inputRef.current && shouldRestoreFocus && !gameState.isComplete) {
+          inputRef.current.focus();
+          setShouldRestoreFocus(false);
+        }
+      }, 100);
+    }
+  }, [gameState.guesses.length, shouldRestoreFocus, gameState.isComplete]);
+
   const handleGuessSubmit = async (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
@@ -70,7 +92,9 @@ const GameBoard = () => {
     
     try {
       await makeGuess(wordToGuess);
-      // Only clear input after successful submission - this maintains natural form behavior
+      // Set flag to restore focus after React re-renders with the new guess
+      setShouldRestoreFocus(true);
+      // Clear input after successful submission
       setGuessInput("");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
@@ -78,6 +102,10 @@ const GameBoard = () => {
         setError(`אני לא מכיר את המילה ${wordToGuess}`);
       } else {
         setError(errorMessage);
+      }
+      // For errors, manually restore focus since no re-render with new guess will happen
+      if (inputRef.current) {
+        inputRef.current.focus();
       }
     } finally {
       setIsSubmitting(false);
