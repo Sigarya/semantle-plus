@@ -5,8 +5,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
-  // For GitHub Pages with custom domain, use root path
-  base: '/',
+  base: '/semantle-plus/',
   server: {
     host: "::",
     port: 8080,
