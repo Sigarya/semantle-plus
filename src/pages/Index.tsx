@@ -7,46 +7,34 @@ import { useGame } from "@/context/GameContext";
 import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
-  console.log("Index: Component rendering");
   
   const {
-    isLoading: gameLoading,
-    gameState
+    isLoading: gameLoading
   } = useGame();
   
   const {
-    session,
-    currentUser,
-    isLoading: authLoading,
-    signOut
+    isLoading: authLoading
   } = useAuth();
   
   const [mounted, setMounted] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
-    console.log("Index: useEffect - setting mounted to true");
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    console.log("Index: Auth state changed", {
-      authLoading,
-      session: !!session,
-      currentUser: !!currentUser
-    });
-  }, [authLoading, session, currentUser]);
+  // Remove verbose auth state logging for production
+  // useEffect(() => {
+  //   Debug logging would go here
+  // }, [authLoading, session, currentUser]);
 
-  useEffect(() => {
-    console.log("Index: Game state changed", {
-      gameLoading,
-      gameState: gameState ? 'exists' : 'null'
-    });
-  }, [gameLoading, gameState]);
+  // Remove verbose game state logging for production
+  // useEffect(() => {
+  //   Debug logging would go here
+  // }, [gameLoading, gameState]);
 
   // Show loading only while auth is initializing
   if (!mounted || authLoading) {
-    console.log("Index: Showing loading state", { mounted, authLoading });
     return (
       <PageLayout>
         <div className="flex flex-col justify-center items-center h-64">

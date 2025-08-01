@@ -47,7 +47,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [currentWord, setCurrentWord] = useState<string | null>(null);
   const [dailyWords, setDailyWords] = useState<DailyWord[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [isHistoricalGame, setIsHistoricalGame] = useState<boolean>(true); // Always historical now
+  const [isHistoricalGame] = useState<boolean>(true); // Always historical now
 
   // Initialize game
   useEffect(() => {
@@ -166,14 +166,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Hebrew word validation (allow Hebrew letters, English letters, numbers, spaces, hyphens, dots)
-    const hebrewWordRegex = /^[א-תa-zA-Z0-9\s\-\.]+$/;
+    const hebrewWordRegex = /^[א-תa-zA-Z0-9\s\-.]+$/;
     if (!hebrewWordRegex.test(normalizedWord)) {
       throw new Error("המילה מכילה תווים לא חוקיים");
     }
     
-    // Check if word was already guessed
-    if (gameState.guesses.some(g => g.word === normalizedWord)) {
-      throw new Error("כבר ניחשת את המילה הזאת");
+    // Check if word was already guessed - return the existing guess instead of error
+    const existingGuess = gameState.guesses.find(g => g.word === normalizedWord);
+    if (existingGuess) {
+      return existingGuess;
     }
 
     // Check rate limit if user is authenticated
@@ -199,7 +200,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Format date for the new server (dd/mm/yyyy)
-    const gameDate = new Date(gameState.wordDate + 'T12:00:00');
+    const gameDate = new Date(`${gameState.wordDate}T12:00:00`);
     const formattedDate = `${gameDate.getDate().toString().padStart(2, '0')}/${(gameDate.getMonth() + 1).toString().padStart(2, '0')}/${gameDate.getFullYear()}`;
     const encodedDate = encodeURIComponent(formattedDate);
 
@@ -260,7 +261,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       similarity,
       rank,
       isCorrect,
-      rankScore: rankScore
+      rankScore
     };
 
     const newGuesses = [...gameState.guesses, newGuess];
