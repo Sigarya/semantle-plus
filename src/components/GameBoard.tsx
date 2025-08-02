@@ -35,6 +35,9 @@ const GameBoard = React.memo(() => {
   const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
   const timeoutMessageRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Intelligent focus management
+  const [shouldRefocus, setShouldRefocus] = useState(false);
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const lastGuessRef = useRef<HTMLDivElement>(null);
 
@@ -101,22 +104,13 @@ const GameBoard = React.memo(() => {
     fetchAndSetSampleRanks();
   }, [fetchAndSetSampleRanks]);
 
-  // Aggressive focus protection - prevent ANY focus loss
-  const handleInputBlur = useCallback((e: React.FocusEvent) => {
-    // NEVER allow the input to lose focus during gameplay
-    if (!gameState.isComplete && inputRef.current) {
-      e.preventDefault();
-      // Immediately refocus without any delay
-      inputRef.current.focus();
-    }
-  }, [gameState.isComplete]);
-
-  // Ensure input is always focused when the game is active
+  // Intelligent focus management - only refocus after guess submission
   useEffect(() => {
-    if (!isLoading && !gameState.isComplete && inputRef.current && document.activeElement !== inputRef.current) {
+    if (shouldRefocus && !gameState.isComplete && inputRef.current) {
       inputRef.current.focus();
+      setShouldRefocus(false); // Consume the refocus request
     }
-  }, [isLoading, gameState.isComplete, gameState.guesses.length]);
+  }, [shouldRefocus, gameState.isComplete]);
 
 
 
@@ -150,6 +144,9 @@ const GameBoard = React.memo(() => {
         setIsSubmitting(false);
         // The existing guess will appear in the "mostRecentGuess" display
         // since it's the same word that was just "submitted"
+        
+        // Trigger intelligent refocus after duplicate guess submission
+        setShouldRefocus(true);
       }, 200);
       
       return;
@@ -184,6 +181,9 @@ const GameBoard = React.memo(() => {
       
       isSubmittingRef.current = false;
       setIsSubmitting(false);
+      
+      // Trigger intelligent refocus after guess submission
+      setShouldRefocus(true);
     }
   };
   
@@ -331,7 +331,6 @@ const GameBoard = React.memo(() => {
                 type="search"
                 value={guessInput}
                 onChange={(e) => setGuessInput(e.target.value)}
-                onBlur={handleInputBlur}
                 placeholder="נחש מילה..."
                 disabled={false}
                 dir="rtl"
