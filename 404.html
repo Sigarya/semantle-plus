@@ -1,23 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="he" dir="rtl">
   <head>
     <meta charset="utf-8">
-    <title>סמנטעל +</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>עמוד לא נמצא | סמנטעל +</title>
+    <meta name="description" content="העמוד שחיפשת לא נמצא. חזור לעמוד הבית של סמנטעל פלוס.">
+    <meta name="robots" content="noindex, nofollow">
     <script type="text/javascript">
-      // Single Page Apps for GitHub Pages
-      // https://github.com/rafgraph/spa-github-pages
-      var pathSegmentsToKeep = 0;
-      var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + 
-        '/?/' + 
-        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
+      // Enhanced 404 handler for GitHub Pages SPA
+      // First check if this is a known route that should be pre-rendered
+      var knownRoutes = ['/', '/about', '/history', '/admin', '/profile', '/leaderboard'];
+      var currentPath = window.location.pathname;
+      
+      // If it's a known route, redirect to home and let React Router handle it
+      if (knownRoutes.includes(currentPath) || currentPath === '') {
+        var pathSegmentsToKeep = 0;
+        var l = window.location;
+        l.replace(
+          l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + 
+          '/?/' + 
+          l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+        );
+      } else {
+        // For unknown routes, show 404 message and redirect after delay
+        setTimeout(function() {
+          window.location.href = '/';
+        }, 3000);
+      }
     </script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background-color: #f9fafb;
+        direction: rtl;
+      }
+      .container {
+        text-align: center;
+        padding: 2rem;
+        max-width: 400px;
+      }
+      h1 { color: #dc2626; margin-bottom: 1rem; }
+      p { color: #6b7280; margin-bottom: 1rem; }
+      .btn {
+        background-color: #3b82f6;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 1rem;
+      }
+      .btn:hover { background-color: #2563eb; }
+    </style>
   </head>
   <body>
+    <div class="container">
+      <h1>עמוד לא נמצא</h1>
+      <p>העמוד שחיפשת אינו קיים.</p>
+      <p>תועבר לעמוד הבית תוך 3 שניות...</p>
+      <a href="/" class="btn">חזור לעמוד הבית</a>
+    </div>
   </body>
 </html>

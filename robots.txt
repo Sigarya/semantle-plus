@@ -12,5 +12,17 @@ Allow: /
 
 User-agent: *
 Allow: /
+Allow: /about
+Allow: /history  
+Allow: /profile
+Allow: /leaderboard
 
+# Disallow admin pages from being indexed
+Disallow: /admin
+Disallow: /admin/
+
+# Sitemap location
 Sitemap: https://semantle.sigarya.xyz/sitemap.xml
+
+# Crawl-delay for better server performance
+Crawl-delay: 1
