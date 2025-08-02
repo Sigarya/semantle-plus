@@ -47,10 +47,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error("AuthContext: Error fetching profile:", error);
+        toast({
+          variant: "destructive",
+          title: "שגיאה",
+          description: "אירעה שגיאה בטעינת הפרופיל"
+        });
         return;
       }
 
