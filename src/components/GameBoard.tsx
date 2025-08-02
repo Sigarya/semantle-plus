@@ -68,7 +68,7 @@ const GameBoard = React.memo(() => {
         }
         
         const formattedDateForApi = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-        const response = await fetch(`https://hebrew-w2v.onrender.com/sample-ranks?date=${encodeURIComponent(formattedDateForApi)}`);
+        const response = await fetch(`https://combined-he-w2v-api.onrender.com/sample-ranks?date=${encodeURIComponent(formattedDateForApi)}`);
         
         if (!response.ok) {
           throw new Error(`שגיאה בקבלת נתונים מהשרת: ${response.status}`);

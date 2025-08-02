@@ -67,7 +67,7 @@ serve(async (req) => {
     console.log('No cached data found, fetching from external API');
 
     // Fetch from external API using the formatted date
-    const externalResponse = await fetch(`https://hebrew-w2v.onrender.com/sample-ranks?date=${encodeURIComponent(formattedDateForApi)}`);
+    const externalResponse = await fetch(`https://combined-he-w2v-api.onrender.com/sample-ranks?date=${encodeURIComponent(formattedDateForApi)}`);
     
     if (!externalResponse.ok) {
       throw new Error(`External API failed with status: ${externalResponse.status}`);
