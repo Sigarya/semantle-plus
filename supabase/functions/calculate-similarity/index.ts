@@ -4,8 +4,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0"
 
-const SIMILARITY_API_URL = "https://heb-w2v-api.onrender.com";
-const RANKING_API_URL = "https://hebrew-w2v.onrender.com/rank";
+const SIMILARITY_API_URL = "https://combined-he-w2v-api.onrender.com";
+const RANKING_API_URL = "https://combined-he-w2v-api.onrender.com/rank";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
