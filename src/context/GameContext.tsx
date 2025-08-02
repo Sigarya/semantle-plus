@@ -231,7 +231,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     if (similarityData.error) {
       console.error("API response error:", similarityData.error);
-      throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
+      // Preserve the original API error message for specific error handling in GameBoard
+      throw new Error(similarityData.error);
     }
 
     // Process rank response (optional - don't fail if this doesn't work)
