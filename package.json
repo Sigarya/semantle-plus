@@ -6,12 +6,14 @@
   "homepage": "https://semantle.sigarya.xyz",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.js && node scripts/generate-sitemap.js",
     "build:dev": "vite build --mode development",
+    "build:spa": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "prerender": "node scripts/prerender.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
