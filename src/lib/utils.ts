@@ -69,10 +69,49 @@ export function getTodayWord(): Promise<string> {
   return Promise.resolve(getRandomDemoWord());
 }
 
-// Mock for checking if a word is valid Hebrew
+// Validation result type for specific error handling
+export type WordValidationResult = {
+  isValid: boolean;
+  errorType?: 'multiple_words' | 'non_hebrew' | 'empty';
+  errorMessage?: string;
+};
+
+// Enhanced validation function for Hebrew words with specific error types
+export function validateHebrewWord(word: string): WordValidationResult {
+  const trimmedWord = word.trim();
+  
+  // Check if empty
+  if (!trimmedWord) {
+    return {
+      isValid: false,
+      errorType: 'empty',
+      errorMessage: 'אנא הזן מילה'
+    };
+  }
+  
+  // Check for multiple words (contains spaces)
+  if (trimmedWord.includes(' ')) {
+    return {
+      isValid: false,
+      errorType: 'multiple_words',
+      errorMessage: 'המילה הסודית צריכה להיות רק מילה אחת'
+    };
+  }
+  
+  // Check if contains only Hebrew characters (no Latin, numbers, special chars except Hebrew)
+  const hebrewPattern = /^[\u0590-\u05FF]+$/;
+  if (!hebrewPattern.test(trimmedWord)) {
+    return {
+      isValid: false,
+      errorType: 'non_hebrew',
+      errorMessage: 'המילה הסודית צריכה להיות רק בעברית'
+    };
+  }
+  
+  return { isValid: true };
+}
+
+// Keep the old function for backward compatibility but make it use the new validation
 export function isValidHebrewWord(word: string): boolean {
-  // A real implementation would use a dictionary or API
-  // For now, just check if it's Hebrew characters
-  const hebrewPattern = /^[\u0590-\u05FF\s]+$/;
-  return hebrewPattern.test(word) && word.trim().length > 0;
+  return validateHebrewWord(word).isValid;
 }

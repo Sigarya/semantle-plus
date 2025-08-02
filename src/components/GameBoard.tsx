@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useGame } from "@/context/GameContext";
-import { isValidHebrewWord } from "@/lib/utils";
+import { isValidHebrewWord, validateHebrewWord } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import GuessTable from "@/components/GuessTable";
@@ -121,8 +121,10 @@ const GameBoard = React.memo(() => {
     
     if (!guessInput.trim() || isSubmitting) return;
 
-    if (!isValidHebrewWord(guessInput)) {
-      setError("אנא הזן מילה בעברית בלבד");
+    // Enhanced validation with specific error messages
+    const validation = validateHebrewWord(guessInput);
+    if (!validation.isValid) {
+      setError(validation.errorMessage || "שגיאה בבדיקת המילה");
       return;
     }
 
@@ -166,7 +168,12 @@ const GameBoard = React.memo(() => {
       await makeGuess(wordToGuess);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
-      if (errorMessage.includes("not found") || errorMessage.includes("לא נמצא")) {
+      
+      // Check for vocabulary errors (word not found in the vocabulary)
+      if (errorMessage.includes("not found") || 
+          errorMessage.includes("לא נמצא") ||
+          errorMessage.includes("Word not found in vocabulary") ||
+          errorMessage.includes("לא נמצאה במאגר")) {
         setError(`אני לא מכיר את המילה ${wordToGuess}`);
       } else {
         setError(errorMessage);
@@ -190,8 +197,11 @@ const GameBoard = React.memo(() => {
   const handleExplorationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!explorationInput.trim()) return;
-    if (!isValidHebrewWord(explorationInput)) {
-      setError("אנא הזן מילה בעברית בלבד");
+    
+    // Enhanced validation with specific error messages
+    const validation = validateHebrewWord(explorationInput);
+    if (!validation.isValid) {
+      setError(validation.errorMessage || "שגיאה בבדיקת המילה");
       return;
     }
     setError(null);
@@ -201,7 +211,10 @@ const GameBoard = React.memo(() => {
       if (error) throw new Error("שגיאה בחישוב הדמיון");
       if (data.error) {
         // Check if it's a "word not found" error
-        if (data.error.includes("Word not found in vocabulary")) {
+        if (data.error.includes("Word not found in vocabulary") ||
+            data.error.includes("not found") ||
+            data.error.includes("לא נמצא") ||
+            data.error.includes("לא נמצאה במאגר")) {
           throw new Error(`אני לא מכיר את המילה ${explorationInput}`);
         } else {
           throw new Error(data.error);
@@ -212,7 +225,10 @@ const GameBoard = React.memo(() => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בבדיקת דמיון";
       // Check if it's a "word not found" error that wasn't caught above
-      if (errorMessage.includes("Word not found in vocabulary")) {
+      if (errorMessage.includes("Word not found in vocabulary") ||
+          errorMessage.includes("not found") ||
+          errorMessage.includes("לא נמצא") ||
+          errorMessage.includes("לא נמצאה במאגר")) {
         setError(`אני לא מכיר את המילה ${explorationInput}`);
       } else {
         setError(errorMessage);
