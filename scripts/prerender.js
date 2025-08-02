@@ -92,7 +92,7 @@ console.log(`📁 Generated static HTML files for ${routes.length} routes`);
 function getMetaTagsForRoute(route) {
   const metaTags = {
     '/': {
-      title: 'סמנטעל + | המשחק שבו אתה מנחש מילים לפי דמיון סמנטי',
+      title: 'סמנטעל פלוס',
       description: 'סמנטעל פלוס - משחק ניחוש מילים מבוסס דמיון סמנטי. נסה לנחש את המילה היומית!'
     },
     '/about': {
