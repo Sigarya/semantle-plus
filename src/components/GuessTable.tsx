@@ -7,9 +7,10 @@ interface GuessTableProps {
   guesses: Guess[];
   originalGuesses: Guess[];
   showHeader?: boolean;
+  flashingWord?: string | null;
 }
 
-const GuessTable = React.memo(({ guesses, originalGuesses, showHeader = true }: GuessTableProps) => {
+const GuessTable = React.memo(({ guesses, originalGuesses, showHeader = true, flashingWord }: GuessTableProps) => {
   if (guesses.length === 0) {
     return (
       <div className="text-center py-4 text-muted-foreground">
@@ -42,8 +43,13 @@ const GuessTable = React.memo(({ guesses, originalGuesses, showHeader = true }: 
             );
             const guessNumber = originalIndex + 1;
             
+            const isFlashing = flashingWord === guess.word;
+            
             return (
-              <TableRow key={`${guess.word}-${index}`} className={`${guess.isCorrect ? "bg-green-500/20" : ""}`}>
+              <TableRow 
+                key={`${guess.word}-${index}`} 
+                className={`${guess.isCorrect ? "bg-green-500/20" : ""} ${isFlashing ? "animate-pulse bg-yellow-200 dark:bg-yellow-900/50" : ""}`}
+              >
                 <TableCell className="w-12 py-1 px-2 text-xs">{guessNumber}</TableCell>
                 <TableCell className="w-24 font-medium py-1 px-2 text-xs truncate">{guess.word}</TableCell>
                 <TableCell className="w-20 text-center py-1 px-2 text-xs">

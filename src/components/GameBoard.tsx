@@ -35,6 +35,10 @@ const GameBoard = React.memo(() => {
   const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
   const timeoutMessageRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Flash effect for duplicate guesses
+  const [flashingWord, setFlashingWord] = useState<string | null>(null);
+  const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Intelligent focus management
   const [shouldRefocus, setShouldRefocus] = useState(false);
   
@@ -104,6 +108,18 @@ const GameBoard = React.memo(() => {
     fetchAndSetSampleRanks();
   }, [fetchAndSetSampleRanks]);
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current);
+      }
+      if (timeoutMessageRef.current) {
+        clearTimeout(timeoutMessageRef.current);
+      }
+    };
+  }, []);
+
   // Intelligent focus management - only refocus after guess submission
   useEffect(() => {
     if (shouldRefocus && !gameState.isComplete && inputRef.current) {
@@ -135,24 +151,27 @@ const GameBoard = React.memo(() => {
     setError(null);
     const wordToGuess = sanitizedInput.trim();
     
-    // Check if word was already guessed - if so, show it again instead of error
+    // Check if word was already guessed - if so, flash the duplicate and show it in Last Guess panel
     const existingGuess = gameState.guesses.find(g => g.word === wordToGuess);
     if (existingGuess) {
-      // Clear input and show brief loading state for UX consistency
+      // Clear input immediately
       setGuessInput("");
-      isSubmittingRef.current = true;
-      setIsSubmitting(true);
       
-      // Brief delay to show loading, then reset
-      setTimeout(() => {
-        isSubmittingRef.current = false;
-        setIsSubmitting(false);
-        // The existing guess will appear in the "mostRecentGuess" display
-        // since it's the same word that was just "submitted"
-        
-        // Trigger intelligent refocus after duplicate guess submission
-        setShouldRefocus(true);
-      }, 200);
+      // Flash the duplicate word in the main guess table
+      setFlashingWord(wordToGuess);
+      
+      // Clear any existing flash timeout
+      if (flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current);
+      }
+      
+      // Stop flashing after 2 seconds
+      flashTimeoutRef.current = setTimeout(() => {
+        setFlashingWord(null);
+      }, 2000);
+      
+      // Trigger refocus after duplicate guess submission
+      setShouldRefocus(true);
       
       return;
     }
@@ -261,17 +280,11 @@ const GameBoard = React.memo(() => {
     return <div className="flex justify-center items-center h-64"><div className="text-xl">טוען משחק...</div></div>;
   }
   
-  // Intelligent flashback: Check if current input matches a previous guess
-  const currentInputTrimmed = guessInput.trim();
-  const matchingHistoricalGuess = currentInputTrimmed ? gameState.guesses.find(g => g.word === currentInputTrimmed) : null;
-  
-  // If typing a word that was already guessed, show the historical data
-  // Otherwise, show the most recent guess (for normal flow)
-  const mostRecentGuess = matchingHistoricalGuess || gameState.guesses[gameState.guesses.length - 1];
-  
-  // Calculate the original guess number for the displayed guess
-  const displayedGuessNumber = matchingHistoricalGuess 
-    ? gameState.guesses.findIndex(g => g.word === matchingHistoricalGuess.word) + 1
+  // Show most recent guess, or the flashing duplicate if one is active
+  const flashingGuess = flashingWord ? gameState.guesses.find(g => g.word === flashingWord) : null;
+  const mostRecentGuess = flashingGuess || gameState.guesses[gameState.guesses.length - 1];
+  const displayedGuessNumber = flashingGuess 
+    ? gameState.guesses.findIndex(g => g.word === flashingWord) + 1
     : gameState.guesses.length;
   
   const sortedGuessesForTable = (gameState.isComplete ? gameState.guesses : gameState.guesses.slice(0, -1)).sort((a, b) => b.similarity - a.similarity);
@@ -398,10 +411,10 @@ const GameBoard = React.memo(() => {
         </>
       )}
 
-      {((mostRecentGuess && !gameState.isComplete) || matchingHistoricalGuess) && (
+      {(mostRecentGuess && !gameState.isComplete) && (
         <div className="space-y-2" ref={lastGuessRef}>
           <h3 className="text-lg font-bold font-heebo">
-            {matchingHistoricalGuess ? "ניחוש קודם" : "הניחוש האחרון"}
+            {flashingWord ? "ניחוש קודם" : "הניחוש האחרון"}
           </h3>
           <div className="border rounded-md overflow-x-auto">
             <Table>
@@ -447,7 +460,7 @@ const GameBoard = React.memo(() => {
 
       {sortedGuessesForTable.length > 0 && (
         <div className={mostRecentGuess && !gameState.isComplete ? "mt-1" : "space-y-2"}>
-          <GuessTable guesses={sortedGuessesForTable} originalGuesses={gameState.guesses} showHeader={!mostRecentGuess || gameState.isComplete}/>
+          <GuessTable guesses={sortedGuessesForTable} originalGuesses={gameState.guesses} showHeader={!mostRecentGuess || gameState.isComplete} flashingWord={flashingWord}/>
         </div>
       )}
 
