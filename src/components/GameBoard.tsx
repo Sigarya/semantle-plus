@@ -239,8 +239,19 @@ const GameBoard = React.memo(() => {
     return <div className="flex justify-center items-center h-64"><div className="text-xl">טוען משחק...</div></div>;
   }
   
-  // For duplicate guesses, we want to show the most recent submission in the "recent guess" panel
-  const mostRecentGuess = gameState.guesses.find(g => g.word === guessInput.trim()) || gameState.guesses[gameState.guesses.length - 1];
+  // Intelligent flashback: Check if current input matches a previous guess
+  const currentInputTrimmed = guessInput.trim();
+  const matchingHistoricalGuess = currentInputTrimmed ? gameState.guesses.find(g => g.word === currentInputTrimmed) : null;
+  
+  // If typing a word that was already guessed, show the historical data
+  // Otherwise, show the most recent guess (for normal flow)
+  const mostRecentGuess = matchingHistoricalGuess || gameState.guesses[gameState.guesses.length - 1];
+  
+  // Calculate the original guess number for the displayed guess
+  const displayedGuessNumber = matchingHistoricalGuess 
+    ? gameState.guesses.findIndex(g => g.word === matchingHistoricalGuess.word) + 1
+    : gameState.guesses.length;
+  
   const sortedGuessesForTable = (gameState.isComplete ? gameState.guesses : gameState.guesses.slice(0, -1)).sort((a, b) => b.similarity - a.similarity);
 
   return (
@@ -365,9 +376,11 @@ const GameBoard = React.memo(() => {
         </>
       )}
 
-      {mostRecentGuess && !gameState.isComplete && (
+      {((mostRecentGuess && !gameState.isComplete) || matchingHistoricalGuess) && (
         <div className="space-y-2" ref={lastGuessRef}>
-          <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
+          <h3 className="text-lg font-bold font-heebo">
+            {matchingHistoricalGuess ? "ניחוש קודם" : "הניחוש האחרון"}
+          </h3>
           <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
@@ -376,7 +389,7 @@ const GameBoard = React.memo(() => {
               <TableBody>
                 <TableRow className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700">
                   <TableCell className="w-12 py-1 px-2 text-xs font-medium text-primary-700 dark:text-primary-300">
-                    {gameState.guesses.length}
+                    {displayedGuessNumber}
                   </TableCell>
                   <TableCell className="w-24 font-medium py-1 px-2 text-xs truncate text-primary-700 dark:text-primary-300">
                     {mostRecentGuess.word}
