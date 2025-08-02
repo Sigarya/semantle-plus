@@ -92,28 +92,28 @@ console.log(`📁 Generated static HTML files for ${routes.length} routes`);
 function getMetaTagsForRoute(route) {
   const metaTags = {
     '/': {
-      title: 'סמנטעל + | המשחק שבו אתה מנחש מילים לפי דמיון סמנטי',
-      description: 'סמנטעל פלוס - משחק ניחוש מילים מבוסס דמיון סמנטי. נסה לנחש את המילה היומית!'
+      title: 'סמנטעל פלוס',
+      description: 'פתרתם את הסמנטעל ובא לכם לשחק שוב? שחקו בכל המשחקים מכל הימים עכשיו!'
     },
     '/about': {
-      title: 'אודות סמנטעל + | כל מה שאתה צריך לדעת על המשחק',
-      description: 'למד על סמנטעל פלוס - איך לשחק, מה זה דמיון סמנטי, והיסטוריה של המשחק.'
+      title: 'אודות סמנטעל פלוס',
+      description: 'מה זה סמנטעל, איך לשחק, מה זה דמיון סמנטי, והיסטוריה של המשחק.'
     },
     '/history': {
-      title: 'היסטוריית המשחקים | סמנטעל +',
-      description: 'צפה בהיסטוריית המשחקים שלך, הניקוד והישגים בסמנטעל פלוס.'
+      title: 'היסטוריית משחקים',
+      description: 'כאן תוכל לשחק בכל המשחקים מכל הימים. המשחק של אתמול יתעדכן כאן בכל יום'
     },
     '/admin': {
-      title: 'פאנל ניהול | סמנטעל +',
+      title: 'פאנל ניהול',
       description: 'פאנל ניהול למנהלי סמנטעל פלוס.'
     },
     '/profile': {
-      title: 'הפרופיל שלי | סמנטעל +',
+      title: 'הפרופיל שלי',
       description: 'נהל את הפרופיל, ההגדרות והנתונים האישיים שלך בסמנטעל פלוס.'
     },
     '/leaderboard': {
-      title: 'לוח התוצאות | סמנטעל +',
-      description: 'צפה בלוח התוצאות של המשחקים הטובים ביותר בסמנטעל פלוס.'
+      title: 'המובילים',
+      description: 'מי פתר היום את החידה הכי מהר?'
     }
   };
   
