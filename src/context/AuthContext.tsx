@@ -24,11 +24,15 @@ interface AuthContextType {
   session: Session | null;
   currentUser: UserProfile | null;
   isLoading: boolean;
+  needsUsernameSelection: boolean;
+  showUsernameDialog: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  setUsernameSelected: (username: string) => void;
+  hideUsernameDialog: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,6 +41,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [needsUsernameSelection, setNeedsUsernameSelection] = useState(false);
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const { toast } = useToast();
 
   const fetchUserProfile = async (user: User) => {
@@ -66,40 +72,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           username: data.username,
           isAdmin: data.is_admin || false
         });
+        setIsLoading(false);
       } else {
-        console.log("AuthContext: No profile found, creating new profile");
-        const username = user.user_metadata?.username || 
-                        user.user_metadata?.full_name || 
-                        user.email?.split('@')[0] || 
-                        'User';
+        console.log("AuthContext: No profile found, user needs to select username");
+        console.log("AuthContext: Setting showUsernameDialog to true");
         
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            username
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error("AuthContext: Error creating profile:", createError);
-          toast({
-            variant: "destructive",
-            title: "שגיאה",
-            description: "אירעה שגיאה ביצירת הפרופיל"
-          });
-        } else if (newProfile) {
-          console.log("AuthContext: Profile created successfully:", newProfile.username);
-          setCurrentUser({
-            id: newProfile.id,
-            username: newProfile.username,
-            isAdmin: newProfile.is_admin || false
-          });
-        }
+        // User needs to select a username - set flags to show the dialog
+        setNeedsUsernameSelection(true);
+        setShowUsernameDialog(true);
+        setCurrentUser(null);
+        
+        // IMPORTANT: Stop loading immediately so the dialog can show
+        setIsLoading(false);
+        console.log("AuthContext: Loading set to false, dialog should now be visible");
       }
     } catch (error) {
       console.error("AuthContext: Error in fetchUserProfile:", error);
+      setIsLoading(false);
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: "אירעה שגיאה בטעינת המערכת"
+      });
     }
   };
 
@@ -117,12 +111,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       
       if (session?.user) {
-        // Fetch user profile without blocking
-        fetchUserProfile(session.user).finally(() => {
-          if (mounted) {
-            setIsLoading(false);
-          }
-        });
+        // Fetch user profile
+        fetchUserProfile(session.user);
       } else {
         setCurrentUser(null);
         setIsLoading(false);
@@ -295,16 +285,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const setUsernameSelected = (username: string) => {
+    if (session?.user) {
+      console.log("AuthContext: Username selected:", username);
+      setCurrentUser({
+        id: session.user.id,
+        username: username,
+        isAdmin: false
+      });
+      setNeedsUsernameSelection(false);
+      setShowUsernameDialog(false);
+      // Loading is already false, no need to change it
+    }
+  };
+
+  const hideUsernameDialog = () => {
+    setShowUsernameDialog(false);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       session, 
       currentUser, 
       isLoading,
+      needsUsernameSelection,
+      showUsernameDialog,
       signIn,
       signInWithGoogle,
       signUp,
       signOut,
-      refreshUser
+      refreshUser,
+      setUsernameSelected,
+      hideUsernameDialog
     }}>
       {children}
     </AuthContext.Provider>

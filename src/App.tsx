@@ -5,9 +5,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { GameProvider } from "@/context/GameContext";
 import { PWAUpdateNotification } from "@/components/PWAUpdateNotification";
+import { UsernameSelectionDialog } from "@/components/UsernameSelectionDialog";
 import { Suspense, lazy } from "react";
 
 // Lazy load pages for code splitting
@@ -28,6 +29,48 @@ const queryClient = new QueryClient({
   },
 });
 
+// Component to handle username dialog within AuthProvider context
+const AppContent = () => {
+  const { showUsernameDialog, setUsernameSelected, hideUsernameDialog } = useAuth();
+
+  // Debug logging
+  console.log("AppContent: showUsernameDialog =", showUsernameDialog);
+
+  return (
+    <>
+      <GameProvider>
+        <Toaster />
+        <Sonner />
+        <PWAUpdateNotification />
+        <UsernameSelectionDialog
+          isOpen={showUsernameDialog}
+          onClose={hideUsernameDialog}
+          onUsernameSet={setUsernameSelected}
+        />
+        <BrowserRouter>
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="text-xl text-primary-500 dark:text-primary-400">
+                טוען...
+              </div>
+            </div>
+          }>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </GameProvider>
+    </>
+  );
+};
+
 const App = () => {
   try {
     return (
@@ -35,30 +78,7 @@ const App = () => {
         <TooltipProvider>
           <ThemeProvider>
             <AuthProvider>
-              <GameProvider>
-                <Toaster />
-                <Sonner />
-                <PWAUpdateNotification />
-                <BrowserRouter>
-                  <Suspense fallback={
-                    <div className="min-h-screen flex items-center justify-center">
-                      <div className="text-xl text-primary-500 dark:text-primary-400">
-                        טוען...
-                      </div>
-                    </div>
-                  }>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/about" element={<About />} />
-                      <Route path="/history" element={<History />} />
-                      <Route path="/admin" element={<Admin />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/leaderboard" element={<Leaderboard />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                </BrowserRouter>
-              </GameProvider>
+              <AppContent />
             </AuthProvider>
           </ThemeProvider>
         </TooltipProvider>
