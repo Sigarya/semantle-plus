@@ -121,16 +121,19 @@ const GameBoard = React.memo(() => {
     
     if (!guessInput.trim() || isSubmitting) return;
 
+    // Sanitize input by removing geresh characters (') before validation
+    const sanitizedInput = guessInput.replace(/'/g, '');
+
     // Enhanced validation with specific error messages
-    const validation = validateHebrewWord(guessInput);
+    const validation = validateHebrewWord(sanitizedInput);
     if (!validation.isValid) {
       setError(validation.errorMessage || "שגיאה בבדיקת המילה");
       return;
     }
 
-    // Clear error and capture the word immediately
+    // Clear error and capture the sanitized word immediately
     setError(null);
-    const wordToGuess = guessInput.trim();
+    const wordToGuess = sanitizedInput.trim();
     
     // Check if word was already guessed - if so, show it again instead of error
     const existingGuess = gameState.guesses.find(g => g.word === wordToGuess);
@@ -198,8 +201,11 @@ const GameBoard = React.memo(() => {
     e.preventDefault();
     if (!explorationInput.trim()) return;
     
+    // Sanitize input by removing geresh characters (') before validation
+    const sanitizedExplorationInput = explorationInput.replace(/'/g, '');
+    
     // Enhanced validation with specific error messages
-    const validation = validateHebrewWord(explorationInput);
+    const validation = validateHebrewWord(sanitizedExplorationInput);
     if (!validation.isValid) {
       setError(validation.errorMessage || "שגיאה בבדיקת המילה");
       return;
@@ -207,7 +213,7 @@ const GameBoard = React.memo(() => {
     setError(null);
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("calculate-similarity", { body: { guess: explorationInput, date: gameState.wordDate } });
+      const { data, error } = await supabase.functions.invoke("calculate-similarity", { body: { guess: sanitizedExplorationInput, date: gameState.wordDate } });
       if (error) throw new Error("שגיאה בחישוב הדמיון");
       if (data.error) {
         // Check if it's a "word not found" error
@@ -215,12 +221,12 @@ const GameBoard = React.memo(() => {
             data.error.includes("not found") ||
             data.error.includes("לא נמצא") ||
             data.error.includes("לא נמצאה במאגר")) {
-          throw new Error(`אני לא מכיר את המילה ${explorationInput}`);
+          throw new Error(`אני לא מכיר את המילה ${sanitizedExplorationInput}`);
         } else {
           throw new Error(data.error);
         }
       }
-      setExplorationResult({ word: explorationInput, similarity: data.similarity, rank: data.rank });
+      setExplorationResult({ word: sanitizedExplorationInput, similarity: data.similarity, rank: data.rank });
       setExplorationInput("");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בבדיקת דמיון";
@@ -229,7 +235,7 @@ const GameBoard = React.memo(() => {
           errorMessage.includes("not found") ||
           errorMessage.includes("לא נמצא") ||
           errorMessage.includes("לא נמצאה במאגר")) {
-        setError(`אני לא מכיר את המילה ${explorationInput}`);
+        setError(`אני לא מכיר את המילה ${sanitizedExplorationInput}`);
       } else {
         setError(errorMessage);
       }
