@@ -4,6 +4,7 @@ import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
+import { secureStorage, CACHE_KEYS, isOnline, offlineQueue, setupOnlineStatusHandlers } from "@/lib/pwaUtils";
 
 interface GameContextType {
   gameState: GameState;
@@ -11,6 +12,7 @@ interface GameContextType {
   currentWord: string | null;
   leaderboard: LeaderboardEntry[];
   isHistoricalGame: boolean;
+  isOffline: boolean;
   makeGuess: (word: string) => Promise<Guess>;
   resetGame: () => void;
   dailyWords: DailyWord[];
@@ -19,6 +21,7 @@ interface GameContextType {
   fetchLeaderboard: (date?: string) => Promise<void>;
   initializeGame: () => Promise<void>;
   getCurrentGameDate: () => string;
+  syncOfflineData: () => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -48,6 +51,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [dailyWords, setDailyWords] = useState<DailyWord[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isHistoricalGame] = useState<boolean>(true); // Always historical now
+  const [isOffline, setIsOffline] = useState<boolean>(!isOnline());
 
   // Initialize game
   useEffect(() => {
@@ -55,13 +59,49 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       try {
         setIsLoading(true);
         
-        // Load daily words
-        const { data, error } = await supabase
-          .from('daily_words')
-          .select('*')
-          .order('date', { ascending: false });
+        // Load daily words - try online first, fallback to cache
+        let data = null;
+        let error = null;
         
-        if (error) {
+        if (isOnline()) {
+          try {
+            const response = await supabase
+              .from('daily_words')
+              .select('*')
+              .order('date', { ascending: false });
+            
+            data = response.data;
+            error = response.error;
+            
+            // Cache the data if successful
+            if (data && !error) {
+              secureStorage.set(CACHE_KEYS.DAILY_WORDS, data);
+            }
+          } catch (apiError) {
+            console.warn("Failed to fetch daily words online, trying cache:", apiError);
+            error = apiError;
+          }
+        }
+        
+        // If offline or API failed, try cached data
+        if (!data || error) {
+          const cachedData = secureStorage.get<any[]>(CACHE_KEYS.DAILY_WORDS);
+          if (cachedData) {
+            data = cachedData;
+            error = null;
+            console.log("Using cached daily words data");
+            
+            if (isOffline) {
+              toast({
+                title: "מצב לא מקוון",
+                description: "משתמש בנתונים שמורים",
+                variant: "default"
+              });
+            }
+          }
+        }
+        
+        if (error && !data) {
           console.error("Error loading daily words:", error);
         }
         
@@ -137,6 +177,78 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     initializeApp();
   }, [toast]);
 
+  // Setup online/offline status handlers
+  useEffect(() => {
+    const cleanup = setupOnlineStatusHandlers(
+      // onOnline
+      () => {
+        setIsOffline(false);
+        syncOfflineData(); // Sync any pending data when coming back online
+        toast({
+          title: "חזרת למצב מקוון",
+          description: "מסנכרן נתונים...",
+          variant: "default"
+        });
+      },
+      // onOffline  
+      () => {
+        setIsOffline(true);
+        toast({
+          title: "אתה במצב לא מקוון",
+          description: "המשחק ימשיך עם נתונים שמורים",
+          variant: "default"
+        });
+      }
+    );
+
+    return cleanup;
+  }, [toast]);
+
+  // Sync offline data when coming back online
+  const syncOfflineData = async () => {
+    if (!isOnline()) return;
+
+    try {
+      const queuedActions = offlineQueue.getAll();
+      
+      for (const action of queuedActions) {
+        try {
+          if (action.type === 'score' && auth.currentUser) {
+            // Retry saving score
+            await supabase
+              .from('daily_scores')
+              .upsert(action.data, { onConflict: 'user_id,word_date' });
+            
+            offlineQueue.remove(action.id);
+          }
+          // Add other action types as needed
+        } catch (error) {
+          console.warn(`Failed to sync action ${action.id}:`, error);
+          // Keep in queue for next retry
+        }
+      }
+
+      // Refresh daily words and other data
+      const { data } = await supabase
+        .from('daily_words')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (data) {
+        secureStorage.set(CACHE_KEYS.DAILY_WORDS, data);
+        setDailyWords(data.map(item => ({
+          id: item.id,
+          word: item.word,
+          date: item.date,
+          hints: item.hints,
+          is_active: item.is_active
+        })));
+      }
+    } catch (error) {
+      console.warn("Failed to sync offline data:", error);
+    }
+  };
+
   // Save game state when it changes
   useEffect(() => {
     if (!isLoading && currentWord && gameState.guesses.length >= 0) {
@@ -175,6 +287,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const existingGuess = gameState.guesses.find(g => g.word === normalizedWord);
     if (existingGuess) {
       return existingGuess;
+    }
+
+    // Check if offline - can't make new guesses without API access
+    if (isOffline || !isOnline()) {
+      throw new Error("אתה במצב לא מקוון. התחבר לאינטרנט כדי לבצע ניחושים חדשים");
     }
 
     // Check rate limit if user is authenticated
@@ -554,6 +671,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         currentWord, 
         leaderboard,
         isHistoricalGame,
+        isOffline,
         makeGuess, 
         resetGame,
         dailyWords,
@@ -561,7 +679,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         loadHistoricalGame,
         fetchLeaderboard,
         initializeGame,
-        getCurrentGameDate
+        getCurrentGameDate,
+        syncOfflineData
       }}
     >
       {children}

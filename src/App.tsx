@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { GameProvider } from "@/context/GameContext";
+import { PWAUpdateNotification } from "@/components/PWAUpdateNotification";
 import { Suspense, lazy } from "react";
 
 // Lazy load pages for code splitting
@@ -37,6 +38,7 @@ const App = () => {
               <GameProvider>
                 <Toaster />
                 <Sonner />
+                <PWAUpdateNotification />
                 <BrowserRouter>
                   <Suspense fallback={
                     <div className="min-h-screen flex items-center justify-center">
