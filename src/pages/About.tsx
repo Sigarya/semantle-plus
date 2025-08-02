@@ -1,4 +1,3 @@
-
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -8,24 +7,24 @@ const About = () => {
       <Header />
       <main className="flex-grow p-4 md:p-8">
         <div className="max-w-3xl mx-auto space-y-6">
-          <h2 className="text-3xl font-bold text-center text-primary-600 dark:text-primary-400 mb-8 font-heebo">אודות סמנטעל +</h2>
-          
+          <h2 className="text-3xl font-bold text-center text-primary-600 dark:text-primary-400 mb-8 font-heebo">
+            סמנטעל פלוס – משחק מילים יומי בעברית עם כל המילים הקודמות
+          </h2>
+
           <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader>
               <CardTitle className="text-xl font-heebo">מה זה סמנטעל?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p>
-                סמנטעל הוא משחק ניחושים המבוסס על הקרבה הסמנטית בין מילים. המטרה היא לנחש את המילה היומית
-                כאשר לכל ניחוש תקבל ציון המבטא עד כמה המילה שניחשת קרובה למילה המבוקשת מבחינת המשמעות.
+                סמנטעל הוא משחק ניחוש מילים יומי המבוסס על קרבה סמנטית בין מילים. זה משחק חידה יומי בשפה העברית, בדומה ל־Wordle אבל במקום אותיות – בודקים משמעות. המטרה היא לנחש את המילה סודית באמצעות רמזים שמבוססים על קרבה במשמעות למילה שניחשת.
               </p>
               <p>
-                הציון מחושב באמצעות מודלים של עיבוד שפה טבעית (NLP) אשר מייצגים מילים כווקטורים במרחב סמנטי,
-                כך שמילים עם משמעויות קרובות נמצאות קרוב זו לזו במרחב הזה.
+                סמנטעל פלוס הוא הרחבה של המשחק המקורי, ומאפשר לשחק לא רק במילה היומית, אלא גם במילים מהעבר. זהו משחק ניחוש מילים ייחודי שמשתמש בטכנולוגיות של עיבוד שפה טבעית (NLP) בעברית, אשר ממפה מילים למרחב סמנטי וחושף את הקשרים ביניהן.
               </p>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader>
               <CardTitle className="text-xl font-heebo">איך משחקים?</CardTitle>
@@ -36,17 +35,14 @@ const About = () => {
                 <li>לאחר כל ניחוש תקבל ציון בין 0% ל-100% המייצג את הקרבה הסמנטית למילה המבוקשת.</li>
                 <li>ככל שהניחוש שלך קרוב יותר סמנטית למילה, כך הציון יהיה גבוה יותר.</li>
                 <li>מטרת המשחק היא לנחש את המילה המדויקת בכמה שפחות ניחושים.</li>
-                <li>צבע הניקוד מרמז על כמה קרוב אתה לפתרון:
-                  <ul className="list-disc list-inside pr-5 mt-1">
-                    <li className="similarity-cold">כחול - רחוק מאוד</li>
-                    <li className="similarity-warm">כתום - מתקרב</li>
-                    <li className="similarity-hot">ירוק - קרוב מאוד</li>
-                  </ul>
+                <li>
+                  אחרי שמגיעים ל-1,000 המילים הכי קרובות, יופיע מד שמראה את מיקום המילה שלך מתוך ה-1,000 – 
+                  למשל, 1/1000 זה הכי רחוק ו-999/1000 זה הכי קרוב למילה הסודית.
                 </li>
               </ol>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader>
               <CardTitle className="text-xl font-heebo">טיפים והמלצות</CardTitle>
@@ -55,33 +51,29 @@ const About = () => {
               <ul className="list-disc list-inside space-y-2">
                 <li>התחל עם מילים כלליות בתחומים שונים כדי לזהות את התחום הסמנטי של המילה המבוקשת.</li>
                 <li>שים לב לניחושים שקיבלו ציון גבוה וחפש מילים נרדפות או מילים מאותו תחום.</li>
-                <li>לפעמים כדאי לנסות צורות דקדוקיות שונות של אותה מילה (יחיד/רבים, זכר/נקבה).</li>
-                <li>אם אתה מחובר למערכת, הסטטיסטיקות שלך יישמרו ותוכל לעקוב אחר ההתקדמות שלך.</li>
+                <li>נסה גם צורות דקדוק שונות – יחיד/רבים, זכר/נקבה – לפעמים זה עושה את ההבדל.</li>
+                <li>אם אתה מחובר למערכת, הסטטיסטיקות שלך יישמרו ותוכל לעקוב אחר ההתקדמות שלך לאורך זמן.</li>
               </ul>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
             <CardHeader>
               <CardTitle className="text-xl font-heebo">קרדיטים והשראה</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p>
-                סמנטעל + מבוסס על רעיון המשחק המקורי Semantle שנוצר על ידי David Turner, 
-                עם התאמות לעברית והרחבות ייחודיות.
+                סמנטעל פלוס מבוסס על הרעיון המקורי של <a href="https://semantle.novalis.org/" target="_blank" rel="noopener noreferrer">Semantle</a> מאת David Turner,וכמובן על משחק <a href="https://Semantle.ishefi.com" target="_blank" rel="noopener noreferrer">הסמנטעל</a> המקורי בעברית עם התאמות למי שרוצים לחקור ולשחק ביותר ממילה אחת ביום.
               </p>
               <p>
-                המשחק משתמש במודלים של עיבוד שפה טבעית בעברית לחישוב הקרבה הסמנטית בין מילים.
-              </p>
-              <p>
-                תודה מיוחדת ל-ishefi על הפיתוח המקורי של סמנטעל בעברית ול-Iddoyadlin על המודל.
+                המשחק עושה שימוש במודל של עיבוד שפה טבעית בעברית שפותח על ידי <a href="https://github.com/iddoyadlin" target="_blank" rel="noopener noreferrer">Iddoyadlin</a>, וכמובן על המשחק והמילים היומיות של המשחק המקורי שפיתח ומתפעל <a href="https://Semantle.ishefi.com" target="_blank" rel="noopener noreferrer">ishefi</a>.
               </p>
             </CardContent>
           </Card>
         </div>
       </main>
       <footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
-        סמנטעל + &copy; {new Date().getFullYear()}
+        סמנטעל פלוס &copy; {new Date().getFullYear()}
       </footer>
     </div>
   );
