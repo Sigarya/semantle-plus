@@ -31,10 +31,11 @@ const queryClient = new QueryClient({
 
 // Component to handle username dialog within AuthProvider context
 const AppContent = () => {
-  const { showUsernameDialog, setUsernameSelected, hideUsernameDialog } = useAuth();
+  const { showUsernameDialog, suggestedUsername, setUsernameSelected, hideUsernameDialog } = useAuth();
 
   // Debug logging
   console.log("AppContent: showUsernameDialog =", showUsernameDialog);
+  console.log("AppContent: suggestedUsername =", suggestedUsername);
 
   return (
     <>
@@ -46,6 +47,7 @@ const AppContent = () => {
           isOpen={showUsernameDialog}
           onClose={hideUsernameDialog}
           onUsernameSet={setUsernameSelected}
+          suggestedUsername={suggestedUsername}
         />
         <BrowserRouter>
           <Suspense fallback={

@@ -26,6 +26,7 @@ interface AuthContextType {
   isLoading: boolean;
   needsUsernameSelection: boolean;
   showUsernameDialog: boolean;
+  suggestedUsername: string;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, username: string) => Promise<void>;
@@ -43,7 +44,100 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [needsUsernameSelection, setNeedsUsernameSelection] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+  const [suggestedUsername, setSuggestedUsername] = useState("");
   const { toast } = useToast();
+
+  // Generate a suggested username from user metadata
+  const generateSuggestedUsername = async (user: User): Promise<string> => {
+    try {
+      // Extract user information from Google metadata
+      const metadata = user.user_metadata || {};
+      const fullName = metadata.full_name || metadata.name || "";
+      const firstName = metadata.given_name || "";
+      const lastName = metadata.family_name || "";
+      const email = user.email || "";
+      
+      console.log("AuthContext: Generating username from metadata:", {
+        fullName, firstName, lastName, email
+      });
+      
+      // Helper function to sanitize text for username
+      const sanitizeForUsername = (text: string): string => {
+        return text
+          .replace(/[^א-תa-zA-Z0-9]/g, '') // Remove invalid characters
+          .trim();
+      };
+      
+      // Try different approaches to generate a base username
+      let baseUsername = "";
+      
+      if (firstName && lastName) {
+        // Prefer FirstLast format
+        baseUsername = sanitizeForUsername(firstName + lastName);
+      } else if (fullName) {
+        // Use full name, remove spaces
+        baseUsername = sanitizeForUsername(fullName);
+      } else if (email) {
+        // Fallback to email prefix
+        baseUsername = sanitizeForUsername(email.split('@')[0]);
+      }
+      
+      // Ensure minimum length
+      if (baseUsername.length < 2) {
+        baseUsername = "User";
+      }
+      
+      // Ensure maximum length (leave room for numbers)
+      if (baseUsername.length > 45) {
+        baseUsername = baseUsername.substring(0, 45);
+      }
+      
+      console.log("AuthContext: Base username:", baseUsername);
+      
+      // Check if base username is available
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', baseUsername)
+        .maybeSingle();
+      
+      if (!existing) {
+        console.log("AuthContext: Base username available:", baseUsername);
+        return baseUsername;
+      }
+      
+      // Username exists, try with random numbers
+      for (let attempt = 1; attempt <= 10; attempt++) {
+        const randomNum = Math.floor(Math.random() * 9999) + 1;
+        const suggestedUsername = baseUsername + randomNum;
+        
+        const { data: existingWithNum } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('username', suggestedUsername)
+          .maybeSingle();
+        
+        if (!existingWithNum) {
+          console.log("AuthContext: Found available username:", suggestedUsername);
+          return suggestedUsername;
+        }
+      }
+      
+      // If all attempts failed, use timestamp
+      const timestamp = Date.now().toString().slice(-4);
+      const finalUsername = baseUsername + timestamp;
+      console.log("AuthContext: Using timestamp-based username:", finalUsername);
+      
+      return finalUsername;
+      
+    } catch (error) {
+      console.error("AuthContext: Error generating username:", error);
+      // Fallback to simple random username
+      const fallback = "User" + Math.floor(Math.random() * 9999);
+      console.log("AuthContext: Using fallback username:", fallback);
+      return fallback;
+    }
+  };
 
   const fetchUserProfile = async (user: User) => {
     try {
@@ -75,7 +169,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
       } else {
         console.log("AuthContext: No profile found, user needs to select username");
-        console.log("AuthContext: Setting showUsernameDialog to true");
+        console.log("AuthContext: Generating suggested username...");
+        
+        // Generate a suggested username
+        const suggested = await generateSuggestedUsername(user);
+        setSuggestedUsername(suggested);
+        console.log("AuthContext: Suggested username:", suggested);
         
         // User needs to select a username - set flags to show the dialog
         setNeedsUsernameSelection(true);
@@ -310,6 +409,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isLoading,
       needsUsernameSelection,
       showUsernameDialog,
+      suggestedUsername,
       signIn,
       signInWithGoogle,
       signUp,
