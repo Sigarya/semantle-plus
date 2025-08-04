@@ -127,7 +127,7 @@ export const UsernameSelectionDialog = ({ isOpen, onClose, onUsernameSet }: User
         <DialogHeader>
           <DialogTitle className="text-right">בחר שם משתמש</DialogTitle>
           <DialogDescription className="text-right">
-            אנא בחר שם משתמש שישמש אותך במשחק. ניתן להשתמש באותיות עבריות ואנגליות, מספרים, קו תחתון, מקף ונקודה.
+            בחר שם משתמש שישמש אותך במשחק. ניתן להשתמש באותיות עבריות ואנגליות, מספרים, קו תחתון, מקף ונקודה.
           </DialogDescription>
         </DialogHeader>
         
