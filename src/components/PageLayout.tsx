@@ -17,8 +17,7 @@ const PageLayout = ({ children, title }: PageLayoutProps) => {
           {title && <h2 className="text-3xl font-bold text-center text-primary-600 dark:text-primary-400 mb-8 font-heebo">{title}</h2>}
           {children}
         </div>
-      </main>
-<footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
+      </main><footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
   <div className="space-y-1 leading-relaxed rtl text-sm">
     <a href="https://github.com/sigarya" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
       Made by Sigarya
@@ -39,13 +38,12 @@ const PageLayout = ({ children, title }: PageLayoutProps) => {
       Iddo Yadlin
     </a>.
     <br />
-    לא קשור רשמית ליוצרים.
-    <br />
     <a href="https://github.com/Sigarya/semantle-plus" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
       קוד מקור
     </a>
   </div>
 </footer>
+
     </div>
   );
 };
