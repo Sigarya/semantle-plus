@@ -74,7 +74,9 @@ const About = () => {
       </main>
 <footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
   <div className="space-y-1 leading-relaxed rtl text-sm">
-    סמנטעל פלוס &copy; {new Date().getFullYear()}
+    <a href="https://github.com/sigarya" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
+      Made by Sigarya
+    </a>
     <br />
     פרויקט עצמאי בהשראת&nbsp;
     <a href="https://semantle.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
