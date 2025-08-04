@@ -20,6 +20,10 @@ const PageLayout = ({ children, title }: PageLayoutProps) => {
       </main>
 <footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
   <div className="space-y-1 leading-relaxed rtl text-sm">
+    <a href="https://github.com/sigarya" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
+      Made by Sigarya
+    </a>
+    <br />
     פרויקט עצמאי בהשראת&nbsp;
     <a href="https://semantle.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
       Semantle
@@ -34,6 +38,8 @@ const PageLayout = ({ children, title }: PageLayoutProps) => {
     <a href="https://x.com/IddoYadlin" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
       Iddo Yadlin
     </a>.
+    <br />
+    לא קשור רשמית ליוצרים.
     <br />
     <a href="https://github.com/Sigarya/semantle-plus" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
       קוד מקור
