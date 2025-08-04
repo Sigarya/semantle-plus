@@ -20,8 +20,6 @@ const PageLayout = ({ children, title }: PageLayoutProps) => {
       </main>
 <footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
   <div className="space-y-1 leading-relaxed rtl text-sm">
-    סמנטעל פלוס &copy; {new Date().getFullYear()}
-    <br />
     פרויקט עצמאי בהשראת&nbsp;
     <a href="https://semantle.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
       Semantle
