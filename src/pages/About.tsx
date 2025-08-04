@@ -91,8 +91,6 @@ const About = () => {
       Iddo Yadlin
     </a>.
     <br />
-    לא קשור רשמית ליוצרים.
-    <br />
     <a href="https://github.com/Sigarya/semantle-plus" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
       קוד מקור
     </a>
