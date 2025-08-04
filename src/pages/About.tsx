@@ -72,9 +72,33 @@ const About = () => {
           </Card>
         </div>
       </main>
-      <footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
-        סמנטעל פלוס &copy; {new Date().getFullYear()}
-      </footer>
+<footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
+  <div className="space-y-1 leading-relaxed rtl text-sm">
+    סמנטעל פלוס &copy; {new Date().getFullYear()}
+    <br />
+    פרויקט עצמאי בהשראת&nbsp;
+    <a href="https://semantle.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
+      Semantle
+    </a>{" "}
+    (David Turner).
+    <br />
+    מבוסס על הגרסה העברית והמילים היומיות של&nbsp;
+    <a href="https://semantle.ishefi.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
+      סמנטעל (ishefi)
+    </a>
+    , והמודל של&nbsp;
+    <a href="https://x.com/IddoYadlin" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
+      Iddo Yadlin
+    </a>.
+    <br />
+    לא קשור רשמית ליוצרים.
+    <br />
+    <a href="https://github.com/Sigarya/semantle-plus" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
+      קוד מקור
+    </a>
+  </div>
+</footer>
+
     </div>
   );
 };
