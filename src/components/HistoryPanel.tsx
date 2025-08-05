@@ -74,14 +74,14 @@ const HistoryPanel = () => {
                 return (
                   <TableRow key={dailyWord.date}>
                     <TableCell>{formatHebrewDate(new Date(dailyWord.date))}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       {isPast && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handlePlayHistoricalGame(dailyWord.date)}
                           disabled={isLoading}
-                          className={isCompleted ? "border-green-500 text-green-600 hover:bg-green-50 dark:text-green-400 dark:border-green-400 dark:hover:bg-green-900/20" : ""}
+                          className={`min-w-[80px] ${isCompleted ? "border-green-500 text-green-600 hover:bg-green-50 dark:text-green-400 dark:border-green-400 dark:hover:bg-green-900/20" : ""}`}
                         >
                           {isLoading ? "טוען..." : isCompleted ? "הושלם 🎉" : "שחק"}
                         </Button>
