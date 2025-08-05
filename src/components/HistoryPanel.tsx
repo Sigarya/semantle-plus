@@ -58,7 +58,7 @@ const HistoryPanel = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-right">תאריך</TableHead>
-                <TableHead className="text-right">פעולות</TableHead>
+                <TableHead className="text-center">פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
