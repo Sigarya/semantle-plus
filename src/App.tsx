@@ -1,3 +1,4 @@
+// src/App.tsx
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -9,7 +10,8 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { GameProvider } from "@/context/GameContext";
 import { PWAUpdateNotification } from "@/components/PWAUpdateNotification";
 import { UsernameSelectionDialog } from "@/components/UsernameSelectionDialog";
-import { Suspense, lazy } from "react";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { Suspense, lazy, useState } from "react";
 
 // Lazy load pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -29,13 +31,11 @@ const queryClient = new QueryClient({
   },
 });
 
-// Component to handle username dialog within AuthProvider context
 const AppContent = () => {
   const { showUsernameDialog, suggestedUsername, setUsernameSelected, hideUsernameDialog } = useAuth();
-
-  // Debug logging
-  console.log("AppContent: showUsernameDialog =", showUsernameDialog);
-  console.log("AppContent: suggestedUsername =", suggestedUsername);
+  
+  // This state will track if the PWA banner is currently being displayed
+  const [isPwaBannerVisible, setIsPwaBannerVisible] = useState(false);
 
   return (
     <>
@@ -43,66 +43,55 @@ const AppContent = () => {
         <Toaster />
         <Sonner />
         <PWAUpdateNotification />
-        <UsernameSelectionDialog
-          isOpen={showUsernameDialog}
-          onClose={hideUsernameDialog}
-          onUsernameSet={setUsernameSelected}
-          suggestedUsername={suggestedUsername}
+        
+        {/* The PWA Prompt with proper visibility handling */}
+        <PWAInstallPrompt 
+          onInstallSuccess={() => setIsPwaBannerVisible(false)}
+          onBannerVisibilityChange={setIsPwaBannerVisible}
         />
-        <BrowserRouter>
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="text-xl text-primary-500 dark:text-primary-400">
-                טוען...
+        
+        {/* We use a state to add padding to the top of the app if the banner is visible */}
+        <div className={isPwaBannerVisible ? "pt-16" : ""}>
+          <UsernameSelectionDialog
+            isOpen={showUsernameDialog}
+            onClose={hideUsernameDialog}
+            onUsernameSet={setUsernameSelected}
+          />
+          <BrowserRouter>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-xl">טוען...</div>
               </div>
-            </div>
-          }>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
+            }>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </div>
       </GameProvider>
     </>
   );
 };
 
 const App = () => {
-  try {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <ThemeProvider>
-            <AuthProvider>
-              <AppContent />
-            </AuthProvider>
-          </ThemeProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  } catch (error) {
-    console.error("App: Critical error during render:", error);
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900">
-        <div className="text-center p-8">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">שגיאה בטעינת האפליקציה</h1>
-          <p className="text-gray-600 mb-4">אירעה שגיאה בטעינת האפליקציה. אנא רענן את הדף.</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            רענן דף
-          </button>
-        </div>
-      </div>
-    );
-  }
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ThemeProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
 };
 
 export default App;

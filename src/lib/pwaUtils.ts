@@ -20,6 +20,7 @@ export const CACHE_KEYS = {
   USER_PROFILE: 'semantle-user-profile',
   GAME_STATE: 'semantle-game-state',
   PENDING_GUESSES: 'semantle-pending-guesses',
+  PWA_PROMPT_LAST_SHOWN: 'pwa-prompt-last-shown',
 } as const;
 
 // Enhanced localStorage with error handling
