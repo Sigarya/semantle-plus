@@ -75,23 +75,25 @@ const HistoryPanel = () => {
                   <TableRow key={dailyWord.date}>
                     <TableCell>{formatHebrewDate(new Date(dailyWord.date))}</TableCell>
                     <TableCell className="text-center">
-                      {isPast && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePlayHistoricalGame(dailyWord.date)}
-                          disabled={isLoading}
-                          className={`min-w-[80px] ${isCompleted ? "border-green-500 text-green-600 hover:bg-green-50 dark:text-green-400 dark:border-green-400 dark:hover:bg-green-900/20" : ""}`}
-                        >
-                          {isLoading ? "טוען..." : isCompleted ? "הושלם 🎉" : "שחק"}
-                        </Button>
-                      )}
-                      {!isPast && dailyWord.date === today.toISOString().split("T")[0] && (
-                        <span className="text-primary-600 dark:text-primary-400">משחק נוכחי</span>
-                      )}
-                      {!isPast && dailyWord.date !== today.toISOString().split("T")[0] && (
-                        <span className="text-muted-foreground">טרם זמין</span>
-                      )}
+                      <div className="flex justify-center">
+                        {isPast && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePlayHistoricalGame(dailyWord.date)}
+                            disabled={isLoading}
+                            className={`min-w-[80px] ${isCompleted ? "border-green-500 text-green-600 hover:bg-green-50 dark:text-green-400 dark:border-green-400 dark:hover:bg-green-900/20" : ""}`}
+                          >
+                            {isLoading ? "טוען..." : isCompleted ? "הושלם 🎉" : "שחק"}
+                          </Button>
+                        )}
+                        {!isPast && dailyWord.date === today.toISOString().split("T")[0] && (
+                          <span className="text-primary-600 dark:text-primary-400">משחק נוכחי</span>
+                        )}
+                        {!isPast && dailyWord.date !== today.toISOString().split("T")[0] && (
+                          <span className="text-muted-foreground">טרם זמין</span>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
