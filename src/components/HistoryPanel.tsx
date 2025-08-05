@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { useGame } from "@/context/GameContext";
+import { useUserCompletions } from "@/hooks/useUserCompletions";
 import { formatHebrewDate } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
 const HistoryPanel = () => {
   const { dailyWords, loadHistoricalGame } = useGame();
+  const { isGameCompleted } = useUserCompletions();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -67,6 +69,8 @@ const HistoryPanel = () => {
                 today.setHours(0, 0, 0, 0);
                 const isPast = gameDate < today;
 
+                const isCompleted = isGameCompleted(dailyWord.date);
+
                 return (
                   <TableRow key={dailyWord.date}>
                     <TableCell>{formatHebrewDate(new Date(dailyWord.date))}</TableCell>
@@ -77,8 +81,9 @@ const HistoryPanel = () => {
                           size="sm"
                           onClick={() => handlePlayHistoricalGame(dailyWord.date)}
                           disabled={isLoading}
+                          className={isCompleted ? "border-green-500 text-green-600 hover:bg-green-50 dark:text-green-400 dark:border-green-400 dark:hover:bg-green-900/20" : ""}
                         >
-                          {isLoading ? "טוען..." : "שחק"}
+                          {isLoading ? "טוען..." : isCompleted ? "הושלם 🎉" : "שחק"}
                         </Button>
                       )}
                       {!isPast && dailyWord.date === today.toISOString().split("T")[0] && (
