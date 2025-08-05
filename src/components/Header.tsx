@@ -7,12 +7,21 @@ import { useTheme } from "@/context/ThemeContext";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import { Sun, Moon } from "lucide-react";
+import { usePWAInstall } from "@/context/PWAInstallContext";
+import { Download } from "lucide-react";
 
 const Header = () => {
   const { currentUser, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
+  const { deferredPrompt } = usePWAInstall();
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+  };
 
   const toggleDarkMode = () => {
     setTheme(theme.name === 'light' ? { name: 'dark', label: 'כהה' } : { name: 'light', label: 'בהיר' });
@@ -60,7 +69,16 @@ const Header = () => {
             <Link to="/history" className="text-primary-700 dark:text-primary-300 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
               היסטוריה
             </Link>
-            
+            {deferredPrompt && (
+              <button
+                onClick={handleInstall}
+                className="flex items-center text-primary-700 dark:text-primary-300 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md gap-1"
+                style={{ direction: 'rtl' }}
+              >
+                <Download className="w-4 h-4 ml-1" />
+                התקן
+              </button>
+            )}
             {currentUser?.isAdmin && (
               <Link to="/admin" className="text-primary-700 dark:text-primary-300 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
                 ניהול
