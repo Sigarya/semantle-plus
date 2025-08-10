@@ -197,6 +197,8 @@ const GameBoard = React.memo(() => {
           errorMessage.includes("Word not found in vocabulary") ||
           errorMessage.includes("לא נמצאה במאגר")) {
         setError(`אני לא מכיר את המילה ${wordToGuess}`);
+      } else if (errorMessage.includes("בעיה בגישה ל-API") || errorMessage.includes("API")) {
+        setError(`בעיה בגישה לשרת - נסה שוב בעוד כמה שניות`);
       } else {
         setError(errorMessage);
       }
@@ -222,7 +224,7 @@ const GameBoard = React.memo(() => {
     
     // Sanitize input by removing geresh characters (') before validation
     const sanitizedExplorationInput = explorationInput.replace(/'/g, '');
-    
+
     // Enhanced validation with specific error messages
     const validation = validateHebrewWord(sanitizedExplorationInput);
     if (!validation.isValid) {
@@ -255,6 +257,8 @@ const GameBoard = React.memo(() => {
           errorMessage.includes("לא נמצא") ||
           errorMessage.includes("לא נמצאה במאגר")) {
         setError(`אני לא מכיר את המילה ${sanitizedExplorationInput}`);
+      } else if (errorMessage.includes("בעיה בגישה ל-API") || errorMessage.includes("API")) {
+        setError(`בעיה בגישה לשרת - נסה שוב בעוד כמה שניות`);
       } else {
         setError(errorMessage);
       }

@@ -268,8 +268,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!currentWord) throw new Error("המשחק לא נטען כראוי");
     if (gameState.isComplete) throw new Error("המשחק הסתיים");
     
+    // Sanitize input by removing geresh characters (') before validation
+    const sanitizedWord = word.replace(/'/g, '');
+    
     // Enhanced input validation
-    const normalizedWord = word.trim();
+    const normalizedWord = sanitizedWord.trim();
     if (!normalizedWord) throw new Error("אנא הזן מילה");
     
     // Length validation
