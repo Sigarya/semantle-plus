@@ -139,9 +139,15 @@ const GameBoard = React.memo(() => {
 
     // Sanitize input by removing geresh characters (') before validation
     const sanitizedInput = guessInput.replace(/'/g, '');
+    
+    // DEBUG: Log the sanitization process
+    console.log('Original input:', guessInput);
+    console.log('Sanitized input:', sanitizedInput);
+    console.log('Geresh removed:', guessInput.includes("'") ? "YES" : "NO");
 
     // Enhanced validation with specific error messages
     const validation = validateHebrewWord(sanitizedInput);
+    console.log('Validation result:', validation);
     if (!validation.isValid) {
       setError(validation.errorMessage || "שגיאה בבדיקת המילה");
       return;
@@ -186,10 +192,12 @@ const GameBoard = React.memo(() => {
       setShowTimeoutMessage(true);
     }, 8000);
     
-      try {
+    try {
+      console.log('About to call makeGuess with word:', wordToGuess);
       await makeGuess(wordToGuess);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
+      console.log('Error from makeGuess:', errorMessage);
       
       // Check for vocabulary errors (word not found in the vocabulary)
       if (errorMessage.includes("not found") || 

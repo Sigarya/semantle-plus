@@ -268,8 +268,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!currentWord) throw new Error("המשחק לא נטען כראוי");
     if (gameState.isComplete) throw new Error("המשחק הסתיים");
     
+    // DEBUG: Log the input and sanitization
+    console.log('makeGuess called with word:', word);
+    console.log('Word contains geresh:', word.includes("'") ? "YES" : "NO");
+    
     // Sanitize input by removing geresh characters (') before validation
     const sanitizedWord = word.replace(/'/g, '');
+    console.log('Sanitized word:', sanitizedWord);
     
     // Enhanced input validation
     const normalizedWord = sanitizedWord.trim();
@@ -282,6 +287,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     // Hebrew word validation (allow Hebrew letters, English letters, numbers, spaces, hyphens, dots)
     const hebrewWordRegex = /^[א-תa-zA-Z0-9\s\-.]+$/;
+    console.log('Testing regex against normalizedWord:', normalizedWord);
+    console.log('Regex test result:', hebrewWordRegex.test(normalizedWord));
     if (!hebrewWordRegex.test(normalizedWord)) {
       throw new Error("המילה מכילה תווים לא חוקיים");
     }
@@ -300,6 +307,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // Check rate limit if user is authenticated
     if (auth.currentUser) {
       try {
+        console.log('Checking rate limit for user:', auth.currentUser.id);
         const { data: rateLimitResult, error: rateLimitError } = await supabase
           .rpc('check_rate_limit', {
             _user_id: auth.currentUser.id,
@@ -317,12 +325,21 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         console.warn("Rate limit check error:", error);
         // Continue without rate limiting if check fails
       }
+    } else {
+      console.log('No authenticated user, skipping rate limit check');
     }
 
     // Format date for the new server (dd/mm/yyyy)
     const gameDate = new Date(`${gameState.wordDate}T12:00:00`);
     const formattedDate = `${gameDate.getDate().toString().padStart(2, '0')}/${(gameDate.getMonth() + 1).toString().padStart(2, '0')}/${gameDate.getFullYear()}`;
     const encodedDate = encodeURIComponent(formattedDate);
+
+    // DEBUG: Log what's being sent to APIs
+    console.log('About to make API calls with:');
+    console.log('- normalizedWord:', normalizedWord);
+    console.log('- gameState.wordDate:', gameState.wordDate);
+    console.log('- formattedDate:', formattedDate);
+    console.log('- encodedDate:', encodedDate);
 
     // Make both API calls in parallel
     const [similarityResponse, rankResponse] = await Promise.allSettled([
@@ -337,6 +354,21 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       fetch(`https://hebrew-w2v-api.onrender.com/rank?word=${encodeURIComponent(normalizedWord)}&date=${encodedDate}`)
     ]);
 
+    // DEBUG: Log the API call results
+    console.log('Similarity response status:', similarityResponse.status);
+    if (similarityResponse.status === 'fulfilled') {
+      console.log('Similarity response value:', similarityResponse.value);
+    } else {
+      console.log('Similarity response rejection reason:', similarityResponse.reason);
+    }
+    
+    console.log('Rank response status:', rankResponse.status);
+    if (rankResponse.status === 'fulfilled') {
+      console.log('Rank response value:', rankResponse.value);
+    } else {
+      console.log('Rank response rejection reason:', rankResponse.reason);
+    }
+
     // Process similarity response
     if (similarityResponse.status === 'rejected') {
       console.error("Error calculating similarity:", similarityResponse.reason);
@@ -344,6 +376,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const { data: similarityData, error: similarityError } = similarityResponse.value;
+    console.log('Similarity API response:', similarityData);
+    console.log('Similarity API error:', similarityError);
+    
     if (similarityError) {
       console.error("Error calculating similarity:", similarityError);
       throw new Error("שגיאה בחישוב הדמיון, נסה שוב");
