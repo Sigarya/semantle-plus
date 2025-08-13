@@ -217,7 +217,7 @@ serve(async (req)=>{
       console.error("Error calling external APIs:", error);
       // --- CHANGED: Use the processedGuess in the error message ---
       return new Response(JSON.stringify({
-        error: `אני לא מכיר את המילה "${processedGuess}"`,
+        error: `אני לא מכיר את המילה ${processedGuess}`,
         similarity: 0,
         isCorrect: false
       }), {
