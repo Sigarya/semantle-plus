@@ -282,7 +282,7 @@ serve(async (req) => {
       console.error("Error calling external APIs:", error);
       return new Response(
         JSON.stringify({ 
-          error: "שגיאה בחישוב הדמיון - בעיה בגישה ל-API",
+          error: "אני לא מכיר את המילה {guess}",
           similarity: 0,
           isCorrect: false
         }),
