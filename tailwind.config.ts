@@ -79,9 +79,9 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: ["Heebo", "sans-serif"],
         heebo: ["Heebo", "sans-serif"],
-        davidLibre: ["David Libre", "serif"],
+        davidLibre: ["Heebo", "serif"],
       },
       keyframes: {
         "accordion-down": {
