@@ -41,6 +41,10 @@ const PageLayout = ({ children, title }: PageLayoutProps) => {
     <a href="https://github.com/Sigarya/semantle-plus" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
       קוד מקור
     </a>
+    <br />
+    <a href="/privacy" className="underline hover:text-primary">
+      מדיניות פרטיות
+    </a>
   </div>
 </footer>
 

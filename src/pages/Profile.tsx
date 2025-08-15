@@ -1,10 +1,10 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import UserProfileForm from "@/components/UserProfileForm";
+import PageLayout from "@/components/PageLayout";
 
 const Profile = () => {
   const { currentUser } = useAuth();
@@ -23,11 +23,8 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background dark:bg-slate-900">
-      <Header />
-      <main className="flex-grow p-4 md:p-8">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-primary-600 dark:text-primary-400 mb-8 font-heebo">הפרופיל שלי</h2>
+    <PageLayout title="הפרופיל שלי">
+      <div className="max-w-3xl mx-auto">
           
           <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700 mb-6">
             <CardHeader>
@@ -93,38 +90,10 @@ const Profile = () => {
                 </div>
               )}
             </CardContent>
-          </Card>
-        </div>
-      </main>
-     <footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
-  <div className="space-y-1 leading-relaxed rtl text-sm">
-    <a href="https://github.com/sigarya" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-      Made by Sigarya
-    </a>
-    <br />
-    פרויקט עצמאי בהשראת&nbsp;
-    <a href="https://semantle.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-      Semantle
-    </a>{" "}
-    (David Turner).
-    <br />
-    מבוסס על הגרסה העברית והמילים היומיות של&nbsp;
-    <a href="https://semantle.ishefi.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-      סמנטעל (ishefi)
-    </a>
-    , והמודל של&nbsp;
-    <a href="https://x.com/IddoYadlin" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-      Iddo Yadlin
-    </a>.
-    <br />
-    <a href="https://github.com/Sigarya/semantle-plus" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-      קוד מקור
-    </a>
-  </div>
-</footer>
-
-    </div>
-  );
-};
+                     </Card>
+         </div>
+       </PageLayout>
+     );
+   };
 
 export default Profile;
