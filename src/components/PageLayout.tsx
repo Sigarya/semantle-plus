@@ -45,6 +45,10 @@ const PageLayout = ({ children, title }: PageLayoutProps) => {
     <a href="/privacy" className="underline hover:text-primary">
       מדיניות פרטיות
     </a>
+    <span>•</span>
+    <a href="/contact" className="underline hover:text-primary">
+      צור קשר
+    </a>
   </div>
 </footer>
 
