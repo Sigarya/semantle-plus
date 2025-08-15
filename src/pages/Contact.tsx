@@ -30,7 +30,7 @@ const Contact = () => {
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
       toast({
         title: "שגיאה",
-        description: "אנא מלא את כל השדות הנדרשים",
+        description: "אנא מלאו את כל השדות הנדרשים",
         variant: "destructive",
       });
       return;
@@ -49,7 +49,7 @@ const Contact = () => {
           name: formData.name,
           email: formData.email,
           message: formData.message,
-          _subject: "הודעה חדשה מאתר סמנטל",
+          _subject: "הודעה חדשה מאתר סמנטעל פלוס",
           _captcha: "false",
           _template: "table"
         }),
@@ -94,7 +94,7 @@ const Contact = () => {
 
         <Card className="shadow-xl border-primary/20">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">שלח לנו הודעה</CardTitle>
+            <CardTitle className="text-2xl font-bold">שלחו לנו הודעה</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -107,7 +107,7 @@ const Contact = () => {
                   id="name"
                   name="name"
                   type="text"
-                  placeholder="הכנס את שמך המלא"
+                  placeholder="שם מלא"
                   value={formData.name}
                   onChange={handleInputChange}
                   required
@@ -142,7 +142,7 @@ const Contact = () => {
                 <Textarea
                   id="message"
                   name="message"
-                  placeholder="כתב כאן את ההודעה שלך..."
+                  placeholder="ההודעה שלך..."
                   value={formData.message}
                   onChange={handleInputChange}
                   required
