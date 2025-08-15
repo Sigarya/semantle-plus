@@ -74,7 +74,7 @@ const Contact = () => {
       console.error("Error sending message:", error);
       toast({
         title: "שגיאה בשליחת ההודעה",
-        description: "אנא נסה שנית מאוחר יותר או שלח לנו מייל ישירות",
+        description: "אנא נסה שנית מאוחר יותר",
         variant: "destructive",
       });
     } finally {
@@ -171,7 +171,7 @@ const Contact = () => {
             </form>
           </CardContent>
         </Card>
-
+      </div>
     </PageLayout>
   );
 };
