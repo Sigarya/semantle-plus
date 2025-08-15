@@ -172,18 +172,6 @@ const Contact = () => {
           </CardContent>
         </Card>
 
-        <div className="mt-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            או שלח לנו מייל ישירות ל: 
-            <a 
-              href="mailto:semantleplus@gmail.com" 
-              className="text-primary hover:underline mr-1"
-            >
-              semantleplus@gmail.com
-            </a>
-          </p>
-        </div>
-      </div>
     </PageLayout>
   );
 };
