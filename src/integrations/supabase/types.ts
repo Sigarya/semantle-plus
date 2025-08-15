@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -403,9 +403,9 @@ export type Database = {
     Functions: {
       check_rate_limit: {
         Args: {
-          _user_id: string
           _action_type: string
           _max_requests?: number
+          _user_id: string
           _window_minutes?: number
         }
         Returns: boolean
@@ -417,28 +417,28 @@ export type Database = {
       get_active_word_for_date: {
         Args: { target_date: string }
         Returns: {
-          word: string
           hints: string[]
+          word: string
         }[]
       }
       get_leaderboard_for_date: {
         Args: { target_date: string }
         Returns: {
-          username: string
-          user_id: string
-          guesses_count: number
           completion_time: string
+          guesses_count: number
           rank: number
+          user_id: string
+          username: string
         }[]
       }
       get_today_leaderboard: {
         Args: Record<PropertyKey, never>
         Returns: {
-          username: string
-          user_id: string
-          guesses_count: number
           completion_time: string
+          guesses_count: number
           rank: number
+          user_id: string
+          username: string
         }[]
       }
       get_user_admin_status: {
@@ -446,19 +446,19 @@ export type Database = {
         Returns: boolean
       }
       get_user_daily_score: {
-        Args: { user_uuid: string; target_date: string }
+        Args: { target_date: string; user_uuid: string }
         Returns: {
-          guesses_count: number
           completion_time: string
+          guesses_count: number
         }[]
       }
       log_security_event: {
         Args: {
-          _user_id: string
           _action: string
-          _resource_type: string
-          _resource_id?: string
           _metadata?: Json
+          _resource_id?: string
+          _resource_type: string
+          _user_id: string
         }
         Returns: undefined
       }
