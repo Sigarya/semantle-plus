@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { GameProvider } from "@/context/GameContext";
+import { MultiplayerProvider } from "@/context/MultiplayerContext";
 import { PWAInstallProvider, usePWAInstall } from "@/context/PWAInstallContext";
 import { PWAUpdateNotification } from "@/components/PWAUpdateNotification";
 import { UsernameSelectionDialog } from "@/components/UsernameSelectionDialog";
@@ -24,6 +25,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Contact = lazy(() => import("./pages/Contact"));
+const Multiplayer = lazy(() => import("./pages/Multiplayer"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -135,9 +137,10 @@ const AppContent = () => {
   return (
     <>
       <GameProvider>
-        <Toaster />
-        <Sonner />
-        <PWAUpdateNotification />
+        <MultiplayerProvider>
+          <Toaster />
+          <Sonner />
+          <PWAUpdateNotification />
         
         {/* The PWA Prompt - only render when banner should be visible */}
         {isPwaBannerVisible && (
@@ -169,11 +172,13 @@ const AppContent = () => {
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/multiplayer" element={<Multiplayer />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </BrowserRouter>
         </div>
+        </MultiplayerProvider>
       </GameProvider>
     </>
   );

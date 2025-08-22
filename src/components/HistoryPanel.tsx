@@ -7,7 +7,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useGame } from "@/context/GameContext";
 import { useUserCompletions } from "@/hooks/useUserCompletions";
 import { formatHebrewDate } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { Users } from "lucide-react";
 
 const HistoryPanel = () => {
   const { dailyWords, loadHistoricalGame } = useGame();
@@ -75,17 +76,29 @@ const HistoryPanel = () => {
                   <TableRow key={dailyWord.date}>
                     <TableCell>{formatHebrewDate(new Date(dailyWord.date))}</TableCell>
                     <TableCell className="text-center">
-                      <div className="flex justify-center">
+                      <div className="flex justify-center gap-2">
                         {isPast && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePlayHistoricalGame(dailyWord.date)}
-                            disabled={isLoading}
-                            className={`min-w-[80px] ${isCompleted ? "border-green-500 text-green-600 hover:bg-green-50 dark:text-green-400 dark:border-green-400 dark:hover:bg-green-900/20" : ""}`}
-                          >
-                            {isLoading ? "טוען..." : isCompleted ? "הושלם 🎉" : "שחק"}
-                          </Button>
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePlayHistoricalGame(dailyWord.date)}
+                              disabled={isLoading}
+                              className={`min-w-[80px] ${isCompleted ? "border-green-500 text-green-600 hover:bg-green-50 dark:text-green-400 dark:border-green-400 dark:hover:bg-green-900/20" : ""}`}
+                            >
+                              {isLoading ? "טוען..." : isCompleted ? "הושלם 🎉" : "שחק"}
+                            </Button>
+                            <Link to={`/multiplayer?date=${dailyWord.date}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1 min-w-[100px]"
+                              >
+                                <Users className="w-4 h-4" />
+                                עם חברים
+                              </Button>
+                            </Link>
+                          </>
                         )}
                         {!isPast && dailyWord.date === today.toISOString().split("T")[0] && (
                           <span className="text-primary-600 dark:text-primary-400">משחק נוכחי</span>
