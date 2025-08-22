@@ -162,6 +162,36 @@ export type Database = {
           },
         ]
       }
+      game_rooms: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          max_players: number
+          room_code: string
+          word_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          max_players?: number
+          room_code: string
+          word_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          max_players?: number
+          room_code?: string
+          word_date?: string
+        }
+        Relationships: []
+      }
       game_sessions: {
         Row: {
           finished_at: string | null
@@ -254,6 +284,92 @@ export type Database = {
           window_start?: string | null
         }
         Relationships: []
+      }
+      room_guesses: {
+        Row: {
+          created_at: string
+          guess_order: number
+          guess_word: string
+          id: string
+          is_correct: boolean
+          player_id: string
+          rank: number | null
+          room_id: string
+          similarity: number
+        }
+        Insert: {
+          created_at?: string
+          guess_order: number
+          guess_word: string
+          id?: string
+          is_correct?: boolean
+          player_id: string
+          rank?: number | null
+          room_id: string
+          similarity: number
+        }
+        Update: {
+          created_at?: string
+          guess_order?: number
+          guess_word?: string
+          id?: string
+          is_correct?: boolean
+          player_id?: string
+          rank?: number | null
+          room_id?: string
+          similarity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_guesses_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "room_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_guesses_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_players: {
+        Row: {
+          id: string
+          is_active: boolean
+          joined_at: string
+          nickname: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          nickname: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          nickname?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_audit_logs: {
         Row: {
@@ -414,6 +530,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      generate_room_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_active_word_for_date: {
         Args: { target_date: string }
         Returns: {
@@ -429,6 +549,19 @@ export type Database = {
           rank: number
           user_id: string
           username: string
+        }[]
+      }
+      get_room_with_players: {
+        Args: { room_code_param: string }
+        Returns: {
+          created_by: string
+          joined_at: string
+          nickname: string
+          player_id: string
+          room_code: string
+          room_id: string
+          user_id: string
+          word_date: string
         }[]
       }
       get_today_leaderboard: {
