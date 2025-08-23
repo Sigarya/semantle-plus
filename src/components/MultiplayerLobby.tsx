@@ -69,7 +69,8 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold font-heebo mb-2">שחק עם חברים</h2>
             <p className="text-muted-foreground">
-              משחק מיום {formattedDate} (לבחירת יום אחר יש להיכנס למשחק עם חברים דרך עמוד היסטוריה בתפריט)
+  משחק מיום {formattedDate} <br />
+  (לבחירת יום אחר יש להיכנס למשחק עם חברים דרך עמוד היסטוריה בתפריט)
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               אין צורך בהרשמה - צרו חדר או הצטרפו למשחק קיים והתחילו לשחק!
