@@ -1,6 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
 import { MultiplayerGameState, GameRoom, RoomPlayer, RoomGuess } from "@/types/multiplayer";
-import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { RealtimeChannel } from "@supabase/supabase-js";
@@ -13,12 +12,23 @@ interface MultiplayerContextType {
   makeGuess: (word: string) => Promise<void>;
   leaveRoom: () => Promise<void>;
   resetMultiplayerState: () => void;
+  timeoutState: {
+    isWarning: boolean;
+    isClosing: boolean;
+    warningTimeLeft: number;
+    closingTimeLeft: number;
+  } | null;
+  dismissTimeoutWarning: () => void;
 }
 
 const MultiplayerContext = createContext<MultiplayerContextType | undefined>(undefined);
 
+// Generate unique guest ID
+const generateGuestId = (): string => {
+  return 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+};
+
 export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
-  const { session } = useAuth();
   const { toast } = useToast();
   
   const [gameState, setGameState] = useState<MultiplayerGameState>({
@@ -32,22 +42,222 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
   
   const [isLoading, setIsLoading] = useState(false);
   const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
+  const [currentGuestId, setCurrentGuestId] = useState<string>(() => generateGuestId());
+  const [syncInterval, setSyncInterval] = useState<NodeJS.Timeout | null>(null);
+  const [timeoutState, setTimeoutState] = useState<{
+    isWarning: boolean;
+    isClosing: boolean;
+    warningTimeLeft: number;
+    closingTimeLeft: number;
+  } | null>(null);
+  const [timeoutTimers, setTimeoutTimers] = useState<{
+    warningTimer: NodeJS.Timeout | null;
+    closingTimer: NodeJS.Timeout | null;
+  }>({ warningTimer: null, closingTimer: null });
 
-  // Cleanup realtime channel on unmount
+  // Cross-room isolation + sync guards
+  const activeRoomIdRef = useRef<string | null>(null);
+  const playersFetchSeqRef = useRef<number>(0);
+  const latestAppliedPlayersSeqRef = useRef<number>(0);
+
+  useEffect(() => {
+    activeRoomIdRef.current = gameState.room?.id ?? null;
+  }, [gameState.room?.id]);
+
+  // Minimal helper to refresh only players for the current room (guarded against staleness)
+  const updatePlayersOnly = useCallback(async (roomId: string) => {
+    if (!roomId) return;
+    const seq = ++playersFetchSeqRef.current;
+    try {
+      const { data, error } = await supabase
+        .from('room_players')
+        .select('*')
+        .eq('room_id', roomId)
+        .eq('is_active', true);
+      if (error || !data) return;
+      if (activeRoomIdRef.current !== roomId) return; // cross-room isolation
+      if (seq < latestAppliedPlayersSeqRef.current) return; // stale response guard
+      latestAppliedPlayersSeqRef.current = seq;
+      setGameState(prev => (prev.room && prev.room.id === roomId) ? { ...prev, players: data } : prev);
+    } catch (_) {}
+  }, []);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (realtimeChannel) {
         supabase.removeChannel(realtimeChannel);
       }
+      if (syncInterval) {
+        clearInterval(syncInterval);
+      }
+      if (timeoutTimers.warningTimer) {
+        clearTimeout(timeoutTimers.warningTimer);
+      }
+      if (timeoutTimers.closingTimer) {
+        clearTimeout(timeoutTimers.closingTimer);
+      }
     };
-  }, [realtimeChannel]);
+  }, [realtimeChannel, syncInterval, timeoutTimers]);
 
-  const setupRealtimeSubscription = useCallback((roomId: string) => {
+  // ULTRA-SIMPLE SYNC SYSTEM: Just sync everything every 1 second
+  const setupSimpleSync = useCallback((roomId: string) => {
+    console.log("Setting up simple sync for room:", roomId);
+    
+    // Clear any existing sync
+    if (syncInterval) {
+      clearInterval(syncInterval);
+    }
+
+    // Simple sync every 1 second - no complex logic, just refresh everything
+    const interval = setInterval(async () => {
+      try {
+        // Always refresh guesses
+        const { data: refreshedGuesses, error: refreshError } = await supabase
+          .from('room_guesses')
+          .select(`
+            *,
+            room_players(nickname)
+          `)
+          .eq('room_id', roomId)
+          .order('guess_order', { ascending: true });
+
+        if (!refreshError && refreshedGuesses) {
+          const guessesWithNicknames = refreshedGuesses.map(g => ({
+            ...g,
+            player_nickname: g.room_players?.nickname || 'Unknown'
+          }));
+
+          setGameState(prev => ({
+            ...prev,
+            guesses: guessesWithNicknames,
+            isComplete: guessesWithNicknames.some(g => g.is_correct)
+          }));
+        }
+        
+        // Refresh players through guarded helper
+        await updatePlayersOnly(roomId);
+      } catch (error) {
+        console.warn("Simple sync error:", error);
+      }
+    }, 1000);
+
+    setSyncInterval(interval);
+  }, [syncInterval]);
+
+  // Function to manage room timeout
+  const setupRoomTimeout = useCallback((roomId: string) => {
+    // Clear any existing timers
+    if (timeoutTimers.warningTimer) clearTimeout(timeoutTimers.warningTimer);
+    if (timeoutTimers.closingTimer) clearTimeout(timeoutTimers.closingTimer);
+
+    // Set warning timer (20 minutes)
+    const warningTimer = setTimeout(() => {
+      console.log("Room timeout warning triggered after 20 minutes of inactivity");
+      setTimeoutState({
+        isWarning: true,
+        isClosing: false,
+        warningTimeLeft: 300, // 5 minutes in seconds
+        closingTimeLeft: 0
+      });
+
+      // Start countdown for warning period
+      const warningCountdown = setInterval(() => {
+        setTimeoutState(prev => {
+          if (!prev) return prev;
+          if (prev.warningTimeLeft <= 1) {
+            clearInterval(warningCountdown);
+            // Start closing countdown
+            setTimeoutState({
+              isWarning: false,
+              isClosing: true,
+              warningTimeLeft: 0,
+              closingTimeLeft: 300 // 5 minutes in seconds
+            });
+            
+            const closingCountdown = setInterval(() => {
+              setTimeoutState(prev => {
+                if (!prev) return prev;
+                if (prev.closingTimeLeft <= 1) {
+                  clearInterval(closingCountdown);
+                  // Close the room
+                  closeRoomDueToInactivity();
+                  return null;
+                }
+                return {
+                  ...prev,
+                  closingTimeLeft: prev.closingTimeLeft - 1
+                };
+              });
+            }, 1000);
+            
+            return prev;
+          }
+          return {
+            ...prev,
+            warningTimeLeft: prev.warningTimeLeft - 1
+          };
+        });
+      }, 1000);
+
+      setTimeoutTimers(prev => ({ ...prev, warningTimer: warningCountdown as any }));
+    }, 20 * 60 * 1000); // 20 minutes
+
+    setTimeoutTimers(prev => ({ ...prev, warningTimer: warningTimer as any }));
+  }, [timeoutTimers]);
+
+  // Function to reset timeout when activity occurs
+  const resetRoomTimeout = useCallback((roomId: string) => {
+    console.log("Resetting room timeout due to activity");
+    setTimeoutState(null);
+    setupRoomTimeout(roomId);
+  }, [setupRoomTimeout]);
+
+  // Function to close room due to inactivity
+  const closeRoomDueToInactivity = useCallback(async () => {
+    console.log("Closing room due to inactivity");
+    
+    // Update room status in database
+    if (gameState.room) {
+      try {
+        await supabase
+          .from('game_rooms')
+          .update({ is_active: false })
+          .eq('id', gameState.room.id);
+      } catch (error) {
+        console.error("Error updating room status:", error);
+      }
+    }
+    
+    // Reset state and show timeout message
+    resetMultiplayerState();
+    toast({
+      title: "החדר נסגר",
+      description: "החדר נסגר בגלל אי פעילות, אפשר לפתוח חדר ולהתחיל משחק חדש.",
+      duration: 10000
+    });
+  }, [gameState.room, toast]);
+
+  // Function to dismiss timeout warning
+  const dismissTimeoutWarning = useCallback(() => {
+    console.log("Timeout warning dismissed by user");
+    setTimeoutState(null);
+    if (gameState.room) {
+      resetRoomTimeout(gameState.room.id);
+    }
+  }, [gameState.room, resetRoomTimeout]);
+
+  // ULTRA-SIMPLE REALTIME: Just basic postgres changes, no complex broadcasting
+  const setupSimpleRealtime = useCallback((roomId: string) => {
+    console.log("Setting up simple realtime for room:", roomId);
+    
     // Remove existing channel
     if (realtimeChannel) {
+      console.log("Removing existing realtime channel");
       supabase.removeChannel(realtimeChannel);
     }
 
+    // Create a simple channel with just postgres changes
     const channel = supabase
       .channel(`room_${roomId}`)
       .on(
@@ -55,25 +265,54 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'room_players'
+          table: 'room_players',
+          filter: `room_id=eq.${roomId}`
         },
         async (payload) => {
-          const newPlayer = payload.new as RoomPlayer;
-          if (newPlayer.room_id === roomId) {
-            setGameState(prev => ({
-              ...prev,
-              players: [...prev.players.filter(p => p.id !== newPlayer.id), newPlayer]
-            }));
-            
-            // Show join notification
-            if (newPlayer.user_id !== session?.user?.id) {
-              toast({
-                title: "שחקן חדש הצטרף",
-                description: `${newPlayer.nickname} הצטרף לקבוצה`,
-                duration: 3000
-              });
+          if (activeRoomIdRef.current !== roomId) return;
+          await updatePlayersOnly(roomId);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'room_players',
+          filter: `room_id=eq.${roomId}`
+        },
+        async (payload) => {
+          if (activeRoomIdRef.current !== roomId) return;
+          const updated = payload.new as any;
+          const oldRow = payload.old as any;
+          if (!updated) return;
+          if (updated.is_active === false) {
+            setGameState(prev => prev.room && prev.room.id === roomId ? { ...prev, players: prev.players.filter(p => p.id !== updated.id) } : prev);
+            if (oldRow && oldRow.guest_id !== currentGuestId && oldRow.nickname) {
+              toast({ title: `${oldRow.nickname} עזב/ה את החדר` });
             }
           }
+          await updatePlayersOnly(roomId);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'room_players',
+          filter: `room_id=eq.${roomId}`
+        },
+        async (payload) => {
+          if (activeRoomIdRef.current !== roomId) return;
+          const oldRow = payload.old as any;
+          if (oldRow?.id) {
+            setGameState(prev => prev.room && prev.room.id === roomId ? { ...prev, players: prev.players.filter(p => p.id !== oldRow.id) } : prev);
+            if (oldRow.guest_id !== currentGuestId && oldRow.nickname) {
+              toast({ title: `${oldRow.nickname} עזב/ה את החדר` });
+            }
+          }
+          await updatePlayersOnly(roomId);
         }
       )
       .on(
@@ -84,96 +323,93 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
           table: 'room_guesses'
         },
         async (payload) => {
-          const newGuess = payload.new as RoomGuess;
-          if (newGuess.room_id === roomId) {
-            // Get player nickname for the guess
-            const { data: playerData } = await supabase
-              .from('room_players')
-              .select('nickname')
-              .eq('id', newGuess.player_id)
-              .single();
-            
-            const guessWithNickname = {
-              ...newGuess,
-              player_nickname: playerData?.nickname || 'Unknown'
-            };
-            
-            setGameState(prev => ({
-              ...prev,
-              guesses: [...prev.guesses, guessWithNickname].sort((a, b) => a.guess_order - b.guess_order),
-              isComplete: newGuess.is_correct || prev.isComplete
-            }));
-          }
+          console.log("New guess (realtime):", payload);
+          // Let the sync system handle the update
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'room_players'
-        },
-        (payload) => {
-          const updatedPlayer = payload.new as RoomPlayer;
-          if (updatedPlayer.room_id === roomId) {
-            setGameState(prev => ({
-              ...prev,
-              players: prev.players.map(p => 
-                p.id === updatedPlayer.id ? updatedPlayer : p
-              )
-            }));
-          }
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+        if (status === 'SUBSCRIBED') {
+          console.log("Successfully subscribed to room:", roomId);
         }
-      )
-      .subscribe();
+      });
 
     setRealtimeChannel(channel);
-  }, [realtimeChannel, session?.user?.id, toast]);
+    
+    // Setup simple sync
+    setupSimpleSync(roomId);
+    
+    // Setup room timeout
+    setupRoomTimeout(roomId);
+  }, [realtimeChannel, setupSimpleSync, setupRoomTimeout, updatePlayersOnly]);
 
   const createRoom = async (nickname: string, wordDate: string): Promise<string> => {
-    if (!session?.user) throw new Error("משתמש לא מחובר");
-    
     setIsLoading(true);
     try {
+      console.log("Creating room for date:", wordDate);
+      
       // Generate room code using the database function
       const { data: codeData, error: codeError } = await supabase
         .rpc('generate_room_code');
       
-      if (codeError) throw new Error("שגיאה ביצירת קוד חדר");
+      if (codeError) {
+        console.error("Detailed room code generation error:", codeError);
+        throw new Error(`שגיאה ביצירת קוד חדר: ${codeError.message || codeError.details || 'Unknown database error'}`);
+      }
       
       const roomCode = codeData;
       
-      // Create the room
+      // Create the room as a guest with the specific word date
       const { data: roomData, error: roomError } = await supabase
         .from('game_rooms')
         .insert({
           room_code: roomCode,
           word_date: wordDate,
-          created_by: session.user.id
+          guest_creator: currentGuestId
         })
         .select()
         .single();
       
-      if (roomError) throw new Error("שגיאה ביצירת החדר");
+      if (roomError) {
+        console.error("Detailed room creation error:", roomError);
+        throw new Error(`שגיאה ביצירת החדר: ${roomError.message || roomError.details || 'Unknown database error'}`);
+      }
       
-      // Join the room as the creator
-      const { data: playerData, error: playerError } = await supabase
-        .from('room_players')
-        .insert({
-          room_id: roomData.id,
-          user_id: session.user.id,
-          nickname: nickname
-        })
-        .select()
-        .single();
+      // Join the room as the creator (conflict-safe insert/update)
+      let playerData;
+      {
+        const { data: insRows, error: insErr } = await supabase
+          .from('room_players')
+          .insert({
+            room_id: roomData.id,
+            guest_id: currentGuestId,
+            nickname: nickname,
+            is_active: true
+          })
+          .select();
+        if (!insErr && insRows && insRows.length > 0) {
+          playerData = insRows[0];
+        } else {
+          const { data: updRows, error: updErr } = await supabase
+            .from('room_players')
+            .update({ nickname, is_active: true })
+            .eq('room_id', roomData.id)
+            .eq('guest_id', currentGuestId)
+            .select();
+          if (updErr || !updRows || updRows.length === 0) {
+            throw new Error("שגיאה בהצטרפות לחדר");
+          }
+          playerData = updRows[0];
+        }
+      }
       
-      if (playerError) throw new Error("שגיאה בהצטרפות לחדר");
-      
-      // Get the current word for this date
+      // Get the current word for this specific date
       const { data: wordData } = await supabase
         .rpc('get_active_word_for_date', { target_date: wordDate });
       
       const currentWord = wordData && wordData.length > 0 ? wordData[0].word : null;
+      
+      console.log("Room created with word date:", wordDate, "and word:", currentWord);
       
       // Update state
       setGameState({
@@ -185,12 +421,13 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         currentWord
       });
       
-      // Setup realtime subscription
-      setupRealtimeSubscription(roomData.id);
+      // Setup simple realtime
+      setupSimpleRealtime(roomData.id);
       
       return roomCode;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "שגיאה ביצירת החדר";
+      console.error("Detailed error creating room:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       toast({
         title: "שגיאה",
         description: errorMessage,
@@ -203,10 +440,10 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const joinRoom = async (roomCode: string, nickname: string): Promise<void> => {
-    if (!session?.user) throw new Error("משתמש לא מחובר");
-    
     setIsLoading(true);
     try {
+      console.log("Joining room with code:", roomCode);
+      
       // Get room data with players
       const { data: roomData, error: roomError } = await supabase
         .rpc('get_room_with_players', { room_code_param: roomCode });
@@ -215,63 +452,62 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("החדר לא נמצא או לא פעיל");
       }
       
+      // Extract the room's word date - this is the source of truth
+      const roomWordDate = roomData[0].word_date;
+      console.log("Joining room with word date:", roomWordDate);
+      
       const room = {
         id: roomData[0].room_id,
         room_code: roomData[0].room_code,
-        word_date: roomData[0].word_date,
+        word_date: roomWordDate,
         created_by: roomData[0].created_by,
+        guest_creator: roomData[0].guest_creator,
         created_at: new Date().toISOString(),
         is_active: true,
         max_players: 10
       };
       
-      // Check if user is already in the room
-      const existingPlayer = roomData.find(r => r.user_id === session.user.id);
-      
-      let currentPlayer: RoomPlayer;
-      
-      if (existingPlayer && existingPlayer.player_id) {
-        // User is already in the room
-        currentPlayer = {
-          id: existingPlayer.player_id,
-          room_id: room.id,
-          user_id: session.user.id,
-          nickname: existingPlayer.nickname,
-          joined_at: existingPlayer.joined_at,
-          is_active: true
-        };
-      } else {
-        // Join the room
-        const { data: playerData, error: playerError } = await supabase
+      // Purge any prior rows for this guest in this room (best-effort for legacy duplicates)
+      const { error: cleanupError } = await supabase.rpc('cleanup_guest_player', {
+        p_room_id: room.id,
+        p_guest_id: currentGuestId,
+      });
+
+      if (cleanupError) {
+        console.warn('Player cleanup failed, join might fail:', cleanupError);
+      }
+
+      // Insert-first, then update fallback on conflict/RLS
+      let currentPlayer: RoomPlayer | null = null;
+      {
+        const { data: insRows, error: insErr } = await supabase
           .from('room_players')
-          .insert({
-            room_id: room.id,
-            user_id: session.user.id,
-            nickname: nickname
-          })
-          .select()
-          .single();
-        
-        if (playerError) throw new Error("שגיאה בהצטרפות לחדר");
-        currentPlayer = playerData;
+          .insert({ room_id: room.id, guest_id: currentGuestId, nickname, is_active: true })
+          .select();
+        if (!insErr && insRows && insRows.length > 0) {
+          currentPlayer = insRows[0] as any;
+        } else {
+          const { data: updRows, error: updErr } = await supabase
+            .from('room_players')
+            .update({ nickname, is_active: true })
+            .eq('room_id', room.id)
+            .eq('guest_id', currentGuestId)
+            .select();
+          if (updErr || !updRows || updRows.length === 0) {
+            throw new Error("שגיאה בהצטרפות לחדר");
+          }
+          currentPlayer = updRows[0] as any;
+        }
       }
+      await updatePlayersOnly(room.id);
       
-      // Get all players
-      const players = roomData
-        .filter(r => r.player_id)
-        .map(r => ({
-          id: r.player_id,
-          room_id: room.id,
-          user_id: r.user_id,
-          nickname: r.nickname,
-          joined_at: r.joined_at,
-          is_active: true
-        }));
-      
-      // If current player wasn't in the original data, add them
-      if (!players.find(p => p.id === currentPlayer.id)) {
-        players.push(currentPlayer);
-      }
+      // Fetch fresh players list from DB truth (avoid stale RPC aggregation)
+      const { data: players, error: playersErr } = await supabase
+        .from('room_players')
+        .select('*')
+        .eq('room_id', room.id)
+        .eq('is_active', true);
+      if (playersErr) throw new Error("שגיאה בטעינת שחקנים");
       
       // Get existing guesses
       const { data: guessesData, error: guessesError } = await supabase
@@ -290,11 +526,13 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         player_nickname: g.room_players?.nickname || 'Unknown'
       }));
       
-      // Get the current word for this date
+      // Get the current word for the room's specific date
       const { data: wordData } = await supabase
-        .rpc('get_active_word_for_date', { target_date: room.word_date });
+        .rpc('get_active_word_for_date', { target_date: roomWordDate });
       
       const currentWord = wordData && wordData.length > 0 ? wordData[0].word : null;
+      
+      console.log("Joined room with word date:", roomWordDate, "and word:", currentWord);
       
       // Check if game is complete
       const isComplete = guesses.some(g => g.is_correct);
@@ -309,8 +547,8 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         currentWord
       });
       
-      // Setup realtime subscription
-      setupRealtimeSubscription(room.id);
+      // Setup simple realtime
+      setupSimpleRealtime(room.id);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "שגיאה בהצטרפות לחדר";
@@ -326,7 +564,7 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const makeGuess = async (word: string): Promise<void> => {
-    if (!gameState.room || !gameState.currentPlayer || !session?.user) {
+    if (!gameState.room || !gameState.currentPlayer) {
       throw new Error("לא ניתן להכניס ניחוש");
     }
     
@@ -334,24 +572,35 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("המשחק הסתיים");
     }
     
-    // Check if word was already guessed in this room
-    const existingGuess = gameState.guesses.find(g => g.guess_word === word);
-    if (existingGuess) {
-      throw new Error(`המילה "${word}" כבר נוחשה על ידי ${existingGuess.player_nickname}`);
+    // SIMPLE DUPLICATE CHECK - Just check local state
+    const localDuplicate = gameState.guesses.find(g => g.guess_word.toLowerCase() === word.toLowerCase());
+    if (localDuplicate) {
+      throw new Error(`המילה "${word}" כבר נוחשה על ידי ${localDuplicate.player_nickname}`);
     }
     
     try {
+      console.log("Making guess:", { word, roomId: gameState.room.id, playerId: gameState.currentPlayer.id });
+      
       // Calculate similarity using the existing edge function
       const { data: similarityData, error: similarityError } = await supabase.functions.invoke(
         "calculate-similarity", 
         { body: { guess: word, date: gameState.room.word_date } }
       );
       
-      if (similarityError) throw new Error("שגיאה בחישוב הדמיון");
-      if (similarityData.error) throw new Error(similarityData.error);
+      if (similarityError) {
+        console.error("Similarity calculation error:", similarityError);
+        throw new Error("שגיאה בחישוב הדמיון");
+      }
+      
+      if (similarityData.error) {
+        console.error("Similarity data error:", similarityData.error);
+        throw new Error(similarityData.error);
+      }
       
       const { similarity, rank } = similarityData;
-      const isCorrect = similarity >= 0.99; // Adjust threshold as needed
+      const isCorrect = similarity >= 0.99;
+      
+      console.log("Similarity calculated:", { similarity, rank, isCorrect });
       
       // Get next guess order
       const nextGuessOrder = gameState.guesses.length + 1;
@@ -367,32 +616,93 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         guess_order: nextGuessOrder
       };
       
-      const { error: insertError } = await supabase
+      console.log("Inserting guess data:", guessData);
+      
+      const { data: insertedGuess, error: insertError } = await supabase
         .from('room_guesses')
-        .insert(guessData);
+        .insert(guessData)
+        .select()
+        .single();
       
-      if (insertError) throw new Error("שגיאה בשמירת הניחוש");
+      if (insertError) {
+        console.error("Guess insertion error:", insertError);
+        throw new Error(`שגיאה בשמירת הניחוש: ${insertError.message || insertError.details || 'Unknown database error'}`);
+      }
       
-      // The realtime subscription will handle updating the state
+      console.log("Guess inserted successfully:", insertedGuess);
+      
+      // Create a complete guess object with nickname
+      const completeGuess = {
+        ...insertedGuess,
+        player_nickname: gameState.currentPlayer.nickname
+      };
+      
+      // Update local state immediately for better UX
+      setGameState(prev => ({
+        ...prev,
+        guesses: [...prev.guesses, completeGuess].sort((a, b) => a.guess_order - b.guess_order),
+        isComplete: isCorrect || prev.isComplete
+      }));
+      
+      // Reset room timeout due to activity
+      resetRoomTimeout(gameState.room.id);
+      
+      console.log("Guess completed successfully - sync system will update other players within 1 second");
       
     } catch (error) {
+      console.error("Error in makeGuess:", error);
       const errorMessage = error instanceof Error ? error.message : "שגיאה בניחוש המילה";
       throw new Error(errorMessage);
     }
   };
 
   const leaveRoom = async (): Promise<void> => {
-    if (!gameState.currentPlayer) return;
+    if (!gameState.currentPlayer || !gameState.room) return;
     
+    const playerToLeaveId = gameState.currentPlayer.id;
+    const roomId = gameState.room.id;
+
     try {
-      await supabase
-        .from('room_players')
-        .update({ is_active: false })
-        .eq('id', gameState.currentPlayer.id);
+      // Immediate local removal from roster for smooth UX
+      setGameState(prev => {
+        if (!prev.room || prev.room.id !== roomId) return prev;
+        return { ...prev, players: prev.players.filter(p => p.id !== playerToLeaveId) };
+      });
+      
+      // Call the secure RPC function to delete the player from the database
+      const { error } = await supabase.rpc('leave_room', {
+        player_id_to_delete: playerToLeaveId,
+      });
+
+      if (error) {
+        // If the RPC fails, something is wrong. Log the error and alert the user.
+        // We will still try to reset the state locally.
+        console.error('Failed to leave room via RPC:', error);
+        toast({
+          title: "שגיאה בעזיבת החדר",
+          description: "הייתה בעיה בעזיבת החדר. נסה לרענן את הדף.",
+          variant: "destructive",
+        });
+      }
+      
+      // Nudge others via minimal refresh (optional, as realtime should handle it)
+      await updatePlayersOnly(roomId);
+      
+      // Clear timeout state before resetting
+      setTimeoutState(null);
+      if (timeoutTimers.warningTimer) {
+        clearTimeout(timeoutTimers.warningTimer);
+      }
+      if (timeoutTimers.closingTimer) {
+        clearTimeout(timeoutTimers.closingTimer);
+      }
+      setTimeoutTimers({ warningTimer: null, closingTimer: null });
       
       resetMultiplayerState();
     } catch (error) {
       console.error("Error leaving room:", error);
+      // Ensure local state is reset even if an unexpected error occurs
+      resetMultiplayerState();
     }
   };
 
@@ -401,6 +711,21 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
       supabase.removeChannel(realtimeChannel);
       setRealtimeChannel(null);
     }
+    
+    if (syncInterval) {
+      clearInterval(syncInterval);
+      setSyncInterval(null);
+    }
+    
+    // Clear timeout state and timers
+    setTimeoutState(null);
+    if (timeoutTimers.warningTimer) {
+      clearTimeout(timeoutTimers.warningTimer);
+    }
+    if (timeoutTimers.closingTimer) {
+      clearTimeout(timeoutTimers.closingTimer);
+    }
+    setTimeoutTimers({ warningTimer: null, closingTimer: null });
     
     setGameState({
       room: null,
@@ -419,7 +744,9 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
     joinRoom,
     makeGuess,
     leaveRoom,
-    resetMultiplayerState
+    resetMultiplayerState,
+    timeoutState,
+    dismissTimeoutWarning
   };
 
   return (

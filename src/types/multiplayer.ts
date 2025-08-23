@@ -2,7 +2,8 @@ export interface GameRoom {
   id: string;
   room_code: string;
   word_date: string;
-  created_by: string;
+  created_by?: string; // Optional since guests won't have user IDs
+  guest_creator?: string; // For guest-created rooms
   created_at: string;
   is_active: boolean;
   max_players: number;
@@ -11,7 +12,8 @@ export interface GameRoom {
 export interface RoomPlayer {
   id: string;
   room_id: string;
-  user_id: string;
+  user_id?: string; // Optional since guests won't have user IDs
+  guest_id?: string; // For guest players
   nickname: string;
   joined_at: string;
   is_active: boolean;

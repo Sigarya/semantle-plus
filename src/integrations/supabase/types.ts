@@ -165,7 +165,8 @@ export type Database = {
       game_rooms: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
+          guest_creator: string | null
           id: string
           is_active: boolean
           max_players: number
@@ -174,7 +175,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
+          guest_creator?: string | null
           id?: string
           is_active?: boolean
           max_players?: number
@@ -183,7 +185,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
+          guest_creator?: string | null
           id?: string
           is_active?: boolean
           max_players?: number
@@ -343,7 +346,8 @@ export type Database = {
           joined_at: string
           nickname: string
           room_id: string
-          user_id: string
+          user_id: string | null
+          guest_id: string | null
         }
         Insert: {
           id?: string
@@ -351,7 +355,8 @@ export type Database = {
           joined_at?: string
           nickname: string
           room_id: string
-          user_id: string
+          user_id?: string | null
+          guest_id?: string | null
         }
         Update: {
           id?: string
@@ -359,7 +364,8 @@ export type Database = {
           joined_at?: string
           nickname?: string
           room_id?: string
-          user_id?: string
+          user_id?: string | null
+          guest_id?: string | null
         }
         Relationships: [
           {
@@ -554,13 +560,15 @@ export type Database = {
       get_room_with_players: {
         Args: { room_code_param: string }
         Returns: {
-          created_by: string
+          created_by: string | null
+          guest_creator: string | null
           joined_at: string
           nickname: string
           player_id: string
           room_code: string
           room_id: string
-          user_id: string
+          user_id: string | null
+          guest_id: string | null
           word_date: string
         }[]
       }

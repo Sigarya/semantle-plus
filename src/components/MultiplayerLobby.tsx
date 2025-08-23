@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, UserPlus, ArrowRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 
 interface MultiplayerLobbyProps {
@@ -20,7 +19,6 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   wordDate,
   isLoading
 }) => {
-  const { session } = useAuth();
   const { toast } = useToast();
   
   const [mode, setMode] = useState<'lobby' | 'create' | 'join'>('lobby');
@@ -30,15 +28,6 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   const formattedDate = new Date(wordDate).toLocaleDateString('he-IL');
 
   const handleCreateRoom = () => {
-    if (!session) {
-      toast({
-        title: "נדרשת התחברות",
-        description: "יש להתחבר כדי ליצור חדר משחק",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     if (!nickname.trim()) {
       toast({
         title: "שם חסר",
@@ -52,15 +41,6 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   };
 
   const handleJoinRoom = () => {
-    if (!session) {
-      toast({
-        title: "נדרשת התחברות",
-        description: "יש להתחבר כדי להצטרף לחדר משחק",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     if (!nickname.trim()) {
       toast({
         title: "שם חסר",
@@ -82,19 +62,6 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     onJoinRoom(roomCode.trim().toUpperCase(), nickname.trim());
   };
 
-  if (!session) {
-    return (
-      <Card className="max-w-md mx-auto">
-        <CardContent className="pt-6 text-center">
-          <div className="text-lg mb-4">יש להתחבר כדי לשחק עם חברים</div>
-          <p className="text-muted-foreground">
-            המשחק הקבוצתי דורש חשבון משתמש כדי לזהות שחקנים ולשמור התקדמות
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
       {mode === 'lobby' && (
@@ -103,6 +70,9 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
             <h2 className="text-2xl font-bold font-heebo mb-2">שחק עם חברים</h2>
             <p className="text-muted-foreground">
               משחק מיום {formattedDate}
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              אין צורך בהרשמה - פשוט הכנס שם ותתחיל לשחק!
             </p>
           </div>
           
