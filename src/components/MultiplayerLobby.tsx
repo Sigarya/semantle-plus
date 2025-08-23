@@ -72,7 +72,7 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
               משחק מיום {formattedDate}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              אין צורך בהרשמה - פשוט הכנס שם ותתחיל לשחק!
+              אין צורך בהרשמה - צרו חדר או הצטרפו למשחק קיים והתחילו לשחק!
             </p>
           </div>
           
@@ -134,7 +134,7 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
             
             <div className="bg-muted p-4 rounded-md">
               <p className="text-sm text-muted-foreground">
-                לאחר יצירת החדר תקבל קוד חדר ייחודי שתוכל לשתף עם החברים שלך.
+                לאחר יצירת החדר תקבלו קוד חדר ייחודי שתוכל לשתף עם חברים.
                 כל השחקנים יראו את הניחושים של כולם בזמן אמת!
               </p>
             </div>
