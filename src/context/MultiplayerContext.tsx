@@ -112,7 +112,7 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
     // Simple sync every 1 second - no complex logic, just refresh everything
     const interval = setInterval(async () => {
       try {
-        // Always refresh guesses
+        // Always refresh guesses with player nicknames
         const { data: refreshedGuesses, error: refreshError } = await supabase
           .from('room_guesses')
           .select(`
@@ -467,11 +467,12 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         max_players: 10
       };
       
-      // Purge any prior rows for this guest in this room (best-effort for legacy duplicates)
-      const { error: cleanupError } = await supabase.rpc('cleanup_guest_player', {
-        p_room_id: room.id,
-        p_guest_id: currentGuestId,
-      });
+      // Clean up any existing entries for this guest in this room
+      const { error: cleanupError } = await supabase
+        .from('room_players')
+        .delete()
+        .eq('room_id', room.id)
+        .eq('guest_id', currentGuestId);
 
       if (cleanupError) {
         console.warn('Player cleanup failed, join might fail:', cleanupError);
@@ -669,15 +670,14 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         return { ...prev, players: prev.players.filter(p => p.id !== playerToLeaveId) };
       });
       
-      // Call the secure RPC function to delete the player from the database
-      const { error } = await supabase.rpc('leave_room', {
-        player_id_to_delete: playerToLeaveId,
-      });
+      // Direct database deletion instead of RPC call
+      const { error } = await supabase
+        .from('room_players')
+        .delete()
+        .eq('id', playerToLeaveId);
 
       if (error) {
-        // If the RPC fails, something is wrong. Log the error and alert the user.
-        // We will still try to reset the state locally.
-        console.error('Failed to leave room via RPC:', error);
+        console.error('Failed to leave room:', error);
         toast({
           title: "שגיאה בעזיבת החדר",
           description: "הייתה בעיה בעזיבת החדר. נסה לרענן את הדף.",
