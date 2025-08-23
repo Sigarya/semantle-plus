@@ -100,24 +100,26 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [realtimeChannel, syncInterval, timeoutTimers]);
 
-  // ULTRA-SIMPLE SYNC SYSTEM: Just sync everything every 1 second
+  // ROBUST SYNC SYSTEM: Sync every 500ms with better error handling
   const setupSimpleSync = useCallback((roomId: string) => {
-    console.log("Setting up simple sync for room:", roomId);
+    console.log("Setting up robust sync for room:", roomId);
     
     // Clear any existing sync
     if (syncInterval) {
       clearInterval(syncInterval);
     }
 
-    // Simple sync every 1 second - no complex logic, just refresh everything
+    // Sync every 500ms for more responsive updates
     const interval = setInterval(async () => {
       try {
-        // Always refresh guesses with player nicknames
+        console.log("Syncing room data for:", roomId);
+        
+        // Refresh guesses with player nicknames
         const { data: refreshedGuesses, error: refreshError } = await supabase
           .from('room_guesses')
           .select(`
             *,
-            room_players(nickname)
+            room_players!inner(nickname)
           `)
           .eq('room_id', roomId)
           .order('guess_order', { ascending: true });
@@ -125,25 +127,41 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         if (!refreshError && refreshedGuesses) {
           const guessesWithNicknames = refreshedGuesses.map(g => ({
             ...g,
-            player_nickname: g.room_players?.nickname || 'Unknown'
+            player_nickname: (g.room_players as any)?.nickname || 'Unknown'
           }));
 
-          setGameState(prev => ({
-            ...prev,
-            guesses: guessesWithNicknames,
-            isComplete: guessesWithNicknames.some(g => g.is_correct)
-          }));
+          console.log("Synced guesses:", guessesWithNicknames.length);
+
+          setGameState(prev => {
+            // Only update if there are actual changes to prevent unnecessary re-renders
+            const hasChanges = prev.guesses.length !== guessesWithNicknames.length ||
+              guessesWithNicknames.some((newGuess, idx) => 
+                !prev.guesses[idx] || prev.guesses[idx].id !== newGuess.id
+              );
+            
+            if (hasChanges) {
+              console.log("Updating game state with new guesses");
+              return {
+                ...prev,
+                guesses: guessesWithNicknames,
+                isComplete: guessesWithNicknames.some(g => g.is_correct)
+              };
+            }
+            return prev;
+          });
+        } else if (refreshError) {
+          console.error("Error refreshing guesses:", refreshError);
         }
         
-        // Refresh players through guarded helper
+        // Refresh players 
         await updatePlayersOnly(roomId);
       } catch (error) {
-        console.warn("Simple sync error:", error);
+        console.error("Sync error:", error);
       }
-    }, 1000);
+    }, 500); // More frequent updates for better responsiveness
 
     setSyncInterval(interval);
-  }, [syncInterval]);
+  }, [syncInterval, updatePlayersOnly]);
 
   // Function to manage room timeout
   const setupRoomTimeout = useCallback((roomId: string) => {
@@ -230,7 +248,7 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
     }
     
     // Reset state and show timeout message
-    resetMultiplayerState();
+    cleanupMultiplayer();
     toast({
       title: "החדר נסגר",
       description: "החדר נסגר בגלל אי פעילות, אפשר לפתוח חדר ולהתחיל משחק חדש.",
@@ -331,6 +349,15 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
         console.log("Realtime subscription status:", status);
         if (status === 'SUBSCRIBED') {
           console.log("Successfully subscribed to room:", roomId);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.error("Realtime subscription failed or closed:", status);
+          // Attempt to reconnect after a delay if we're still in the same room
+          setTimeout(() => {
+            console.log("Attempting to reconnect realtime...");
+            if (activeRoomIdRef.current === roomId) {
+              setupSimpleRealtime(roomId);
+            }
+          }, 2000);
         }
       });
 
@@ -688,37 +715,40 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
       // Nudge others via minimal refresh (optional, as realtime should handle it)
       await updatePlayersOnly(roomId);
       
-      // Clear timeout state before resetting
-      setTimeoutState(null);
-      if (timeoutTimers.warningTimer) {
-        clearTimeout(timeoutTimers.warningTimer);
-      }
-      if (timeoutTimers.closingTimer) {
-        clearTimeout(timeoutTimers.closingTimer);
-      }
-      setTimeoutTimers({ warningTimer: null, closingTimer: null });
-      
-      resetMultiplayerState();
+      // Clear local state
+      cleanupMultiplayer();
     } catch (error) {
       console.error("Error leaving room:", error);
-      // Ensure local state is reset even if an unexpected error occurs
-      resetMultiplayerState();
+      cleanupMultiplayer();
     }
   };
 
-  const resetMultiplayerState = () => {
-    if (realtimeChannel) {
-      supabase.removeChannel(realtimeChannel);
-      setRealtimeChannel(null);
-    }
+  const cleanupMultiplayer = useCallback(() => {
+    console.log("Cleaning up multiplayer state completely");
     
+    // Clear active room reference first to prevent race conditions
+    const wasActiveRoom = activeRoomIdRef.current;
+    activeRoomIdRef.current = null;
+    
+    // Clear sync interval
     if (syncInterval) {
+      console.log("Clearing sync interval");
       clearInterval(syncInterval);
       setSyncInterval(null);
     }
     
-    // Clear timeout state and timers
-    setTimeoutState(null);
+    // Unsubscribe from realtime with proper cleanup
+    if (realtimeChannel) {
+      console.log("Removing realtime channel");
+      try {
+        supabase.removeChannel(realtimeChannel);
+      } catch (error) {
+        console.warn("Error removing realtime channel:", error);
+      }
+      setRealtimeChannel(null);
+    }
+    
+    // Clear all timeouts and intervals
     if (timeoutTimers.warningTimer) {
       clearTimeout(timeoutTimers.warningTimer);
     }
@@ -727,15 +757,21 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
     }
     setTimeoutTimers({ warningTimer: null, closingTimer: null });
     
+    // Reset timeout state
+    setTimeoutState(null);
+    
+    // Reset game state
     setGameState({
       room: null,
       players: [],
       guesses: [],
       currentPlayer: null,
       isComplete: false,
-      currentWord: null,
+      currentWord: null
     });
-  };
+    
+    console.log("Multiplayer cleanup completed for room:", wasActiveRoom);
+  }, [realtimeChannel, syncInterval, timeoutTimers]);
 
   const contextValue: MultiplayerContextType = {
     gameState,
@@ -744,7 +780,7 @@ export const MultiplayerProvider = ({ children }: { children: ReactNode }) => {
     joinRoom,
     makeGuess,
     leaveRoom,
-    resetMultiplayerState,
+    resetMultiplayerState: cleanupMultiplayer,
     timeoutState,
     dismissTimeoutWarning
   };
