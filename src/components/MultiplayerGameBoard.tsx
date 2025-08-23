@@ -28,7 +28,6 @@ const MultiplayerGameBoard = () => {
   const copyRoomCode = useCallback(async () => {
     const code = gameState.room?.room_code || '';
     if (!code) return;
-
     try {
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         await navigator.clipboard.writeText(code);
@@ -43,7 +42,6 @@ const MultiplayerGameBoard = () => {
         document.execCommand('copy');
         document.body.removeChild(textarea);
       }
-
       setCopiedCode(true);
       setTimeout(() => setCopiedCode(false), 2000);
     } catch (error) {
@@ -55,7 +53,6 @@ const MultiplayerGameBoard = () => {
   const handleGuessSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guessInput.trim() || isSubmitting) return;
-
     setIsSubmitting(true);
     try {
       await makeGuess(guessInput.trim());
@@ -80,48 +77,50 @@ const MultiplayerGameBoard = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+      {gameState.isComplete && (
+        <Card className="border-green-400 bg-green-50 text-green-800 animate-in fade-in slide-in-from-top-4 duration-500">
+          <CardContent className="p-6 text-center">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <Trophy className="h-10 w-10 text-green-500" />
+              <div>
+                <CardTitle className="text-2xl font-bold">ניצחתם!</CardTitle>
+                <p className="mt-2 text-green-700">מצאתם את המילה הסודית ביחד, כל הכבוד!</p>
+              </div>
+              <Button onClick={leaveRoom} variant="outline" className="mt-2 border-green-300 hover:bg-green-100 text-green-800">
+                עזוב חדר
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Room Info Card */}
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2">
-            <Users className="h-5 w-5" />
-            חדר מרובה משתתפים
-          </CardTitle>
-          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-            <span>
-              קוד חדר: 
-              <button onClick={copyRoomCode} className="inline-flex items-center gap-1 ml-1 hover:bg-muted px-2 py-1 rounded transition-colors" title="לחץ להעתקה">
-                <Badge variant="secondary" className="cursor-pointer hover:bg-muted-foreground/20">{gameState.room.room_code}</Badge>
-                {copiedCode ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-              </button>
-            </span>
+          <CardTitle className="flex items-center justify-center gap-2"><Users className="h-5 w-5" /> חדר מרובה משתתפים</CardTitle>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-sm text-muted-foreground mt-2">
             <span>תאריך: {new Date(gameState.room.word_date).toLocaleDateString('he-IL')}</span>
             <span>שחקנים: {gameState.players.length}</span>
+            <span>קוד חדר: <button onClick={copyRoomCode} className="inline-flex items-center gap-1 ml-1 hover:bg-muted px-2 py-1 rounded transition-colors" title="לחץ להעתקה"><Badge variant="secondary" className="cursor-pointer hover:bg-muted-foreground/20 text-base">{gameState.room.room_code}</Badge>{copiedCode ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}</button></span>
           </div>
         </CardHeader>
       </Card>
       
       {/* Guess Input Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Target className="h-5 w-5" /> הכנס ניחוש</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Target className="h-5 w-5" /> הכנס ניחוש</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleGuessSubmit} className="flex gap-2">
             <Input value={guessInput} onChange={(e) => setGuessInput(e.target.value)} placeholder="הקלד מילה..." disabled={isSubmitting || gameState.isComplete} className="flex-1" />
-            <Button type="submit" disabled={isSubmitting || gameState.isComplete || !guessInput.trim()} className="min-w-[100px]">
-              {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> שולח...</> : "שלח"}
-            </Button>
+            <Button type="submit" disabled={isSubmitting || gameState.isComplete || !guessInput.trim()} className="min-w-[100px]">{isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> שולח...</> : "שלח"}</Button>
           </form>
         </CardContent>
       </Card>
 
       {/* Guesses Table Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5" /> ניחושים ({gameState.guesses.length})</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5" /> ניחושים ({gameState.guesses.length})</CardTitle></CardHeader>
         <CardContent>
           {gameState.guesses.length === 0 ? (
             <div className="text-center py-4 text-muted-foreground">עדיין אין ניחושים. תהיה הראשון!</div>
@@ -129,39 +128,32 @@ const MultiplayerGameBoard = () => {
             <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader>
-                  {/* ✨ THIS IS THE LINE WE FIXED! ✨ */}
-                  {/* We added classes like "text-right" and "text-center" to match your screenshot perfectly. */}
                   <TableRow>
-                    <TableHead className="text-right">#</TableHead>
-                    <TableHead className="text-right">מילה</TableHead>
-                    <TableHead className="text-right">שחקן</TableHead>
-                    <TableHead className="text-center">קרבה</TableHead>
-                    <TableHead className="text-center">מתחמם?</TableHead>
+                    {/* ✨ FIX: The '#' column is now hidden on small screens! ✨ */}
+                    <TableHead className="hidden sm:table-cell text-right px-2">#</TableHead>
+                    <TableHead className="text-right px-2">מילה</TableHead>
+                    <TableHead className="text-right px-2">שחקן</TableHead>
+                    <TableHead className="text-center px-2">קרבה</TableHead>
+                    <TableHead className="text-center px-2">מתחמם?</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedGuesses.map((guess) => (
                     <TableRow key={guess.id} className={guess.is_correct ? "bg-green-500/20" : ""}>
-                      <TableCell className="text-right">{guess.guess_order}</TableCell>
-                      <TableCell className="font-medium text-right">{guess.guess_word}</TableCell>
-                      <TableCell className="text-right"><Badge variant="outline">{guess.player_nickname}</Badge></TableCell>
-                      <TableCell className="text-center">{`${(guess.similarity * 100).toFixed(2)}%`}</TableCell>
-                      <TableCell className="text-center">
+                      {/* ✨ FIX: The data cell for '#' is also hidden on small screens. ✨ */}
+                      <TableCell className="hidden sm:table-cell text-right py-1 px-2 text-xs">{guess.guess_order}</TableCell>
+                      <TableCell className="font-medium text-right py-1 px-2 text-xs">{guess.guess_word}</TableCell>
+                      <TableCell className="text-right py-1 px-2 text-xs"><Badge variant="outline">{guess.player_nickname}</Badge></TableCell>
+                      <TableCell className="text-center py-1 px-2 text-xs">{`${(guess.similarity * 100).toFixed(2)}%`}</TableCell>
+                      <TableCell className="py-1 px-2 text-xs">
                         {guess.rank && guess.rank > 0 ? (
                           <div className="flex items-center gap-1 justify-center">
                             <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0">
-                              <div 
-                                className="absolute top-0 left-0 h-full bg-green-500 rounded-sm transition-all duration-200 min-w-[2px]"
-                                style={{ width: getProgressBarWidth(guess.rank) }}
-                              />
+                              <div className="absolute top-0 left-0 h-full bg-green-500 rounded-sm transition-all duration-200 min-w-[2px]" style={{ width: getProgressBarWidth(guess.rank) }} />
                             </div>
-                            <span className="text-xs text-muted-foreground font-heebo whitespace-nowrap">
-                              {guess.rank}/1000
-                            </span>
+                            <span className="text-muted-foreground font-heebo whitespace-nowrap">{guess.rank}/1000</span>
                           </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground font-heebo">רחוק</span>
-                        )}
+                        ) : (<span className="text-muted-foreground font-heebo">רחוק</span>)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -172,19 +164,6 @@ const MultiplayerGameBoard = () => {
         </CardContent>
       </Card>
       
-      {/* Game Complete & Leave Room Buttons */}
-      {gameState.isComplete && (
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader className="text-center">
-            <CardTitle className="text-green-800 flex items-center justify-center gap-2"><Trophy className="h-6 w-6" /> המשחק הסתיים!</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-green-700 mb-4">מישהו ניחש את המילה הנכונה! המשחק הסתיים.</p>
-            <Button onClick={leaveRoom} variant="outline">עזוב חדר</Button>
-          </CardContent>
-        </Card>
-      )}
-
       {!gameState.isComplete && (
         <div className="text-center">
           <Button onClick={leaveRoom} variant="outline">עזוב חדר</Button>
