@@ -178,7 +178,7 @@ const MultiplayerGameBoard = () => {
       
       {!gameState.isComplete && (
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Target className="h-5 w-5" /> הכנס ניחוש</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Target className="h-5 w-5" /> כאן מנחשים:</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleGuessSubmit} className="flex gap-2">
               <Input value={guessInput} onChange={(e) => setGuessInput(e.target.value)} placeholder="הקלד מילה..." disabled={isSubmitting} className="flex-1" dir="rtl"/>
@@ -240,13 +240,13 @@ const MultiplayerGameBoard = () => {
 
       {gameState.guesses.length === 0 && !gameState.isComplete && (
           <div className="text-center py-8 text-muted-foreground">
-              עדיין אין ניחושים. תהיו הראשונים!
+              עדיין אין ניחושים. תתחילו לנחש!
           </div>
       )}
       
       {!gameState.isComplete && (
         <div className="text-center pt-4">
-          <Button onClick={leaveRoom} variant="outline">עזוב חדר</Button>
+          <Button onClick={leaveRoom} variant="outline">יציאה מהחדר</Button>
         </div>
       )}
     </div>
