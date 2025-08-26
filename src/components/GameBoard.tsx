@@ -324,7 +324,7 @@ const GameBoard = React.memo(() => {
                 <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
-              שחק עם חברים (ניסיוני)
+              משחק עם חברים ✨
             </Button>
           </Link>
         </div>
@@ -381,7 +381,7 @@ const GameBoard = React.memo(() => {
                 <div className="flex items-center justify-center gap-3">
                   <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   <div className="text-sm text-blue-700 dark:text-blue-300">
-                    לא נתקענו, פשוט לוקח לנו קצת זמן לחשב את הניחוש הראשון לפעמים :)<br/>
+                    לא נתקענו, פשוט לוקח לנו קצת זמן לחשב את הניחוש לפעמים :)<br/>
                     אל דאגה, מהניחוש הבא הכול יזרום הרבה יותר מהר
                   </div>
                 </div>

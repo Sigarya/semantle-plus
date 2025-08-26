@@ -1,4 +1,3 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -16,7 +15,14 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' &&
     componentTagger(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // ✨ THIS IS THE KEY CHANGE! ✨
+      // We are switching from 'autoUpdate' to 'prompt'.
+      // This tells the PWA to notify our app when an update is ready,
+      // so we can ask the user before reloading.
+      registerType: 'prompt', 
+
+      // Everything below this line is your excellent existing configuration,
+      // which we are keeping exactly as is!
       includeAssets: ['favicon.ico', 'robots.txt', 'sitemap.xml'],
       manifest: {
         name: 'סמנטעל פלוס',
@@ -46,94 +52,39 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        // Cache all static assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2,ttf}'],
-        
-        // Define runtime caching strategies
         runtimeCaching: [
-          // Supabase API calls - Network first with cache fallback
           {
             urlPattern: /^https:\/\/ciuhkkmuvqoepohihofs\.supabase\.co\/rest\/v1\/.*/i,
             handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api-cache',
-              networkTimeoutSeconds: 10,
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
-              }
-            }
+            options: { cacheName: 'supabase-api-cache', networkTimeoutSeconds: 10, expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 } }
           },
-          
-          // Supabase functions - Network first with cache fallback
           {
             urlPattern: /^https:\/\/ciuhkkmuvqoepohihofs\.supabase\.co\/functions\/v1\/.*/i,
             handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-functions-cache',
-              networkTimeoutSeconds: 15,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 2 // 2 hours
-              }
-            }
+            options: { cacheName: 'supabase-functions-cache', networkTimeoutSeconds: 15, expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 2 } }
           },
-          
-          // External API (Hebrew W2V) - Network first with longer cache
           {
             urlPattern: /^https:\/\/.*\.onrender\.com\/.*/i,
             handler: 'NetworkFirst',
-            options: {
-              cacheName: 'external-api-cache',
-              networkTimeoutSeconds: 20,
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
-              }
-            }
+            options: { cacheName: 'external-api-cache', networkTimeoutSeconds: 20, expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 } }
           },
-          
-          // Google Fonts - Cache first
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-stylesheets',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
+            options: { cacheName: 'google-fonts-stylesheets', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } }
           },
-          
-          // Google Fonts - Cache first
           {
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
+            options: { cacheName: 'google-fonts-webfonts', expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 } }
           },
-          
-          // Images from Supabase storage
           {
             urlPattern: /^https:\/\/ciuhkkmuvqoepohihofs\.supabase\.co\/storage\/.*/i,
             handler: 'CacheFirst',
-            options: {
-              cacheName: 'supabase-images',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              }
-            }
+            options: { cacheName: 'supabase-images', expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 } }
           }
         ],
-        
-        // Don't cache POST requests
         ignoreURLParametersMatching: [/^utm_/, /^fbclid$/]
       }
     })
@@ -146,7 +97,6 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    // Optimize bundle size and performance
     target: 'esnext',
     minify: 'terser',
     sourcemap: mode === 'development',
@@ -155,7 +105,6 @@ export default defineConfig(({ mode }) => ({
         assetFileNames: 'assets/[name].[hash][extname]',
         chunkFileNames: 'assets/[name].[hash].js',
         entryFileNames: 'assets/[name].[hash].js',
-        // Split vendor chunks for better caching
         manualChunks: {
           vendor: ['react', 'react-dom'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-toast', '@radix-ui/react-tabs'],
@@ -163,7 +112,6 @@ export default defineConfig(({ mode }) => ({
         }
       }
     },
-    // Optimize chunk size warnings
     chunkSizeWarningLimit: 1000
   }
 }));
