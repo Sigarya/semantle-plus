@@ -46,8 +46,26 @@ export default defineConfig(({ mode }) => ({
         lang: 'he',
         dir: 'rtl',
         icons: [
-          // your icons
-        ]
+          {
+            src: '/favicon.ico',
+            sizes: '16x16 32x32',
+            type: 'image/x-icon'
+          },
+          {
+            src: '/placeholder.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          },
+          {
+            src: '/placeholder.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          }
+        ],
+        categories: ['games', 'education', 'entertainment'],
+        prefer_related_applications: false
       }
     })
   ].filter(Boolean),

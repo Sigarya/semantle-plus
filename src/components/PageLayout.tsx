@@ -1,6 +1,7 @@
 
 import { ReactNode } from "react";
 import Header from "@/components/Header";
+import { GameStructuredData, OrganizationStructuredData, WebsiteStructuredData } from "@/components/StructuredData";
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -11,6 +12,13 @@ const PageLayout = ({ children, title }: PageLayoutProps) => {
   
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900">
+      <GameStructuredData />
+      <OrganizationStructuredData 
+        name="סמנטעל פלוס"
+        url="https://semantleplus.com"
+        description="משחק ניחוש מילים בעברית מבוסס על דמיון סמנטי"
+      />
+      <WebsiteStructuredData />
       <Header />
       <main className="flex-grow p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
