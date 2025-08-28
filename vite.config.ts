@@ -7,13 +7,15 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig(({ mode }) => ({
   base: '',
   server: { host: "::", port: 8080 },
-  preview: { historyApiFallback: true },
+  preview: { 
+    port: 4173,
+    host: true
+  },
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'prompt',
-      
       workbox: {
         skipWaiting: true,
         clientsClaim: true,

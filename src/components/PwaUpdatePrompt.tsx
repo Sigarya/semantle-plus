@@ -1,23 +1,63 @@
 // src/components/PwaUpdatePrompt.tsx
 
-import React from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { RefreshCw } from 'lucide-react';
 
 function PwaUpdatePrompt() {
-  // This special hook from vite-plugin-pwa watches for updates.
-  // When `needRefresh` is true, it means a new version is downloaded and waiting.
-  const {
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW();
+  const [needRefresh, setNeedRefresh] = useState(false);
 
-  // This function tells the service worker to activate the new version
-  // and reload the page. The `true` parameter forces it to reload all tabs.
+  useEffect(() => {
+    // Simple service worker update detection
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => {
+          // Check for updates every 10 seconds
+          const checkForUpdate = () => {
+            registration.update().then(() => {
+              if (registration.waiting) {
+                setNeedRefresh(true);
+              }
+            }).catch(console.error);
+          };
+
+          // Initial check
+          if (registration.waiting) {
+            setNeedRefresh(true);
+          }
+
+          // Listen for new service worker installing
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  setNeedRefresh(true);
+                }
+              });
+            }
+          });
+
+          // Periodic check for updates
+          const interval = setInterval(checkForUpdate, 10000);
+          return () => clearInterval(interval);
+        });
+      });
+    }
+  }, []);
+
   const handleUpdate = () => {
-    updateServiceWorker(true);
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => {
+          if (registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+      window.location.reload();
+    }
   };
 
   // If there's no update, we show nothing at all.
