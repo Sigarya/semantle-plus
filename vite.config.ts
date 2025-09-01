@@ -1,3 +1,5 @@
+// filename: vite.config.js
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -16,6 +18,10 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'prompt',
+      // We tell the plugin to NOT generate a manifest.
+      // This will make it use the one you already have in the /public folder!
+      manifest: false, 
+      
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
@@ -33,40 +39,6 @@ export default defineConfig(({ mode }) => ({
       },
 
       includeAssets: ['favicon.ico', 'robots.txt', 'sitemap.xml'],
-      manifest: {
-        name: 'סמנטעל פלוס',
-        short_name: 'סמנטעל+',
-        description: 'פתרתם את המילה של היום? בסמנטעל פלוס אפשר לשחק גם בכל המילים הקודמות בלי לחכות למחר.',
-        theme_color: '#3b82f6',
-        background_color: '#ffffff',
-        display: 'standalone',
-        start_url: '/',
-        scope: '/',
-        orientation: 'portrait',
-        lang: 'he',
-        dir: 'rtl',
-        icons: [
-          {
-            src: '/favicon.ico',
-            sizes: '16x16 32x32',
-            type: 'image/x-icon'
-          },
-          {
-            src: '/placeholder.svg',
-            sizes: '192x192',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
-          },
-          {
-            src: '/placeholder.svg',
-            sizes: '512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
-          }
-        ],
-        categories: ['games', 'education', 'entertainment'],
-        prefer_related_applications: false
-      }
     })
   ].filter(Boolean),
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
