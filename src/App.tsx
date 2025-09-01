@@ -7,8 +7,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { GameProvider } from "@/context/GameContext";
-import { MultiplayerProvider } from "@/context/MultiplayerContext";
 import { PWAInstallProvider, usePWAInstall } from "@/context/PWAInstallContext";
 import { UsernameSelectionDialog } from "@/components/UsernameSelectionDialog";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -17,6 +15,7 @@ import { secureStorage, CACHE_KEYS } from "@/lib/pwaUtils";
 
 // ✨ STEP 1: Import our new, smarter PWA update component. ✨
 import PwaUpdatePrompt from "@/components/PwaUpdatePrompt"; 
+import LazyContextProviders from "@/components/LazyContextProviders";
 
 // Lazy load pages for code splitting (your original setup is perfect)
 const Index = lazy(() => import("./pages/Index"));
@@ -66,51 +65,49 @@ const AppContent = () => {
 
   return (
     <>
-      <GameProvider>
-        <MultiplayerProvider>
-          <Toaster />
-          <Sonner />
+      <LazyContextProviders>
+        <Toaster />
+        <Sonner />
 
-          {/* ✨ STEP 2: We replace the old, simple notification with our new, interactive prompt. ✨ */}
-          <PwaUpdatePrompt />
+        {/* ✨ STEP 2: We replace the old, simple notification with our new, interactive prompt. ✨ */}
+        <PwaUpdatePrompt />
+      
+        {isPwaBannerVisible && (
+          <PWAInstallPrompt 
+            onInstallSuccess={() => setIsPwaBannerVisible(false)}
+            onBannerVisibilityChange={setIsPwaBannerVisible}
+          />
+        )}
         
-          {isPwaBannerVisible && (
-            <PWAInstallPrompt 
-              onInstallSuccess={() => setIsPwaBannerVisible(false)}
-              onBannerVisibilityChange={setIsPwaBannerVisible}
-            />
-          )}
-          
-          <div className={isPwaBannerVisible ? "pt-16" : ""}>
-            <UsernameSelectionDialog
-              isOpen={showUsernameDialog}
-              onClose={hideUsernameDialog}
-              onUsernameSet={setUsernameSelected}
-            />
-            <BrowserRouter>
-              <Suspense fallback={
-                <div className="min-h-screen flex items-center justify-center">
-                  <div className="text-xl">טוען...</div>
-                </div>
-              }>
-                {/* Your routing map is perfect and remains unchanged. */}
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/history" element={<History />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/multiplayer" element={<Multiplayer />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </div>
-        </MultiplayerProvider>
-      </GameProvider>
+        <div className={isPwaBannerVisible ? "pt-16" : ""}>
+          <UsernameSelectionDialog
+            isOpen={showUsernameDialog}
+            onClose={hideUsernameDialog}
+            onUsernameSet={setUsernameSelected}
+          />
+          <BrowserRouter>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-xl">טוען...</div>
+              </div>
+            }>
+              {/* Your routing map is perfect and remains unchanged. */}
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/multiplayer" element={<Multiplayer />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </div>
+      </LazyContextProviders>
     </>
   );
 };

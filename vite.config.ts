@@ -70,5 +70,18 @@ export default defineConfig(({ mode }) => ({
     })
   ].filter(Boolean),
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
-  build: { /* your build config */ }
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-toast', '@radix-ui/react-tooltip'],
+          query: ['@tanstack/react-query'],
+          supabase: ['@supabase/supabase-js']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  }
 }));

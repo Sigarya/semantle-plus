@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import PageLayout from "@/components/PageLayout";
 import MultiplayerLobby from "@/components/MultiplayerLobby";
-import MultiplayerGameBoard from "@/components/MultiplayerGameBoard";
+import LazyMultiplayerGameBoard from "@/components/LazyMultiplayerGameBoard";
 import { useMultiplayer } from "@/context/MultiplayerContext";
 import { useGame } from "@/context/GameContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -64,7 +64,7 @@ const Multiplayer: React.FC = () => {
             isLoading={isLoading}
           />
         ) : (
-          <MultiplayerGameBoard />
+          <LazyMultiplayerGameBoard />
         )}
       </div>
     </PageLayout>

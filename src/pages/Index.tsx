@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import GameBoard from "@/components/GameBoard";
+import LazyGameBoard from "@/components/LazyGameBoard";
 import PageLayout from "@/components/PageLayout";
 import AuthModal from "@/components/AuthModal";
 import { useGame } from "@/context/GameContext";
@@ -56,7 +56,7 @@ const Index = () => {
             </div>
           </div>
         ) : (
-          <GameBoard />
+          <LazyGameBoard />
         )}
         
         <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
