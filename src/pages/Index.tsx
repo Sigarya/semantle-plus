@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import LazyGameBoard from "@/components/LazyGameBoard";
 import PageLayout from "@/components/PageLayout";
-import AuthModal from "@/components/AuthModal";
+import LazyAuthModal from "@/components/LazyAuthModal";
 import { useGame } from "@/context/GameContext";
 import { useAuth } from "@/context/AuthContext";
 
@@ -59,7 +59,7 @@ const Index = () => {
           <LazyGameBoard />
         )}
         
-        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+        <LazyAuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       </div>
     </PageLayout>
   );

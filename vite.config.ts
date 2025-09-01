@@ -76,9 +76,14 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-toast', '@radix-ui/react-tooltip'],
+          radix: ['@radix-ui/react-dialog', '@radix-ui/react-toast', '@radix-ui/react-tooltip', '@radix-ui/react-table', '@radix-ui/react-select'],
+          radixForm: ['@radix-ui/react-checkbox', '@radix-ui/react-radio-group', '@radix-ui/react-slider', '@radix-ui/react-switch'],
+          charts: ['recharts'],
+          confetti: ['react-confetti'],
           query: ['@tanstack/react-query'],
-          supabase: ['@supabase/supabase-js']
+          supabase: ['@supabase/supabase-js'],
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+          dates: ['date-fns', 'date-fns-tz']
         }
       }
     },

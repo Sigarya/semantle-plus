@@ -1,7 +1,7 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import AdminPanel from "@/components/AdminPanel";
+import LazyAdminPanel from "@/components/LazyAdminPanel";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import PageLayout from "@/components/PageLayout";
@@ -31,7 +31,7 @@ const Admin = () => {
   return (
     <PageLayout title="פאנל ניהול">
       <div className="max-w-3xl mx-auto">
-        <AdminPanel />
+        <LazyAdminPanel />
       </div>
     </PageLayout>
   );
