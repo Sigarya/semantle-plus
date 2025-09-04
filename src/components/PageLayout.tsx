@@ -33,7 +33,7 @@ const PageLayout = ({ children, title }: PageLayoutProps) => {
     </a>
     <br />
     <p dir="rtl" lang="he">
-      אוהבים את סמנטעל פלוס? 
+  אוהבים את סמנטעל פלוס?&nbsp;
       <a href="https://ko-fi.com/sigarya" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
         אתם יכולים לקנות לי ☕!
       </a>
