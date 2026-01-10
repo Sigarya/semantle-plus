@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { PWAInstallProvider, usePWAInstall } from "@/context/PWAInstallContext";
@@ -14,7 +15,7 @@ import { Suspense, lazy, useState, useEffect } from "react";
 import { secureStorage, CACHE_KEYS } from "@/lib/pwaUtils";
 
 // ✨ STEP 1: Import our new, smarter PWA update component. ✨
-import PwaUpdatePrompt from "@/components/PwaUpdatePrompt"; 
+import PwaUpdatePrompt from "@/components/PwaUpdatePrompt";
 import LazyContextProviders from "@/components/LazyContextProviders";
 
 // Lazy load pages for code splitting (your original setup is perfect)
@@ -60,7 +61,7 @@ const AppContent = () => {
     };
     checkAndShowPrompt();
   }, [deferredPrompt]);
-  
+
   // Your testing hooks and debug logs also remain.
 
   return (
@@ -71,14 +72,14 @@ const AppContent = () => {
 
         {/* ✨ STEP 2: We replace the old, simple notification with our new, interactive prompt. ✨ */}
         <PwaUpdatePrompt />
-      
+
         {isPwaBannerVisible && (
-          <PWAInstallPrompt 
+          <PWAInstallPrompt
             onInstallSuccess={() => setIsPwaBannerVisible(false)}
             onBannerVisibilityChange={setIsPwaBannerVisible}
           />
         )}
-        
+
         <div className={isPwaBannerVisible ? "pt-16" : ""}>
           <UsernameSelectionDialog
             isOpen={showUsernameDialog}
@@ -116,15 +117,17 @@ const AppContent = () => {
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ThemeProvider>
-          <PWAInstallProvider>
-            <AuthProvider>
-              <AppContent />
-            </AuthProvider>
-          </PWAInstallProvider>
-        </ThemeProvider>
-      </TooltipProvider>
+      <HelmetProvider>
+        <TooltipProvider>
+          <ThemeProvider>
+            <PWAInstallProvider>
+              <AuthProvider>
+                <AppContent />
+              </AuthProvider>
+            </PWAInstallProvider>
+          </ThemeProvider>
+        </TooltipProvider>
+      </HelmetProvider>
     </QueryClientProvider>
   );
 };
