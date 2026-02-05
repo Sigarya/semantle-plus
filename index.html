@@ -18,6 +18,14 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#3b82f6" />
 
+    <!-- PWA Serviceworker -->
+  <script>
+  if (typeof navigator.serviceWorker !== 'undefined') {
+    navigator.serviceWorker.register('sw.js')
+  }
+</script>
+
+
   <!-- Preconnect to critical origins for better performance -->
   <link rel="preconnect" href="https://ciuhkkmuvqoepohihofs.supabase.co">
   <link rel="preconnect" href="https://fonts.googleapis.com">
