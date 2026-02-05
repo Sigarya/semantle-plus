@@ -1,11 +1,12 @@
 {
+  "id": "Semantle_Plus",
   "name": "סמנטעל פלוס | כל החידות, גם עם חברים",
   "short_name": "סמנטעל פלוס",
   "description": "סמנטעל פלוס הוא הגרסה המשודרגת של משחק הניחושים הסמנטי סמנטעל. שחקו בכל חידות העבר, אתגרו חברים וצפו בניחושים שלהם בזמן אמת",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "theme_color": "#9a60c6",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "he",
