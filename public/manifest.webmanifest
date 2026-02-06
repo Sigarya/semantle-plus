@@ -94,27 +94,28 @@
     {
       "src": "screenshots/1.jpg",
       "sizes": "1920x1080",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "form_factor": "narrow"
     },
     {
       "src": "screenshots/2.jpg",
       "sizes": "1920x1080",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "form_factor": "narrow"
     },
     {
       "src": "screenshots/3.jpg",
       "sizes": "1920x1080",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "form_factor": "narrow"
     },
     {
       "src": "screenshots/4.jpg",
       "sizes": "1920x1080",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "form_factor": "narrow"
     }
   ]
 
 }
+
