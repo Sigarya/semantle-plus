@@ -92,28 +92,29 @@
   "id": "Semantle_Plus",
   "screenshots": [
     {
-      "src": "screenshots/1.png",
+      "src": "screenshots/1.jpg",
       "sizes": "1920x1080",
-      "type": "image/png",
+      "type": "image/jpg",
       "form_factor": "narrow"
     },
     {
-      "src": "screenshots/2.png",
+      "src": "screenshots/2.jpg",
       "sizes": "1920x1080",
-      "type": "image/png",
+      "type": "image/jpg",
       "form_factor": "narrow"
     },
     {
-      "src": "screenshots/3.png",
+      "src": "screenshots/3.jpg",
       "sizes": "1920x1080",
-      "type": "image/png",
+      "type": "image/jpg",
       "form_factor": "narrow"
     },
     {
-      "src": "screenshots/4.png",
+      "src": "screenshots/4.jpg",
       "sizes": "1920x1080",
-      "type": "image/png",
+      "type": "image/jpg",
       "form_factor": "narrow"
     }
   ]
+
 }
