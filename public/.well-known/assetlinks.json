@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "xyz.sigarya.semantle.twa",
+        "sha256_cert_fingerprints": ["47:07:B1:00:46:97:08:04:8D:35:CE:20:1B:AE:E7:06:CF:19:42:1C:FB:6D:E1:8F:8F:62:B6:87:C4:DA:A9:8F"]
+      }
+    }]
