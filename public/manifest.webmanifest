@@ -89,33 +89,31 @@
       "purpose": "any"
     }
   ],
-  "id": "Semantle_Plus"
+  "id": "Semantle_Plus",
+  "screenshots": [
+    {
+      "src": "screenshots/1.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screenshots/2.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screenshots/3.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screenshots/4.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
 }
-
-"screenshots": [
-  {
-    "src": "screenshots/1.png",
-    "sizes": "1920x1080",
-    "type": "image/png",
-    "form_factor": "narrow"
-  },
-  {
-    "src": "screenshots/2.png",
-    "sizes": "1920x1080",
-    "type": "image/png",
-    "form_factor": "narrow"
-  }
- {
-    "src": "screenshots/3.png",
-    "sizes": "1920x1080",
-    "type": "image/png",
-    "form_factor": "narrow"
-  }
- {
-    "src": "screenshots/4.png",
-    "sizes": "1920x1080",
-    "type": "image/png",
-    "form_factor": "narrow"
-  }
-]
-
