@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "xyz.sigarya.semantle.twa",
-        "sha256_cert_fingerprints": ["56:BD:14:33:41:8A:00:80:2E:5E:64:C2:4D:58:3A:9E:19:F8:12:08:59:A8:FC:6F:F4:AA:28:17:C5:A5:4F:B8"]
+        "sha256_cert_fingerprints": ["94:91:D2:07:37:CD:53:BA:85:44:D1:3F:21:DB:40:3F:C4:26:5D:3D:D3:D5:BE:90:50:BB:3C:16:F2:BA:07:61"]
       }
     }]
