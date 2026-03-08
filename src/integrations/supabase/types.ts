@@ -341,31 +341,31 @@ export type Database = {
       }
       room_players: {
         Row: {
+          guest_id: string | null
           id: string
           is_active: boolean
           joined_at: string
           nickname: string
           room_id: string
           user_id: string | null
-          guest_id: string | null
         }
         Insert: {
+          guest_id?: string | null
           id?: string
           is_active?: boolean
           joined_at?: string
           nickname: string
           room_id: string
           user_id?: string | null
-          guest_id?: string | null
         }
         Update: {
+          guest_id?: string | null
           id?: string
           is_active?: boolean
           joined_at?: string
           nickname?: string
           room_id?: string
           user_id?: string | null
-          guest_id?: string | null
         }
         Relationships: [
           {
@@ -382,7 +382,7 @@ export type Database = {
           action: string
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           resource_id: string | null
           resource_type: string
@@ -393,7 +393,7 @@ export type Database = {
           action: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           resource_id?: string | null
           resource_type: string
@@ -404,7 +404,7 @@ export type Database = {
           action?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           resource_id?: string | null
           resource_type?: string
@@ -532,14 +532,12 @@ export type Database = {
         }
         Returns: boolean
       }
-      cleanup_old_data: {
-        Args: Record<PropertyKey, never>
+      cleanup_guest_player: {
+        Args: { p_guest_id: string; p_room_id: string }
         Returns: undefined
       }
-      generate_room_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      cleanup_old_data: { Args: never; Returns: undefined }
+      generate_room_code: { Args: never; Returns: string }
       get_active_word_for_date: {
         Args: { target_date: string }
         Returns: {
@@ -560,20 +558,20 @@ export type Database = {
       get_room_with_players: {
         Args: { room_code_param: string }
         Returns: {
-          created_by: string | null
-          guest_creator: string | null
+          created_by: string
+          guest_creator: string
+          guest_id: string
           joined_at: string
           nickname: string
           player_id: string
           room_code: string
           room_id: string
-          user_id: string | null
-          guest_id: string | null
+          user_id: string
           word_date: string
         }[]
       }
       get_today_leaderboard: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           completion_time: string
           guesses_count: number
@@ -582,10 +580,7 @@ export type Database = {
           username: string
         }[]
       }
-      get_user_admin_status: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      get_user_admin_status: { Args: { _user_id: string }; Returns: boolean }
       get_user_daily_score: {
         Args: { target_date: string; user_uuid: string }
         Returns: {
@@ -593,6 +588,7 @@ export type Database = {
           guesses_count: number
         }[]
       }
+      leave_room: { Args: { player_id_to_delete: string }; Returns: undefined }
       log_security_event: {
         Args: {
           _action: string
@@ -603,10 +599,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      refresh_daily_leaderboards: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      refresh_daily_leaderboards: { Args: never; Returns: undefined }
       refresh_leaderboards_for_date: {
         Args: { target_date: string }
         Returns: undefined

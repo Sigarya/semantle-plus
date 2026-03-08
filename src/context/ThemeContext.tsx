@@ -26,17 +26,22 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       setTheme(parsedTheme);
       
       // Apply the theme
-      if (parsedTheme.name === 'dark') {
+      const isDark = parsedTheme.name === 'dark';
+      if (isDark) {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
       }
+      const meta = document.getElementById('theme-color-meta');
+      if (meta) meta.setAttribute('content', isDark ? '#1e293b' : '#f5f3ff');
     } else {
       // Check system preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark) {
-        setTheme(themes[1]); // Dark theme
+        setTheme(themes[1]);
         document.documentElement.classList.add('dark');
+        const meta = document.getElementById('theme-color-meta');
+        if (meta) meta.setAttribute('content', '#1e293b');
       }
     }
   }, []);
@@ -50,6 +55,12 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+    }
+
+    // Update mobile status bar color
+    const meta = document.getElementById('theme-color-meta');
+    if (meta) {
+      meta.setAttribute('content', newTheme.name === 'dark' ? '#1e293b' : '#f5f3ff');
     }
   };
 
