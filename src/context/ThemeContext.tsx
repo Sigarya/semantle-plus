@@ -51,6 +51,12 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    // Update mobile status bar color
+    const meta = document.getElementById('theme-color-meta');
+    if (meta) {
+      meta.setAttribute('content', newTheme.name === 'dark' ? '#1e293b' : '#f5f3ff');
+    }
   };
 
   return (
