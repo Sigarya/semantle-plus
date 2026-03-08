@@ -38,8 +38,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       // Check system preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark) {
-        setTheme(themes[1]); // Dark theme
+        setTheme(themes[1]);
         document.documentElement.classList.add('dark');
+        const meta = document.getElementById('theme-color-meta');
+        if (meta) meta.setAttribute('content', '#1e293b');
       }
     }
   }, []);
