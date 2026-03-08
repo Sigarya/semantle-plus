@@ -26,11 +26,14 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       setTheme(parsedTheme);
       
       // Apply the theme
-      if (parsedTheme.name === 'dark') {
+      const isDark = parsedTheme.name === 'dark';
+      if (isDark) {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
       }
+      const meta = document.getElementById('theme-color-meta');
+      if (meta) meta.setAttribute('content', isDark ? '#1e293b' : '#f5f3ff');
     } else {
       // Check system preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
