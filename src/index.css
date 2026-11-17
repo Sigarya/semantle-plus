@@ -329,3 +329,21 @@
 @layer components {
  .page-content:has(.history-list) { max-width: 760px; }
 }
+
+/* Gameplay shortcuts share one compact row; help remains visually secondary. */
+@layer components {
+ .game-shortcuts { gap: 6px; }
+ .game-shortcuts .ui-button { min-height: 44px; white-space: nowrap; }
+ .game-shortcuts > a { background: transparent; }
+ @media(max-width: 767px) {
+  .game-heading:has(.game-shortcuts) { flex-wrap: wrap; gap: 2px; }
+  .game-shortcuts { width: 100%; gap: 6px; }
+  .game-shortcuts > a { flex: 1; }
+  .game-shortcuts .ui-button { gap: 5px; padding-inline: 8px; font-size: .75rem; }
+  .game-shortcuts .game-help { padding-inline: 6px; }
+ }
+ @media(max-width: 359px) {
+  .game-shortcuts { gap: 3px; }
+  .game-shortcuts .ui-button { gap: 3px; padding-inline: 5px; font-size: .6875rem; }
+ }
+}

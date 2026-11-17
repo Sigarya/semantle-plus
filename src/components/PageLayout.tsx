@@ -1,8 +1,10 @@
 
 import { ReactNode } from "react";
 import Header from "@/components/Header";
-import { GameStructuredData, OrganizationStructuredData } from "@/components/StructuredData";
+import { GameStructuredData, OrganizationStructuredData, WebsiteStructuredData } from "@/components/StructuredData";
 import SeoHead from "./SeoHead";
+import { useLocation } from "react-router-dom";
+import { normalizeSeoPath } from "@/lib/seo";
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -12,15 +14,17 @@ interface PageLayoutProps {
 
 const PageLayout = ({ children, title, description }: PageLayoutProps) => {
 
+  const isHome = normalizeSeoPath(useLocation().pathname) === "/";
+
   return (
     <div className="app-shell min-h-screen flex flex-col">
-      <GameStructuredData />
+      {isHome && <><GameStructuredData /><WebsiteStructuredData /></>}
       <OrganizationStructuredData
         name="סמנטעל פלוס"
         url="https://semantle.sigarya.xyz"
         description="משחק ניחוש מילים בעברית מבוסס על דמיון סמנטי"
       />
-      <SeoHead title={title} description={description} />
+      <SeoHead description={description} />
       <a href="#main-content" className="sr-only focus:not-sr-only focus:p-3">דלג לתוכן המשחק</a>
       <Header />
       <main id="main-content" className="page-main flex-grow px-4 py-6 md:px-8 md:py-8">

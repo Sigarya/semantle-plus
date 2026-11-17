@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import GuessTable from "@/components/GuessTable";
 import WelcomeDialog from "@/components/WelcomeDialog";
+import { CalendarDays, Users } from "lucide-react";
 
 const GameBoard = React.memo(() => {
   const { gameState, currentWord, makeGuess, resetGame, isLoading } = useGame();
@@ -304,20 +305,22 @@ const GameBoard = React.memo(() => {
         <div className="text-sm text-muted-foreground mt-2">
           משחק מיום <bdi>{formattedGameDate}</bdi>
         </div>
-        </div><div className="game-actions">
-          <WelcomeDialog />
-          <Link to={`/multiplayer?date=${gameState.wordDate}`}>
-            <Button variant="outline" size="sm" className="gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              משחק עם חברים ✨
-            </Button>
-          </Link>
         </div>
+        <nav className="game-actions game-shortcuts" aria-label="אפשרויות משחק">
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <Link to={`/multiplayer?date=${gameState.wordDate}`}>
+              <Users size={16} aria-hidden="true" />
+              משחק עם חברים
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <Link to="/history">
+              <CalendarDays size={16} aria-hidden="true" />
+              חידות קודמות
+            </Link>
+          </Button>
+          <WelcomeDialog />
+        </nav>
       </div>
 
       {gameState.isComplete ? (

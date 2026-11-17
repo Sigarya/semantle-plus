@@ -1,4 +1,5 @@
 import React from 'react';
+import { SITE_URL } from '@/lib/seo';
 
 interface GameStructuredDataProps {
   gameName?: string;
@@ -16,12 +17,12 @@ interface OrganizationStructuredDataProps {
 export const GameStructuredData: React.FC<GameStructuredDataProps> = ({
   gameName = 'סמנטעל פלוס',
   description = 'משחק ניחוש מילים בעברית מבוסס על דמיון סמנטי. נחשו את המילה היומית או שחקו במילים קודמות.',
-  url = 'https://semantleplus.com',
-  datePublished = '2024-01-01'
+  url = `${SITE_URL}/`,
+  datePublished
 }) => {
   const gameSchema = {
     "@context": "https://schema.org",
-    "@type": "Game",
+    "@type": "VideoGame",
     "name": gameName,
     "description": description,
     "url": url,
@@ -69,7 +70,6 @@ export const OrganizationStructuredData: React.FC<OrganizationStructuredDataProp
     "name": name,
     "url": url,
     "description": description,
-    "foundingDate": "2024",
     "founder": {
       "@type": "Person",
       "name": "Sigarya",
@@ -98,14 +98,9 @@ export const WebsiteStructuredData: React.FC = () => {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "סמנטעל פלוס",
-    "url": "https://semantleplus.com",
+    "url": `${SITE_URL}/`,
     "description": "משחק ניחוש מילים בעברית מבוסס על דמיון סמנטי",
-    "inLanguage": "he",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://semantleplus.com/search?q={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
+    "inLanguage": "he"
   };
 
   return (
