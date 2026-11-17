@@ -11,7 +11,7 @@ interface PWAInstallPromptProps {
 }
 
 export const PWAInstallPrompt = ({ onInstallSuccess, onBannerVisibilityChange }: PWAInstallPromptProps) => {
-  const { deferredPrompt } = usePWAInstall();
+  const { takePrompt } = usePWAInstall();
   const [isInstalling, setIsInstalling] = useState(false);
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [installError, setInstallError] = useState(false);
@@ -19,11 +19,27 @@ export const PWAInstallPrompt = ({ onInstallSuccess, onBannerVisibilityChange }:
   const hideBanner = () => onBannerVisibilityChange?.(false);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) { setInstructionsOpen(true); return; }
+    const promptEvent = takePrompt();
+    const webInstall = (navigator as Navigator & { install?: () => Promise<unknown> }).install;
+    if (!promptEvent && typeof webInstall === 'function') {
+      setIsInstalling(true);
+      try {
+        await webInstall.call(navigator);
+        onInstallSuccess();
+        hideBanner();
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          setInstallError(true);
+          setInstructionsOpen(true);
+        }
+      } finally { setIsInstalling(false); }
+      return;
+    }
+    if (!promptEvent) { setInstallError(false); setInstructionsOpen(true); return; }
     setIsInstalling(true);
     try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+      await promptEvent.prompt();
+      const { outcome } = await promptEvent.userChoice;
       if (outcome === 'accepted') { onInstallSuccess(); hideBanner(); }
       else hideBanner();
     } catch {
@@ -41,7 +57,7 @@ export const PWAInstallPrompt = ({ onInstallSuccess, onBannerVisibilityChange }:
             <div><strong>סמנטעל פלוס, ישר ממסך הבית</strong><span>אפשר להוסיף את האתר למסך הבית או להוריד מ־Google Play.</span></div>
           </div>
           <div className="install-actions">
-            <Button size="sm" onClick={handleInstall} disabled={isInstalling} className="install-home"><Plus aria-hidden="true" />{isInstalling ? "מתקין..." : "הוספה למסך הבית"}</Button>
+            <Button size="sm" onClick={handleInstall} disabled={isInstalling} className="install-home"><Plus aria-hidden="true" />{isInstalling ? "מתקין..." : "התקנה"}</Button>
             <a className="google-play-link" href={GOOGLE_PLAY_URL} target="_blank" rel="noopener noreferrer" aria-label="הורדת סמנטעל פלוס מ־Google Play">
               <svg viewBox="0 0 24 26" width="18" height="20" aria-hidden="true"><path fill="#32BBFF" d="M1 1 13 13 1 25Z"/><path fill="#32D396" d="m1 1 15 9-3 3Z"/><path fill="#FFBC00" d="m16 10 6 3-6 3-3-3Z"/><path fill="#F24E60" d="m1 25 12-12 3 3Z"/></svg>
               <b dir="ltr">Google Play</b>

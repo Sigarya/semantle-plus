@@ -15,12 +15,13 @@ const Header = () => {
   const { theme, setTheme } = useTheme();
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
-  const { deferredPrompt } = usePWAInstall();
+  const { deferredPrompt, takePrompt } = usePWAInstall();
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
+    const promptEvent = takePrompt();
+    if (!promptEvent) return;
+    await promptEvent.prompt();
+    await promptEvent.userChoice;
   };
 
   const toggleDarkMode = () => {
