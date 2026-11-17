@@ -131,12 +131,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         
         if (savedState) {
           const parsedState = JSON.parse(savedState);
-          // Check if saved state is for yesterday, if not create new state
+          // Keep the default puzzle on refresh, but recover its per-date progress
+          // when the last open game was a different historical puzzle.
           if (parsedState.wordDate === yesterdayDate) {
             gameStateToLoad = parsedState;
           } else {
-            // Old game state from different day - create new one for yesterday
-            gameStateToLoad = {
+            const savedDailyState = localStorage.getItem(`game_state_${yesterdayDate}`);
+            const parsedDailyState = savedDailyState ? JSON.parse(savedDailyState) : null;
+            gameStateToLoad = parsedDailyState?.wordDate === yesterdayDate ? parsedDailyState : {
               guesses: [],
               isComplete: false,
               wordDate: yesterdayDate

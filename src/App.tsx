@@ -11,8 +11,8 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { PWAInstallProvider, usePWAInstall } from "@/context/PWAInstallContext";
 import { UsernameSelectionDialog } from "@/components/UsernameSelectionDialog";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
-import { Suspense, lazy, useState, useEffect } from "react";
-import { secureStorage, CACHE_KEYS } from "@/lib/pwaUtils";
+import { Suspense, lazy, useState, useEffect, useRef } from "react";
+import { hasInstalledRelatedApp, useAppDisplay } from "@/hooks/useAppDisplay";
 
 // ✨ STEP 1: Import our new, smarter PWA update component. ✨
 import PwaUpdatePrompt from "@/components/PwaUpdatePrompt";
@@ -41,27 +41,47 @@ const queryClient = new QueryClient({
 
 // All your helper functions are great and remain unchanged.
 const isWelcomeDialogShowing = (): boolean => { /* ... */ return !localStorage.getItem('semantle-has-visited'); };
-const shouldShowPrompt = (): boolean => { const lastShown = secureStorage.get<number>(CACHE_KEYS.PWA_PROMPT_LAST_SHOWN); return !lastShown || Date.now() - lastShown > 7 * 24 * 60 * 60 * 1000; };
-const isAppAlreadyInstalled = async (): Promise<boolean> => window.matchMedia('(display-mode: standalone)').matches || !!(navigator as Navigator & { standalone?: boolean }).standalone;
 
 const AppContent = () => {
   const { showUsernameDialog, setUsernameSelected, hideUsernameDialog } = useAuth();
   const { deferredPrompt } = usePWAInstall();
   const [isPwaBannerVisible, setIsPwaBannerVisible] = useState(false);
+  const inApp = useAppDisplay();
 
-  // Your excellent PWA install logic remains exactly the same.
+  const dismissedThisVisit = useRef(false);
+  const setBannerVisibility = (visible: boolean) => {
+    if (!visible) dismissedThisVisit.current = true;
+    setIsPwaBannerVisible(visible);
+  };
+  useEffect(() => {
+    const handleInstalled = () => {
+      dismissedThisVisit.current = true;
+      setIsPwaBannerVisible(false);
+    };
+    window.addEventListener('appinstalled', handleInstalled);
+    return () => window.removeEventListener('appinstalled', handleInstalled);
+  }, []);
   useEffect(() => {
     let cancelled = false;
+    if (inApp) {
+      setIsPwaBannerVisible(false);
+      return;
+    }
     const checkAndShowPrompt = async () => {
-      const installed = await isAppAlreadyInstalled();
-      if (!cancelled && !installed && shouldShowPrompt() && !isWelcomeDialogShowing()) {
+      const installed = await hasInstalledRelatedApp();
+      if (!cancelled && installed) {
+        setIsPwaBannerVisible(false);
+        clearInterval(timer);
+        return;
+      }
+      if (!cancelled && !installed && !dismissedThisVisit.current && !isWelcomeDialogShowing()) {
         setIsPwaBannerVisible(true);
         clearInterval(timer);
       }
     };
     const timer = setInterval(checkAndShowPrompt, 1000);
     return () => { cancelled = true; clearInterval(timer); };
-  }, [deferredPrompt]);
+  }, [deferredPrompt, inApp]);
 
   // Your testing hooks and debug logs also remain.
 
@@ -76,8 +96,8 @@ const AppContent = () => {
 
         {isPwaBannerVisible && (
           <PWAInstallPrompt
-            onInstallSuccess={() => setIsPwaBannerVisible(false)}
-            onBannerVisibilityChange={setIsPwaBannerVisible}
+            onInstallSuccess={() => setBannerVisibility(false)}
+            onBannerVisibilityChange={setBannerVisibility}
           />
         )}
 

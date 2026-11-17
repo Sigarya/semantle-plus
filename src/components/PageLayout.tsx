@@ -3,8 +3,10 @@ import { ReactNode } from "react";
 import Header from "@/components/Header";
 import { GameStructuredData, OrganizationStructuredData, WebsiteStructuredData } from "@/components/StructuredData";
 import SeoHead from "./SeoHead";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { normalizeSeoPath } from "@/lib/seo";
+import { GOOGLE_PLAY_URL } from "@/lib/appLinks";
+import { useAppDisplay } from "@/hooks/useAppDisplay";
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -15,6 +17,7 @@ interface PageLayoutProps {
 const PageLayout = ({ children, title, description }: PageLayoutProps) => {
 
   const isHome = normalizeSeoPath(useLocation().pathname) === "/";
+  const inApp = useAppDisplay();
 
   return (
     <div className="app-shell min-h-screen flex flex-col">
@@ -33,46 +36,22 @@ const PageLayout = ({ children, title, description }: PageLayoutProps) => {
           {children}
         </div>
       </main>
-      <footer className="p-4 border-t border-border text-center text-sm text-muted-foreground">
-        <div className="space-y-1 leading-relaxed rtl text-sm">
-          <a href="https://github.com/sigarya" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-            Made by Sigarya
-          </a>
-          <br />
-          <p dir="rtl" lang="he">
-            אוהבים את סמנטעל פלוס?&nbsp;
-            <a href="https://ko-fi.com/sigarya" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-              אתם יכולים לקנות לי ☕
-            </a>
-          </p>
-          <br />
-          פרויקט עצמאי בהשראת&nbsp;
-          <a href="https://semantle.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-            Semantle
-          </a>{" "}
-          (David Turner).
-          <br />
-          מבוסס על הגרסה העברית והמילים היומיות של&nbsp;
-          <a href="https://semantle.ishefi.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-            סמנטעל (ishefi)
-          </a>
-          , והמודל של&nbsp;
-          <a href="https://x.com/IddoYadlin" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-            Iddo Yadlin
-          </a>.
-          <br />
-          <a href="https://github.com/Sigarya/semantle-plus" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
-            קוד מקור
-          </a>
-          <br />
-          <a href="/privacy" className="underline hover:text-primary">
-            מדיניות פרטיות
-          </a>
-          <span>•</span>
-          <a href="/contact" className="underline hover:text-primary">
-            צור קשר
-          </a>
+      <footer className="site-footer">
+        <div className="footer-main">
+          <a href="https://github.com/sigarya" target="_blank" rel="noopener noreferrer" dir="ltr">Made by Sigarya</a>
+          <a href="https://ko-fi.com/sigarya" target="_blank" rel="noopener noreferrer">אוהבים לשחק? אפשר לקנות לי ☕</a>
         </div>
+        <p className="footer-credits">
+          פרויקט עצמאי בהשראת <a href="https://semantle.com" target="_blank" rel="noopener noreferrer">Semantle</a> של David Turner.
+          מבוסס על הגרסה העברית והמילים היומיות של <a href="https://semantle.ishefi.com" target="_blank" rel="noopener noreferrer">סמנטעל (ishefi)</a>{" "}
+          ועל המודל של <a href="https://x.com/IddoYadlin" target="_blank" rel="noopener noreferrer"><bdi>Iddo Yadlin</bdi></a>.
+        </p>
+        <nav className="footer-links" aria-label="קישורים נוספים">
+          <Link to="/privacy">מדיניות פרטיות</Link>
+          <Link to="/contact">צור קשר</Link>
+          {!inApp && <a href={GOOGLE_PLAY_URL} target="_blank" rel="noopener noreferrer">הורדה מ-Google Play</a>}
+          <a href="https://github.com/Sigarya/semantle-plus" target="_blank" rel="noopener noreferrer">קוד מקור</a>
+        </nav>
       </footer>
 
     </div>

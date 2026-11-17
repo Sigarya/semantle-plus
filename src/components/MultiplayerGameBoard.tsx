@@ -98,15 +98,15 @@ const MultiplayerGameBoard = () => {
     <div className="multiplayer-board max-w-3xl mx-auto space-y-4">
 
       {gameState.isComplete && (
-        <Card className="border-green-400 bg-green-50 text-green-800 animate-in fade-in slide-in-from-top-4 duration-500">
+        <Card className="border-green-400 bg-green-50 text-green-800 dark:text-green-300 animate-in fade-in slide-in-from-top-4 duration-500">
           <CardContent className="p-6 text-center">
             <div className="flex flex-col items-center justify-center gap-4">
               <Trophy className="h-10 w-10 text-green-500" />
               <div>
                 <CardTitle className="text-2xl font-bold">ניצחתם!</CardTitle>
-                <p className="mt-2 text-green-700">מצאתם את המילה הסודית ביחד, כל הכבוד!</p>
+                <p className="mt-2 text-green-700 dark:text-green-300">מצאתם את המילה הסודית ביחד, כל הכבוד!</p>
               </div>
-              <Button onClick={leaveRoom} variant="outline" className="mt-2 border-green-300 hover:bg-green-100 text-green-800">
+              <Button onClick={leaveRoom} variant="outline" className="mt-2 border-green-300 hover:bg-green-100 text-green-800 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-900/30">
                 עזוב חדר
               </Button>
             </div>
@@ -122,7 +122,7 @@ const MultiplayerGameBoard = () => {
             <span>תאריך: {new Date(gameState.room.word_date).toLocaleDateString('he-IL')}</span>
             <span className="flex items-center">
               קוד: 
-              <button onClick={copyRoomCode} className="inline-flex items-center gap-1 mr-1 hover:bg-muted px-2 py-0.5 rounded transition-colors" title="לחץ להעתקה">
+              <button onClick={copyRoomCode} className="room-code-copy inline-flex min-h-11 items-center gap-1 mr-1 hover:bg-muted px-2 py-0.5 rounded transition-colors" title="לחץ להעתקה" aria-label={`העתקת קוד החדר ${gameState.room.room_code}`}>
                 <Badge variant="secondary" className="cursor-pointer hover:bg-muted-foreground/20">{gameState.room.room_code}</Badge>
                 {copiedCode ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
               </button>
@@ -137,7 +137,7 @@ const MultiplayerGameBoard = () => {
           <CardContent>
             <form onSubmit={handleGuessSubmit} className="guess-form flex gap-2">
               <Input ref={inputRef} aria-label="המילה לניחוש" value={guessInput} onChange={(e) => setGuessInput(e.target.value)} placeholder="הקלד מילה..." className="flex-1" dir="rtl"/>
-              <Button type="submit" onMouseDown={event => event.preventDefault()} disabled={isSubmitting || !guessInput.trim()} className="min-w-[80px]">
+              <Button type="submit" aria-label={isSubmitting ? "מחשב ניחוש" : "נחש"} aria-busy={isSubmitting} onMouseDown={event => event.preventDefault()} disabled={isSubmitting || !guessInput.trim()} className="min-w-[80px]">
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "נחש"}
               </Button>
             </form>

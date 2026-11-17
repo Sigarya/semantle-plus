@@ -28,7 +28,12 @@ const Header = () => {
   };
 
   return (
-    <header className="site-header" onKeyDown={(event) => { if (event.key === "Escape") setIsNavMenuOpen(false); }}>
+    <header className="site-header" onKeyDown={(event) => {
+      if (event.key === "Escape" && isNavMenuOpen) {
+        setIsNavMenuOpen(false);
+        event.currentTarget.querySelector<HTMLButtonElement>('[aria-controls="main-navigation"]')?.focus();
+      }
+    }}>
       <div className="container mx-auto flex flex-wrap items-center justify-between">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold text-primary font-heebo">

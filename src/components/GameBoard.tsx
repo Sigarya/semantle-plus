@@ -301,11 +301,12 @@ const GameBoard = React.memo(() => {
       }}
     >
       <div className="game-heading">
-        <div><h2 className="font-bold font-heebo">סמנטעל +</h2>
-        <div className="text-sm text-muted-foreground mt-2">
+        <div className="game-identity"><h2 className="font-bold font-heebo">סמנטעל +</h2>
+        <div className="game-date text-sm text-muted-foreground mt-2">
           משחק מיום <bdi>{formattedGameDate}</bdi>
         </div>
         </div>
+        <div className="game-help-slot"><WelcomeDialog /></div>
         <nav className="game-actions game-shortcuts" aria-label="אפשרויות משחק">
           <Button asChild variant="outline" size="sm" className="gap-2">
             <Link to={`/multiplayer?date=${gameState.wordDate}`}>
@@ -319,7 +320,6 @@ const GameBoard = React.memo(() => {
               חידות קודמות
             </Link>
           </Button>
-          <WelcomeDialog />
         </nav>
       </div>
 
@@ -331,14 +331,14 @@ const GameBoard = React.memo(() => {
             <div className="text-muted-foreground mb-6">מספר ניחושים: {gameState.guesses.length}</div>
                           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
                 <Button onClick={resetGame} className="bg-primary hover:bg-primary dark:hover:bg-primary w-full sm:w-auto">שחק שוב</Button>
-                <Link to="/history" className="block w-full sm:w-auto"><Button variant="outline" className="w-full sm:w-auto">משחק מיום אחר</Button></Link>
+                <Button asChild variant="outline" className="w-full sm:w-auto"><Link to="/history">משחק מיום אחר</Link></Button>
               </div>
             <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-medium font-heebo mb-4">נסה מילים נוספות</h3>
               <p className="text-sm text-muted-foreground mb-4">נסה מילים אחרות לראות כמה הן קרובות למילה</p>
               <form onSubmit={handleExplorationSubmit} className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input type="text" value={explorationInput} onChange={(e) => setExplorationInput(e.target.value)} className="text-lg flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" placeholder="נסה מילה..." disabled={isSubmitting} dir="rtl" />
+                  <input type="text" aria-label="מילה לבדיקת קרבה" value={explorationInput} onChange={(e) => setExplorationInput(e.target.value)} className="ui-input text-lg flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" placeholder="נסה מילה..." disabled={isSubmitting} dir="rtl" />
                   <Button type="submit" className="bg-primary hover:bg-primary dark:hover:bg-primary px-6 w-full sm:w-auto" disabled={isSubmitting || !explorationInput.trim()}>בדוק</Button>
                 </div>
               </form>
@@ -412,6 +412,8 @@ const GameBoard = React.memo(() => {
               />
               <Button
                 type="submit"
+                aria-label={isSubmitting ? "מחשב ניחוש" : "נחש"}
+                aria-busy={isSubmitting}
                 className="bg-primary hover:bg-primary dark:hover:bg-primary px-4 py-2 text-sm font-medium whitespace-nowrap flex items-center justify-center min-w-[70px] h-10"
                 disabled={isSubmitting || !guessInput.trim()}
                 onMouseDown={(e) => {
@@ -421,7 +423,7 @@ const GameBoard = React.memo(() => {
 
               >
                 {isSubmitting ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div aria-hidden="true" className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   "נחש"
                 )}

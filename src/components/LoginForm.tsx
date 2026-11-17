@@ -101,10 +101,12 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="email">אימייל</Label>
+        <Label htmlFor="login-email">אימייל</Label>
         <Input
-          id="email"
+          id="login-email"
           type="email"
+          autoComplete="email"
+          dir="ltr"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -114,10 +116,12 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       </div>
       
       <div className="grid gap-2">
-        <Label htmlFor="password">סיסמה</Label>
+        <Label htmlFor="login-password">סיסמה</Label>
         <Input
-          id="password"
+          id="login-password"
           type="password"
+          autoComplete="current-password"
+          dir="ltr"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="********"
@@ -127,7 +131,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       </div>
 
       {error && (
-        <div className="text-destructive text-sm">{error}</div>
+        <div role="alert" className="form-error text-sm">{error}</div>
       )}
 
       <Button 
@@ -143,7 +147,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
         <button
           type="button"
           onClick={onToggleMode}
-          className="text-primary hover:text-primary dark:hover:text-primary"
+          className="auth-mode-toggle text-primary hover:underline underline-offset-4"
           disabled={isLoading || authLoading}
         >
           הירשם עכשיו
