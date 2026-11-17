@@ -40,10 +40,9 @@ const queryClient = new QueryClient({
 });
 
 // All your helper functions are great and remain unchanged.
-const isPWAInstallSupported = (): boolean => { /* ... */ return 'onbeforeinstallprompt' in window; };
 const isWelcomeDialogShowing = (): boolean => { /* ... */ return !localStorage.getItem('semantle-has-visited'); };
-const shouldShowPrompt = (): boolean => { /* ... */ return true; };
-const isAppAlreadyInstalled = async (): Promise<boolean> => { /* ... */ return false; };
+const shouldShowPrompt = (): boolean => { const lastShown = secureStorage.get<number>(CACHE_KEYS.PWA_PROMPT_LAST_SHOWN); return !lastShown || Date.now() - lastShown > 7 * 24 * 60 * 60 * 1000; };
+const isAppAlreadyInstalled = async (): Promise<boolean> => window.matchMedia('(display-mode: standalone)').matches || !!(navigator as Navigator & { standalone?: boolean }).standalone;
 
 const AppContent = () => {
   const { showUsernameDialog, setUsernameSelected, hideUsernameDialog } = useAuth();
@@ -52,14 +51,16 @@ const AppContent = () => {
 
   // Your excellent PWA install logic remains exactly the same.
   useEffect(() => {
+    let cancelled = false;
     const checkAndShowPrompt = async () => {
-      if (!deferredPrompt) return;
-      const alreadyInstalled = await isAppAlreadyInstalled();
-      if (isPWAInstallSupported() && shouldShowPrompt() && !isWelcomeDialogShowing() && !alreadyInstalled) {
-        setTimeout(() => setIsPwaBannerVisible(true), 1000);
+      const installed = await isAppAlreadyInstalled();
+      if (!cancelled && !installed && shouldShowPrompt() && !isWelcomeDialogShowing()) {
+        setIsPwaBannerVisible(true);
+        clearInterval(timer);
       }
     };
-    checkAndShowPrompt();
+    const timer = setInterval(checkAndShowPrompt, 1000);
+    return () => { cancelled = true; clearInterval(timer); };
   }, [deferredPrompt]);
 
   // Your testing hooks and debug logs also remain.
@@ -80,7 +81,7 @@ const AppContent = () => {
           />
         )}
 
-        <div className={isPwaBannerVisible ? "pt-16" : ""}>
+        <div>
           <UsernameSelectionDialog
             isOpen={showUsernameDialog}
             onClose={hideUsernameDialog}

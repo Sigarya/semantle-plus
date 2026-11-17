@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { Guess, GameState, DailyWord, LeaderboardEntry } from "../types/game";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -612,7 +612,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return gameState.wordDate;
   };
 
-  const fetchLeaderboard = async (date?: string): Promise<void> => {
+  const fetchLeaderboard = useCallback(async (date?: string): Promise<void> => {
     const targetDate = date || gameState.wordDate;
     
     try {
@@ -689,7 +689,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error in fallback leaderboard fetch:", fallbackError);
       }
     }
-  };
+  }, [gameState.wordDate]);
 
   const initializeGame = async () => {
     // Already handled by the main initialization

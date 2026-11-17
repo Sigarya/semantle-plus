@@ -4,9 +4,9 @@ import PageLayout from "@/components/PageLayout";
 const About = () => {
   return (
     <PageLayout title="סמנטעל פלוס – משחק מילים יומי בעברית עם כל המילים הקודמות">
-            <div className="space-y-6">
+            <div className="reading-page space-y-6">
 
-          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+          <Card className="bg-background bg-card border-border">
             <CardHeader>
               <CardTitle className="text-xl font-heebo">מה זה סמנטעל?</CardTitle>
             </CardHeader>
@@ -20,7 +20,7 @@ const About = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+          <Card className="bg-background bg-card border-border">
             <CardHeader>
               <CardTitle className="text-xl font-heebo">איך משחקים?</CardTitle>
             </CardHeader>
@@ -38,7 +38,7 @@ const About = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+          <Card className="bg-background bg-card border-border">
             <CardHeader>
               <CardTitle className="text-xl font-heebo">טיפים והמלצות</CardTitle>
             </CardHeader>
@@ -52,7 +52,7 @@ const About = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+          <Card className="bg-background bg-card border-border">
             <CardHeader>
               <CardTitle className="text-xl font-heebo">קרדיטים והשראה</CardTitle>
             </CardHeader>

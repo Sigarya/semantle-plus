@@ -1,5 +1,6 @@
 // src/components/PWAInstallPrompt.tsx
 
+import { GOOGLE_PLAY_URL } from "@/lib/appLinks";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { X } from "lucide-react";
@@ -21,22 +22,19 @@ export const PWAInstallPrompt = ({ onInstallSuccess, onBannerVisibilityChange }:
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
-      console.log('No deferred prompt available');
       return;
     }
 
     setIsInstalling(true);
     try {
-      deferredPrompt.prompt();
+      await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
         secureStorage.set(CACHE_KEYS.PWA_PROMPT_LAST_SHOWN, Date.now());
         onInstallSuccess();
         hideBanner();
       } else {
-        console.log('User dismissed the install prompt');
         secureStorage.set(CACHE_KEYS.PWA_PROMPT_LAST_SHOWN, Date.now());
         hideBanner();
       }
@@ -55,49 +53,27 @@ export const PWAInstallPrompt = ({ onInstallSuccess, onBannerVisibilityChange }:
   };
 
   const handleRemindLater = () => {
-    const sevenDays = 7 * 24 * 60 * 60 * 1000;
-    const remindTime = Date.now() - sevenDays;
-    secureStorage.set(CACHE_KEYS.PWA_PROMPT_LAST_SHOWN, remindTime);
+    secureStorage.set(CACHE_KEYS.PWA_PROMPT_LAST_SHOWN, Date.now());
     hideBanner();
   };
 
-  // For testing purposes - manually trigger the prompt
-  const handleManualTrigger = () => {
-    console.log('Manual trigger for PWA prompt');
-    if (deferredPrompt) {
-      handleInstall();
-    }
-  };
-
-  // Debug logging
-  console.log('PWA Install Prompt Render:', {
-    hasDeferredPrompt: !!deferredPrompt,
-    isInstalling
-  });
-
-  if (!deferredPrompt) return null;
-
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg animate-in fade-in slide-in-from-top-4 duration-500">
-      <div className="max-w-4xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 text-right">
-            <div className="text-sm font-medium mb-1">התקן את סמנטעל + למסך הבית</div>
-            <div className="text-xs opacity-90">גישה מהירה • עובד כמו אפליקציה • עדכונים אוטומטיים</div>
-          </div>
-          <div className="flex items-center space-x-2 space-x-reverse mr-4">
-            <Button size="sm" onClick={handleInstall} disabled={isInstalling} className="bg-white text-blue-600 hover:bg-gray-100 text-xs px-3 py-1 h-auto">
-              {isInstalling ? "מתקין..." : "התקן"}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={handleRemindLater} className="text-white hover:bg-white/20 text-xs px-2 py-1 h-auto">
-              מאוחר יותר
-            </Button>
-            <Button size="sm" variant="ghost" onClick={handleDismiss} className="text-white hover:bg-white/20 p-1 h-auto">
-              <X size={16} />
-            </Button>
-          </div>
+    <section className="install-banner" aria-label="התקנת האפליקציה">
+      <div className="install-banner-inner">
+        <div className="install-copy">
+          <strong>התקן את סמנטעל + למסך הבית</strong>
+          <span>גישה מהירה • עובד כמו אפליקציה • עדכונים אוטומטיים</span>
         </div>
+        <div className="install-actions">
+          {deferredPrompt && <Button size="sm" onClick={handleInstall} disabled={isInstalling}>{isInstalling ? "מתקין..." : "התקן"}</Button>}
+          <a className="google-play-link" href={GOOGLE_PLAY_URL} target="_blank" rel="noopener noreferrer" aria-label="הורדת סמנטעל פלוס מ־Google Play">
+            <svg viewBox="0 0 24 26" width="21" height="24" aria-hidden="true"><path fill="#32BBFF" d="M1 1 13 13 1 25Z"/><path fill="#32D396" d="m1 1 15 9-3 3Z"/><path fill="#FFBC00" d="m16 10 6 3-6 3-3-3Z"/><path fill="#F24E60" d="m1 25 12-12 3 3Z"/></svg>
+            <span><small>להורדה ב־</small><b dir="ltr">Google Play</b></span>
+          </a>
+          <Button size="sm" variant="ghost" onClick={handleRemindLater} className="install-later">מאוחר יותר</Button>
+        </div>
+        <Button size="icon" variant="ghost" onClick={handleDismiss} className="install-close" aria-label="סגירת הצעת ההתקנה"><X size={18}/></Button>
       </div>
-    </div>
+    </section>
   );
 };

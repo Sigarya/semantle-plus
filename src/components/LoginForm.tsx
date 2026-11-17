@@ -94,7 +94,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
           <Separator />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background dark:bg-slate-800 px-2 text-muted-foreground">
+          <span className="bg-background bg-card px-2 text-muted-foreground">
             או התחבר עם אימייל
           </span>
         </div>
@@ -132,7 +132,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
 
       <Button 
         type="submit" 
-        className="w-full bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600"
+        className="w-full bg-primary hover:bg-primary dark:hover:bg-primary"
         disabled={isLoading || authLoading}
       >
         {isLoading ? "מתחבר..." : "התחבר"}
@@ -143,7 +143,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
         <button
           type="button"
           onClick={onToggleMode}
-          className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+          className="text-primary hover:text-primary dark:hover:text-primary"
           disabled={isLoading || authLoading}
         >
           הירשם עכשיו

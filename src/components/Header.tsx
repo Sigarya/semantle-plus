@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
@@ -28,10 +28,10 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-primary-50 dark:bg-slate-800 border-b border-primary-200 dark:border-slate-700 p-4 shadow-sm">
+    <header className="site-header" onKeyDown={(event) => { if (event.key === "Escape") setIsNavMenuOpen(false); }}>
       <div className="container mx-auto flex flex-wrap items-center justify-between">
         <div className="flex items-center">
-          <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400 font-heebo">
+          <h1 className="text-2xl font-bold text-primary font-heebo">
             <Link to="/">סמנטעל +</Link>
           </h1>
         </div>
@@ -39,6 +39,8 @@ const Header = () => {
         <div className="md:hidden">
           <Button 
             variant="ghost"
+            aria-expanded={isNavMenuOpen}
+            aria-controls="main-navigation"
             onClick={() => setIsNavMenuOpen(!isNavMenuOpen)}
           >
             <span className="sr-only">תפריט</span>
@@ -52,27 +54,27 @@ const Header = () => {
           </Button>
         </div>
 
-        <nav className={`${isNavMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row w-full md:w-auto md:items-center md:justify-between mt-4 md:mt-0 space-y-2 md:space-y-0 md:space-x-4 md:space-x-reverse`}>
+        <nav id="main-navigation" aria-label="ניווט ראשי" className={`${isNavMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row w-full md:w-auto md:items-center md:justify-between mt-4 md:mt-0 space-y-2 md:space-y-0 md:space-x-4 md:space-x-reverse`}>
           <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 md:space-x-reverse">
-            <Link to="/" className="text-primary-700 dark:text-primary-300 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
+            <NavLink end to="/" className="text-primary hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
               משחק
-            </Link>
+            </NavLink>
             
-            <Link to="/leaderboard" className="text-primary-700 dark:text-primary-300 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
+            <NavLink end to="/leaderboard" className="text-primary hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
               טבלת המובילים
-            </Link>
+            </NavLink>
             
-            <Link to="/about" className="text-primary-700 dark:text-primary-300 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
+            <NavLink end to="/about" className="text-primary hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
               אודות
-            </Link>
+            </NavLink>
             
-            <Link to="/history" className="text-primary-700 dark:text-primary-300 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
+            <NavLink end to="/history" className="text-primary hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
               היסטוריה
-            </Link>
+            </NavLink>
             {deferredPrompt && (
               <button
                 onClick={handleInstall}
-                className="flex items-center text-primary-700 dark:text-primary-300 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md gap-1"
+                className="flex items-center text-primary hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md gap-1"
                 style={{ direction: 'rtl' }}
               >
                 <Download className="w-4 h-4 ml-1" />
@@ -80,7 +82,7 @@ const Header = () => {
               </button>
             )}
             {currentUser?.isAdmin && (
-              <Link to="/admin" className="text-primary-700 dark:text-primary-300 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
+              <Link to="/admin" className="text-primary hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
                 ניהול
               </Link>
             )}
@@ -90,7 +92,7 @@ const Header = () => {
             <Button 
               variant="outline" 
               size="sm"
-              className="flex items-center gap-2"
+              className="theme-toggle flex items-center gap-2"
               onClick={toggleDarkMode}
             >
               {theme.name === 'light' ? (
@@ -108,12 +110,12 @@ const Header = () => {
 
             {currentUser ? (
               <div className="flex items-center space-x-4 space-x-reverse">
-                <Link to="/profile" className="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
+                <Link to="/profile" className="text-primary hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md" onClick={() => setIsNavMenuOpen(false)}>
                   {currentUser.username}
                 </Link>
                 <Button 
                   variant="outline" 
-                  className="border-primary-300 text-primary-700 dark:border-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900"
+                  className="border-border text-primary hover:bg-accent dark:hover:bg-accent"
                   onClick={() => {
                     signOut();
                     setIsNavMenuOpen(false);
@@ -126,7 +128,7 @@ const Header = () => {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button 
-                    className="bg-primary-500 hover:bg-primary-600 text-white dark:bg-primary-700 dark:hover:bg-primary-600"
+                    className="bg-primary hover:bg-primary text-primary-foreground dark:hover:bg-primary"
                     onClick={() => setIsNavMenuOpen(false)}
                   >
                     התחברות

@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useGame } from "@/context/GameContext";
@@ -9,8 +9,12 @@ import PageLayout from "@/components/PageLayout";
 const Leaderboard = () => {
   const { leaderboard, gameState, fetchLeaderboard } = useGame();
   
+  const [refreshing, setRefreshing] = useState(true);
   useEffect(() => {
-    fetchLeaderboard();
+    let active = true;
+    setRefreshing(true);
+    fetchLeaderboard().finally(() => { if (active) setRefreshing(false); });
+    return () => { active = false; };
   }, [fetchLeaderboard]);
 
   const formatTime = (dateString: string) => {
@@ -25,9 +29,9 @@ const Leaderboard = () => {
     <PageLayout title="טבלת המובילים">
       <div className="max-w-3xl mx-auto">
           
-          <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+          <Card className="leaderboard-panel bg-card border-border">
             <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-wrap gap-3 justify-between items-center">
                 <CardTitle className="text-xl font-heebo">
                   {`תוצאות ל-${formatHebrewDate(new Date(gameState.wordDate))}`}
                 </CardTitle>
@@ -35,15 +39,16 @@ const Leaderboard = () => {
                   <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => fetchLeaderboard()}
+                    disabled={refreshing}
+                    onClick={async () => { setRefreshing(true); try { await fetchLeaderboard(); } finally { setRefreshing(false); } }}
                   >
                     רענן
                   </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              {leaderboard.length === 0 ? (
+            <CardContent aria-busy={refreshing}>
+              {refreshing && leaderboard.length === 0 ? <div className="text-center py-6 text-muted-foreground" role="status">טוען...</div> : leaderboard.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
                   אין תוצאות זמינות להיום
                 </div>
@@ -51,7 +56,7 @@ const Leaderboard = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="border-b border-primary-200 dark:border-slate-700">
+                      <tr className="border-b border-border">
                         <th className="py-2 px-3 text-right">מקום</th>
                         <th className="py-2 px-3 text-right">משתמש</th>
                         <th className="py-2 px-3 text-right">ניחושים</th>
@@ -62,7 +67,7 @@ const Leaderboard = () => {
                       {leaderboard.map((entry, index) => (
                         <tr 
                           key={index}
-                          className="border-b border-primary-100 dark:border-slate-800 hover:bg-primary-50 dark:hover:bg-slate-700/50"
+                          className="border-b border-border hover:bg-accent dark:hover:bg-slate-700/50"
                         >
                           <td className="py-2 px-3">
                             <div className="flex items-center gap-2">

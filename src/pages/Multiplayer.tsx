@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import PageLayout from "@/components/PageLayout";
 import MultiplayerLobby from "@/components/MultiplayerLobby";
 import LazyMultiplayerGameBoard from "@/components/LazyMultiplayerGameBoard";
@@ -8,12 +8,11 @@ import { useGame } from "@/context/GameContext";
 import { useToast } from "@/components/ui/use-toast";
 
 const Multiplayer: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   
   const { gameState, isLoading, createRoom, joinRoom } = useMultiplayer();
-  const { getCurrentGameDate } = useGame();
+  const { getCurrentGameDate, dailyWords } = useGame();
   
   const [wordDate, setWordDate] = useState<string>("");
 
@@ -61,6 +60,8 @@ const Multiplayer: React.FC = () => {
             onCreateRoom={handleCreateRoom}
             onJoinRoom={handleJoinRoom}
             wordDate={wordDate}
+            availableDates={dailyWords.map(word => word.date).filter(date => date <= getCurrentGameDate()).sort().reverse()}
+            onDateChange={(date) => { setWordDate(date); setSearchParams(previous => { const next = new URLSearchParams(previous); next.set("date", date); return next; }); }}
             isLoading={isLoading}
           />
         ) : (

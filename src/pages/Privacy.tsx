@@ -4,17 +4,17 @@ import PageLayout from "@/components/PageLayout";
 const Privacy = () => {
   return (
     <PageLayout title="תנאי פרטיות">
-      <div className="space-y-6">
+      <div className="reading-page space-y-6">
         
         {/* Hebrew Title */}
-        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+        <Card className="sr-only">
           <CardHeader>
             <CardTitle className="text-xl font-heebo text-center">תנאי פרטיות</CardTitle>
           </CardHeader>
         </Card>
 
         {/* Last Updated */}
-        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+        <Card className="bg-background bg-card border-border">
           <CardHeader>
             <CardTitle className="text-lg font-heebo">עדכון אחרון</CardTitle>
           </CardHeader>
@@ -24,7 +24,7 @@ const Privacy = () => {
         </Card>
 
         {/* Introduction */}
-        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+        <Card className="bg-background bg-card border-border">
           <CardHeader>
             <CardTitle className="text-xl font-heebo">מבוא</CardTitle>
           </CardHeader>
@@ -36,7 +36,7 @@ const Privacy = () => {
         </Card>
 
         {/* Our Commitment */}
-        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+        <Card className="bg-background bg-card border-border">
           <CardHeader>
             <CardTitle className="text-xl font-heebo">המחויבות שלנו</CardTitle>
           </CardHeader>
@@ -48,7 +48,7 @@ const Privacy = () => {
         </Card>
 
         {/* Information We Collect */}
-        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+        <Card className="bg-background bg-card border-border">
           <CardHeader>
             <CardTitle className="text-xl font-heebo">המידע שאנו אוספים</CardTitle>
           </CardHeader>
@@ -60,7 +60,7 @@ const Privacy = () => {
         </Card>
 
         {/* Third Party Services */}
-        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+        <Card className="bg-background bg-card border-border">
           <CardHeader>
             <CardTitle className="text-xl font-heebo">שירותי צד שלישי</CardTitle>
           </CardHeader>
@@ -72,7 +72,7 @@ const Privacy = () => {
         </Card>
 
         {/* Cookies */}
-        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+        <Card className="bg-background bg-card border-border">
           <CardHeader>
             <CardTitle className="text-xl font-heebo">עוגיות</CardTitle>
           </CardHeader>
@@ -84,7 +84,7 @@ const Privacy = () => {
         </Card>
 
         {/* Changes to the Policy */}
-        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+        <Card className="bg-background bg-card border-border">
           <CardHeader>
             <CardTitle className="text-xl font-heebo">שינויים במדיניות</CardTitle>
           </CardHeader>
@@ -96,7 +96,7 @@ const Privacy = () => {
         </Card>
 
         {/* Contact Information */}
-        <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+        <Card className="bg-background bg-card border-border">
           <CardHeader>
             <CardTitle className="text-xl font-heebo">צור קשר</CardTitle>
           </CardHeader>

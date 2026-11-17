@@ -13,7 +13,7 @@ interface PageLayoutProps {
 const PageLayout = ({ children, title, description }: PageLayoutProps) => {
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900">
+    <div className="app-shell min-h-screen flex flex-col">
       <GameStructuredData />
       <OrganizationStructuredData
         name="סמנטעל פלוס"
@@ -21,14 +21,15 @@ const PageLayout = ({ children, title, description }: PageLayoutProps) => {
         description="משחק ניחוש מילים בעברית מבוסס על דמיון סמנטי"
       />
       <SeoHead title={title} description={description} />
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:p-3">דלג לתוכן המשחק</a>
       <Header />
-      <main className="flex-grow p-4 md:p-8">
-        <div className="max-w-3xl mx-auto">
-          {title && <h2 className="text-3xl font-bold text-center text-primary-600 dark:text-primary-400 mb-8 font-heebo">{title}</h2>}
+      <main id="main-content" className="page-main flex-grow px-4 py-6 md:px-8 md:py-8">
+        <div className="page-content mx-auto">
+          {title && <h2 className="text-2xl font-bold text-right text-primary mb-6 font-heebo">{title}</h2>}
           {children}
         </div>
       </main>
-      <footer className="p-4 border-t border-primary-200 dark:border-slate-700 text-center text-sm text-muted-foreground">
+      <footer className="p-4 border-t border-border text-center text-sm text-muted-foreground">
         <div className="space-y-1 leading-relaxed rtl text-sm">
           <a href="https://github.com/sigarya" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
             Made by Sigarya
