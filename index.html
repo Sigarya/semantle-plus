@@ -4,6 +4,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <script>
+    // Capture the single-use install event before the application bundle loads.
+    window.__semantleInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (event) {
+      event.preventDefault();
+      window.__semantleInstallPrompt = event;
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__semantleInstallPrompt = null;
+    });
+  </script>
 
   <!-- Metadata כללי - מנוהל ע"י React Helmet -->
   <!-- title, description, author, og:*, twitter:* מוסרים מכאן -->
