@@ -1,3 +1,4 @@
+import GameDatePicker from "@/components/GameDatePicker";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,8 @@ interface MultiplayerLobbyProps {
   onCreateRoom: (nickname: string) => void;
   onJoinRoom: (roomCode: string, nickname: string) => void;
   wordDate: string;
+  availableDates: string[];
+  onDateChange: (date: string) => void;
   isLoading: boolean;
 }
 
@@ -17,6 +20,8 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   onCreateRoom,
   onJoinRoom,
   wordDate,
+  availableDates,
+  onDateChange,
   isLoading
 }) => {
   const { toast } = useToast();
@@ -25,7 +30,6 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   const [nickname, setNickname] = useState("");
   const [roomCode, setRoomCode] = useState("");
 
-  const formattedDate = new Date(wordDate).toLocaleDateString('he-IL');
 
   const handleCreateRoom = () => {
     if (!nickname.trim()) {
@@ -68,44 +72,41 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
         <>
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold font-heebo mb-2">שחק עם חברים</h2>
-            <p className="text-muted-foreground">
-  משחק מיום {formattedDate} <br />
-  (לבחירת יום אחר יש להיכנס למשחק עם חברים דרך עמוד היסטוריה בתפריט)
-            </p>
+            <GameDatePicker value={wordDate} dates={availableDates} onChange={onDateChange} disabled={isLoading || availableDates.length === 0} />
             <p className="text-sm text-muted-foreground mt-2">
               אין צורך בהרשמה - צרו חדר או הצטרפו למשחק קיים והתחילו לשחק!
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="cursor-pointer transition-all hover:shadow-lg hover:scale-105" 
-                  onClick={() => setMode('create')}>
+            <Card className="lobby-choice"
+                  >
               <CardHeader className="text-center">
-                <Users className="w-12 h-12 mx-auto mb-2 text-primary-500" />
+                <Users className="w-12 h-12 mx-auto mb-2 text-primary" />
                 <CardTitle className="font-heebo">צור חדר חדש</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
                 <p className="text-muted-foreground mb-4">
                   צור חדר חדש ושתף את הקוד עם החברים שלך
                 </p>
-                <Button className="w-full">
+                <Button className="w-full" onClick={() => setMode("create")}>
                   צור חדר
                   <ArrowRight className="w-4 h-4 mr-2" />
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="cursor-pointer transition-all hover:shadow-lg hover:scale-105" 
-                  onClick={() => setMode('join')}>
+            <Card className="lobby-choice"
+                  >
               <CardHeader className="text-center">
-                <UserPlus className="w-12 h-12 mx-auto mb-2 text-primary-500" />
+                <UserPlus className="w-12 h-12 mx-auto mb-2 text-primary" />
                 <CardTitle className="font-heebo">הצטרף לחדר קיים</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
                 <p className="text-muted-foreground mb-4">
                   הזן קוד חדר שקיבלת מחבר והצטרף למשחק
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => setMode("join")}>
                   הצטרף לחדר
                   <UserPlus className="w-4 h-4 mr-2" />
                 </Button>

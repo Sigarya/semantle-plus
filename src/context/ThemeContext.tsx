@@ -33,7 +33,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         document.documentElement.classList.remove('dark');
       }
       const meta = document.getElementById('theme-color-meta');
-      if (meta) meta.setAttribute('content', isDark ? '#1e293b' : '#f5f3ff');
+      if (meta) meta.setAttribute('content', isDark ? '#131216' : '#fbfbf9');
     } else {
       // Check system preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -41,7 +41,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         setTheme(themes[1]);
         document.documentElement.classList.add('dark');
         const meta = document.getElementById('theme-color-meta');
-        if (meta) meta.setAttribute('content', '#1e293b');
+        if (meta) meta.setAttribute('content', '#131216');
       }
     }
   }, []);
@@ -60,7 +60,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     // Update mobile status bar color
     const meta = document.getElementById('theme-color-meta');
     if (meta) {
-      meta.setAttribute('content', newTheme.name === 'dark' ? '#1e293b' : '#f5f3ff');
+      meta.setAttribute('content', newTheme.name === 'dark' ? '#131216' : '#fbfbf9');
     }
   };
 

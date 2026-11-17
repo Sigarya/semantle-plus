@@ -90,6 +90,10 @@
     }
   ],
   "id": "Semantle_Plus",
+  "related_applications": [
+    { "platform": "webapp", "url": "/manifest.webmanifest", "id": "/Semantle_Plus" },
+    { "platform": "play", "id": "xyz.sigarya.semantle.twa", "url": "https://play.google.com/store/apps/details?id=xyz.sigarya.semantle.twa" }
+  ],
   "screenshots": [
     {
       "src": "screenshots/1.jpg",

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 const WelcomeDialog = () => {
@@ -23,7 +23,8 @@ const WelcomeDialog = () => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => open ? setIsOpen(true) : handleClose()}>
+      <DialogTrigger asChild><Button variant="ghost" className="game-help">איך משחקים?</Button></DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center font-heebo">
@@ -32,43 +33,23 @@ const WelcomeDialog = () => {
         </DialogHeader>
         <div className="space-y-4 text-sm leading-relaxed">
           <p>
-            אפשר לנחש כל מילה. המילה הסודית תהיה תמיד מילה אחת בלבד.
-            אחרי כל ניחוש, המשחק יראה לכם עד כמה המילה קרובה במשמעות למילה הסודית.
-            הקרבה היא לא באיות אלא במשמעות - מה שנקרא קרבה סמנטית.
+            בכל יום מחכה לכם מילה סודית אחת. הקלידו מילה ולחצו על ״נחש״: אחרי כל ניסיון תקבלו ציון שמראה עד כמה הניחוש קרוב למילה הסודית במשמעות. אין הגבלה על מספר הניחושים.
           </p>
-
           <p>
-            המדד הזה מבוסס על מודל בשם Word2Vec, שלמד את השפה מטקסטים של ויקיפדיה.
-            במילים פשוטות: שתי מילים נחשבות קרובות יותר ככל שיותר סביר שתופענה יחד בהקשרים דומים.
+            הקרבה אינה נקבעת לפי האותיות או אורך המילה. למשל, מילים שקשורות לאותו נושא עשויות להיות קרובות גם אם הן נראות שונות. החישוב מבוסס על מודל Word2Vec, שלמד קשרים בין מילים מטקסטים של ויקיפדיה.
           </p>
-
           <p>
-            המשחק נותן ציון בין -100 ל־100: 100- זה מאוד רחוק, 100 זו המילה הסודית עצמה.
+            ציון הקרבה נע בין <bdi>−100</bdi> ל־<bdi>100</bdi>. ככל שהציון גבוה יותר, הניחוש קרוב יותר לפי המודל; <bdi>100</bdi> היא המילה הסודית. נסו להשתמש בניחושים הקרובים כדי לחשוב על מילים נוספות מאותו תחום.
           </p>
-
           <p>
-            בנוסף, תראו אם הניחוש שלכם נמצא בין אלף המילים הקרובות ביותר למילה הסודית - ככה תדעו אם אתם בכיוון.
+            כשניחוש נמצא בין אלף המילים הקרובות ביותר, תראו גם דירוג מתוך 1,000: <bdi>1/1000</bdi> נמצא בקצה הרחוק של הרשימה, ו־<bdi>999/1000</bdi> הוא הקרוב ביותר לפני המילה הסודית.
           </p>
-
-          <p>
-            המילה הסודית יכולה להיות מכל חלק דיבר (שם עצם, פועל, תואר וכו'), אבל תמיד תהיה מילה אחת בלבד.
-          </p>
-
-          <p>
-            בניגוד ל־Wordle, כאן לא מגבילים אתכם לשישה ניחושים - לרוב תצטרכו הרבה ניחושים כדי להגיע למטרה.
-            המשחק מתעדכן בכל יום עם המילה שהייתה אתמול במשחק המקורי.
-          </p>
-
-          <div className="border-t pt-4 mt-6">
-            <h3 className="font-bold mb-2 font-heebo">מה שונה ב־סמנטעל +</h3>
-            <p>
-              בדף הראשי תוכלו לשחק בכל יום במילה שהופיעה אתמול במשחק המקורי.
-            </p>
-            <p className="mt-2">
-              דרך דף "היסטוריה" אפשר לגשת לכל אחת מהמילים מהעבר ולשחק אותן מתי שתרצו - בלי לחץ של זמן.
-            </p>
+          <div className="border-t pt-4 mt-6 space-y-3">
+            <h3 className="font-bold font-heebo">מה אפשר לעשות בסמנטעל פלוס?</h3>
+            <p>לשחק בלי פרסומות בחידה היומית, שמתבססת על המילה שהופיעה אתמול בסמנטעל המקורי.</p>
+            <p>לפתוח את ״חידות קודמות״ ולשחק בכל חידות העבר, בלי הגבלה.</p>
+            <p>לבחור ״משחק עם חברים״, ליצור חדר ולשתף את הקוד. כולם מנחשים את אותה מילה ורואים את הניחושים בזמן אמת — בחידה היומית או בחידה מיום אחר.</p>
           </div>
-
           <p className="font-bold text-center font-heebo">בהצלחה!</p>
         </div>
 

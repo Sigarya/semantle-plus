@@ -3,14 +3,17 @@ import React from "react";
 import { Guess } from "@/types/game";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+export type DisplayGuess = Guess & { playerName?: string; order?: number; id?: string };
+
 interface GuessTableProps {
-  guesses: Guess[];
+  guesses: DisplayGuess[];
   originalGuesses: Guess[];
   showHeader?: boolean;
   flashingWord?: string | null;
+  recentWord?: string;
 }
 
-const GuessTable = React.memo(({ guesses, originalGuesses, showHeader = true, flashingWord }: GuessTableProps) => {
+const GuessTable = React.memo(({ guesses, originalGuesses, showHeader = true, flashingWord, recentWord }: GuessTableProps) => {
   if (guesses.length === 0) {
     return (
       <div className="text-center py-4 text-muted-foreground">
@@ -20,8 +23,8 @@ const GuessTable = React.memo(({ guesses, originalGuesses, showHeader = true, fl
   }
 
   return (
-    <div className="border rounded-md overflow-x-auto">
-      <Table>
+    <div className="guess-ledger overflow-x-auto">
+      <Table aria-label="ניחושים">
         {showHeader && (
           <TableHeader>
             <TableRow className="border-b">
@@ -41,17 +44,18 @@ const GuessTable = React.memo(({ guesses, originalGuesses, showHeader = true, fl
               originalGuesses.slice(0, i).filter(prev => prev.word === guess.word).length === 
               guesses.slice(0, index).filter(prev => prev.word === guess.word).length
             );
-            const guessNumber = originalIndex + 1;
+            const guessNumber = guess.order ?? originalIndex + 1;
             
             const isFlashing = flashingWord === guess.word;
             
             return (
               <TableRow 
-                key={`${guess.word}-${index}`} 
-                className={`${guess.isCorrect ? "bg-green-500/20" : ""} ${isFlashing ? "animate-pulse bg-yellow-200 dark:bg-yellow-900/50" : ""}`}
+                key={guess.id ?? guess.word}
+                className={`guess-row ${guess.word === recentWord ? "guess-recent" : ""} ${guess.isCorrect ? "guess-correct" : ""} ${isFlashing ? "guess-duplicate" : ""}`}
+                title={guess.word === recentWord ? "הניחוש האחרון" : undefined}
               >
                 <TableCell className="w-12 py-1 px-2 text-xs">{guessNumber}</TableCell>
-                <TableCell className="w-24 font-medium py-1 px-2 text-xs truncate">{guess.word}</TableCell>
+                <TableCell className="w-24 font-medium py-1 px-2 text-xs break-words">{guess.word}{guess.playerName && <span className="guess-player">{guess.playerName}</span>}</TableCell>
                 <TableCell className="w-20 text-center py-1 px-2 text-xs">
                   {`${(guess.similarity * 100).toFixed(2)}%`}
                 </TableCell>
@@ -60,7 +64,7 @@ const GuessTable = React.memo(({ guesses, originalGuesses, showHeader = true, fl
                     <div className="flex items-center gap-1 justify-center">
                       <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0">
                         <div 
-                          className="absolute top-0 left-0 h-full bg-green-500 rounded-sm transition-all duration-200"
+                          className="rank-fill absolute top-0 left-0 h-full"
                           style={{ width: `${Math.min((guess.rank / 1000) * 100, 100)}%` }}
                         />
                       </div>

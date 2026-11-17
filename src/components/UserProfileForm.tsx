@@ -123,7 +123,7 @@ const UserProfileForm = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+      <Card className="bg-background bg-card border-border">
         <CardHeader>
           <CardTitle className="text-xl">עדכון שם משתמש</CardTitle>
         </CardHeader>
@@ -144,7 +144,7 @@ const UserProfileForm = () => {
             </div>
             <Button 
               type="submit" 
-              className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600"
+              className="bg-primary hover:bg-primary dark:hover:bg-primary"
               disabled={isUpdatingUsername || !username.trim() || username === currentUser?.username}
             >
               {isUpdatingUsername ? "מעדכן..." : "עדכן שם משתמש"}
@@ -153,7 +153,7 @@ const UserProfileForm = () => {
         </CardContent>
       </Card>
       
-      <Card className="bg-background dark:bg-slate-800 border-primary-200 dark:border-slate-700">
+      <Card className="bg-background bg-card border-border">
         <CardHeader>
           <CardTitle className="text-xl">עדכון סיסמה</CardTitle>
         </CardHeader>
@@ -189,7 +189,7 @@ const UserProfileForm = () => {
             
             <Button 
               type="submit" 
-              className="bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600"
+              className="bg-primary hover:bg-primary dark:hover:bg-primary"
               disabled={
                 isUpdatingPassword || 
                 !newPassword || 

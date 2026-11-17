@@ -124,7 +124,7 @@ const AdminPanel = () => {
 
   return (
     <div className="space-y-8">
-      <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+      <Card className="bg-white bg-card border-gray-200 border-border">
         <CardHeader>
           <CardTitle className="text-xl text-gray-900 dark:text-white">הגדר מילה חדשה</CardTitle>
         </CardHeader>
@@ -137,7 +137,7 @@ const AdminPanel = () => {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="rtl:text-right bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white"
+                className="rtl:text-right bg-white dark:bg-slate-700 border-gray-300 border-border text-gray-900 dark:text-white"
               />
             </div>
             
@@ -149,7 +149,7 @@ const AdminPanel = () => {
                 onChange={(e) => setNewWord(e.target.value)}
                 placeholder="הכנס מילה חדשה..."
                 dir="rtl"
-                className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white"
+                className="bg-white dark:bg-slate-700 border-gray-300 border-border text-gray-900 dark:text-white"
               />
             </div>
             
@@ -163,7 +163,7 @@ const AdminPanel = () => {
         </CardContent>
       </Card>
       
-      <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+      <Card className="bg-white bg-card border-gray-200 border-border">
         <CardHeader>
           <CardTitle className="text-xl text-gray-900 dark:text-white">מילים מוגדרות</CardTitle>
         </CardHeader>
@@ -192,7 +192,7 @@ const AdminPanel = () => {
                             setNewWord(dailyWord.word);
                             setSelectedDate(dailyWord.date);
                           }}
-                          className="border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600"
+                          className="border-gray-300 border-border text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600"
                         >
                           ערוך
                         </Button>

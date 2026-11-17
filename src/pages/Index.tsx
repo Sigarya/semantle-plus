@@ -38,7 +38,7 @@ const Index = () => {
     return (
       <PageLayout>
         <div className="flex flex-col justify-center items-center h-64">
-          <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">
+          <div className="text-xl text-primary mb-4">
             טוען...
           </div>
         </div>
@@ -51,7 +51,7 @@ const Index = () => {
       <div className="space-y-6">
         {gameLoading ? (
           <div className="flex flex-col justify-center items-center h-64">
-            <div className="text-xl text-primary-500 dark:text-primary-400 mb-4">
+            <div className="text-xl text-primary mb-4">
               טוען משחק...
             </div>
           </div>

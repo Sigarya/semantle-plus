@@ -10,3 +10,24 @@
 
 [[prerender]]
   path = "/*"
+
+# Also expose noindex before JavaScript or prerendering runs.
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Robots-Tag = "noindex, follow"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, follow"
+
+[[headers]]
+  for = "/profile"
+  [headers.values]
+    X-Robots-Tag = "noindex, follow"
+
+[[headers]]
+  for = "/profile/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, follow"

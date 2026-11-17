@@ -9,55 +9,36 @@ function PwaUpdatePrompt() {
   const [needRefresh, setNeedRefresh] = useState(false);
 
   useEffect(() => {
-    // Simple service worker update detection
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(registration => {
-          // Check for updates every 10 seconds
-          const checkForUpdate = () => {
-            registration.update().then(() => {
-              if (registration.waiting) {
-                setNeedRefresh(true);
-              }
-            }).catch(console.error);
-          };
-
-          // Initial check
-          if (registration.waiting) {
-            setNeedRefresh(true);
-          }
-
-          // Listen for new service worker installing
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  setNeedRefresh(true);
-                }
-              });
-            }
-          });
-
-          // Periodic check for updates
-          const interval = setInterval(checkForUpdate, 10000);
-          return () => clearInterval(interval);
-        });
+    if (!('serviceWorker' in navigator)) return;
+    let disposed = false;
+    const cleanups: (() => void)[] = [];
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      if (disposed) return;
+      registrations.forEach(registration => {
+        const inspect = () => { if (!disposed && registration.waiting) setNeedRefresh(true); };
+        const watchInstalling = () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          const changed = () => { if (!disposed && worker.state === 'installed' && navigator.serviceWorker.controller) setNeedRefresh(true); };
+          worker.addEventListener('statechange', changed);
+          cleanups.push(() => worker.removeEventListener('statechange', changed));
+        };
+        inspect();
+        watchInstalling();
+        registration.addEventListener('updatefound', watchInstalling);
+        const interval = window.setInterval(() => { registration.update().then(inspect).catch(console.error); }, 60000);
+        cleanups.push(() => { window.clearInterval(interval); registration.removeEventListener('updatefound', watchInstalling); });
       });
-    }
+    }).catch(console.error);
+    return () => { disposed = true; cleanups.forEach(cleanup => cleanup()); };
   }, []);
 
-  const handleUpdate = () => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(registration => {
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          }
-        });
-      });
-      window.location.reload();
-    }
+  const handleUpdate = async () => {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    const waiting = registrations.find(registration => registration.waiting)?.waiting;
+    if (!waiting) { window.location.reload(); return; }
+    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), { once: true });
+    waiting.postMessage({ type: 'SKIP_WAITING' });
   };
 
   // If there's no update, we show nothing at all.
@@ -67,9 +48,9 @@ function PwaUpdatePrompt() {
 
   // If an update is found, we show this beautiful, animated card!
   return (
-    <div className="fixed bottom-4 right-4 z-[100]">
-      <Card className="bg-background border-primary-500 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <CardContent className="p-4 flex items-center gap-4">
+    <div className="update-prompt" role="status">
+      <Card className="bg-background border-0 shadow-none">
+        <CardContent className="p-0 flex items-center justify-between gap-4">
           <div className="text-sm text-right">
             <p className="font-bold">עדכון חדש זמין!</p>
             <p className="text-muted-foreground">רענן כדי לקבל את הגרסה האחרונה.</p>

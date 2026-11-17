@@ -84,15 +84,15 @@ const Contact = () => {
 
   return (
     <PageLayout title="צור קשר">
-      <div className="max-w-2xl mx-auto">
+      <div className="contact-page max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <Mail className="h-16 w-16 mx-auto text-primary mb-4" />
+          <Mail className="h-7 w-7 mx-auto text-primary mb-4" />
           <p className="text-lg text-muted-foreground">
             יש לך שאלה, הצעה או רוצה לשתף אותנו במשוב? נשמח לשמוע ממך!
           </p>
         </div>
 
-        <Card className="shadow-xl border-primary/20">
+        <Card className="border-border">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">שלחו לנו הודעה</CardTitle>
           </CardHeader>
@@ -146,7 +146,7 @@ const Contact = () => {
                   value={formData.message}
                   onChange={handleInputChange}
                   required
-                  className="min-h-32 text-base resize-none"
+                  className="min-h-32 text-base resize-y"
                   dir="rtl"
                 />
               </div>

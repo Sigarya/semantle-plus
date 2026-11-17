@@ -94,17 +94,19 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
           <Separator />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background dark:bg-slate-800 px-2 text-muted-foreground">
+          <span className="bg-background bg-card px-2 text-muted-foreground">
             או התחבר עם אימייל
           </span>
         </div>
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="email">אימייל</Label>
+        <Label htmlFor="login-email">אימייל</Label>
         <Input
-          id="email"
+          id="login-email"
           type="email"
+          autoComplete="email"
+          dir="ltr"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -114,10 +116,12 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       </div>
       
       <div className="grid gap-2">
-        <Label htmlFor="password">סיסמה</Label>
+        <Label htmlFor="login-password">סיסמה</Label>
         <Input
-          id="password"
+          id="login-password"
           type="password"
+          autoComplete="current-password"
+          dir="ltr"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="********"
@@ -127,12 +131,12 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       </div>
 
       {error && (
-        <div className="text-destructive text-sm">{error}</div>
+        <div role="alert" className="form-error text-sm">{error}</div>
       )}
 
       <Button 
         type="submit" 
-        className="w-full bg-primary-500 hover:bg-primary-600 dark:bg-primary-700 dark:hover:bg-primary-600"
+        className="w-full bg-primary hover:bg-primary dark:hover:bg-primary"
         disabled={isLoading || authLoading}
       >
         {isLoading ? "מתחבר..." : "התחבר"}
@@ -143,7 +147,7 @@ const LoginForm = ({ onToggleMode }: LoginFormProps) => {
         <button
           type="button"
           onClick={onToggleMode}
-          className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+          className="auth-mode-toggle text-primary hover:underline underline-offset-4"
           disabled={isLoading || authLoading}
         >
           הירשם עכשיו

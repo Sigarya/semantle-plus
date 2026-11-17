@@ -1,65 +1,19 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import { useMultiplayer } from "@/context/MultiplayerContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import GuessTable, { DisplayGuess } from "@/components/GuessTable";
 import { Loader2, Users, Trophy, Target, Copy, Check } from "lucide-react";
-
-// Utility function for progress bar width calculation
-const getProgressBarWidth = (rank: number): string => {
-  if (!rank || rank <= 0) return '0%';
-  const percentage = Math.min((rank / 1000) * 100, 100);
-  return `${percentage}%`;
-};
-
-// A new, more robust GuessTable component inspired by your example
-const GuessTable = ({ guesses }: { guesses: any[] }) => {
-  return (
-    <div className="border rounded-md overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-right w-12 py-2 px-2">#</TableHead>
-            <TableHead className="text-right py-2 px-2">מילה</TableHead>
-            <TableHead className="text-right py-2 px-2">שחקן</TableHead>
-            <TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead>
-            <TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {guesses.map((guess) => (
-            <TableRow key={guess.id} className={guess.is_correct ? "bg-green-100 dark:bg-green-900/30" : ""}>
-              <TableCell className="text-right py-1 px-2 text-xs">{guess.guess_order}</TableCell>
-              <TableCell className="font-medium text-right py-1 px-2 text-xs">{guess.guess_word}</TableCell>
-              <TableCell className="text-right py-1 px-2 text-xs"><Badge variant="outline" className="font-normal">{guess.player_nickname}</Badge></TableCell>
-              <TableCell className="text-center py-1 px-2 text-xs">{`${(guess.similarity * 100).toFixed(2)}%`}</TableCell>
-              <TableCell className="text-center py-1 px-2">
-                {guess.rank && guess.rank > 0 ? (
-                  <div className="flex items-center gap-1 justify-center">
-                    <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0">
-                      <div className="absolute top-0 left-0 h-full bg-green-500 rounded-sm min-w-[2px]" style={{ width: getProgressBarWidth(guess.rank) }} />
-                    </div>
-                    <span className="text-xs text-muted-foreground font-heebo whitespace-nowrap">{guess.rank}/1000</span>
-                  </div>
-                ) : (<span className="text-xs text-muted-foreground font-heebo">רחוק</span>)}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-};
-
 
 const MultiplayerGameBoard = () => {
   const { gameState, makeGuess, leaveRoom } = useMultiplayer();
   const { toast } = useToast();
   const [guessInput, setGuessInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
   // Memoize sorted guesses and derive the last guess and the rest of the guesses
@@ -125,6 +79,7 @@ const MultiplayerGameBoard = () => {
       toast({ title: "שגיאה", description: errorMessage, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
+      inputRef.current?.focus({ preventScroll: true });
     }
   }, [guessInput, isSubmitting, makeGuess, toast]);
 
@@ -140,18 +95,18 @@ const MultiplayerGameBoard = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-4">
+    <div className="multiplayer-board max-w-3xl mx-auto space-y-4">
 
       {gameState.isComplete && (
-        <Card className="border-green-400 bg-green-50 text-green-800 animate-in fade-in slide-in-from-top-4 duration-500">
+        <Card className="border-green-400 bg-green-50 text-green-800 dark:text-green-300 animate-in fade-in slide-in-from-top-4 duration-500">
           <CardContent className="p-6 text-center">
             <div className="flex flex-col items-center justify-center gap-4">
               <Trophy className="h-10 w-10 text-green-500" />
               <div>
                 <CardTitle className="text-2xl font-bold">ניצחתם!</CardTitle>
-                <p className="mt-2 text-green-700">מצאתם את המילה הסודית ביחד, כל הכבוד!</p>
+                <p className="mt-2 text-green-700 dark:text-green-300">מצאתם את המילה הסודית ביחד, כל הכבוד!</p>
               </div>
-              <Button onClick={leaveRoom} variant="outline" className="mt-2 border-green-300 hover:bg-green-100 text-green-800">
+              <Button onClick={leaveRoom} variant="outline" className="mt-2 border-green-300 hover:bg-green-100 text-green-800 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-900/30">
                 עזוב חדר
               </Button>
             </div>
@@ -167,7 +122,7 @@ const MultiplayerGameBoard = () => {
             <span>תאריך: {new Date(gameState.room.word_date).toLocaleDateString('he-IL')}</span>
             <span className="flex items-center">
               קוד: 
-              <button onClick={copyRoomCode} className="inline-flex items-center gap-1 mr-1 hover:bg-muted px-2 py-0.5 rounded transition-colors" title="לחץ להעתקה">
+              <button onClick={copyRoomCode} className="room-code-copy inline-flex min-h-11 items-center gap-1 mr-1 hover:bg-muted px-2 py-0.5 rounded transition-colors" title="לחץ להעתקה" aria-label={`העתקת קוד החדר ${gameState.room.room_code}`}>
                 <Badge variant="secondary" className="cursor-pointer hover:bg-muted-foreground/20">{gameState.room.room_code}</Badge>
                 {copiedCode ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
               </button>
@@ -180,9 +135,9 @@ const MultiplayerGameBoard = () => {
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Target className="h-5 w-5" /> כאן מנחשים:</CardTitle></CardHeader>
           <CardContent>
-            <form onSubmit={handleGuessSubmit} className="flex gap-2">
-              <Input value={guessInput} onChange={(e) => setGuessInput(e.target.value)} placeholder="הקלד מילה..." disabled={isSubmitting} className="flex-1" dir="rtl"/>
-              <Button type="submit" disabled={isSubmitting || !guessInput.trim()} className="min-w-[80px]">
+            <form onSubmit={handleGuessSubmit} className="guess-form flex gap-2">
+              <Input ref={inputRef} aria-label="המילה לניחוש" value={guessInput} onChange={(e) => setGuessInput(e.target.value)} placeholder="הקלד מילה..." className="flex-1" dir="rtl"/>
+              <Button type="submit" aria-label={isSubmitting ? "מחשב ניחוש" : "נחש"} aria-busy={isSubmitting} onMouseDown={event => event.preventDefault()} disabled={isSubmitting || !guessInput.trim()} className="min-w-[80px]">
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "נחש"}
               </Button>
             </form>
@@ -190,53 +145,15 @@ const MultiplayerGameBoard = () => {
         </Card>
       )}
 
-      {/* ✨ NEW: Last Guess Panel - just like the example ✨ */}
-      {(mostRecentGuess && !gameState.isComplete) && (
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold font-heebo">הניחוש האחרון</h3>
-          <div className="border rounded-md overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b">
-                    <TableHead className="text-right w-12 py-2 px-2">#</TableHead>
-                    <TableHead className="text-right py-2 px-2">מילה</TableHead>
-                    <TableHead className="text-right py-2 px-2">שחקן</TableHead>
-                    <TableHead className="text-center w-20 py-2 px-2">קרבה</TableHead>
-                    <TableHead className="text-center w-28 py-2 px-2">מתחמם?</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700">
-                  <TableCell className="w-12 py-1 px-2 text-xs font-medium text-primary-700 dark:text-primary-300">{mostRecentGuess.guess_order}</TableCell>
-                  <TableCell className="font-medium py-1 px-2 text-xs truncate text-primary-700 dark:text-primary-300">{mostRecentGuess.guess_word}</TableCell>
-                  <TableCell className="py-1 px-2 text-xs text-primary-700 dark:text-primary-300"><Badge variant="outline" className="font-normal border-primary-300 dark:border-primary-700">{mostRecentGuess.player_nickname}</Badge></TableCell>
-                  <TableCell className="w-20 text-center py-1 px-2 text-xs text-primary-700 dark:text-primary-300">{`${(mostRecentGuess.similarity * 100).toFixed(2)}%`}</TableCell>
-                  <TableCell className="w-28 text-center py-1 px-2">
-                    {mostRecentGuess.rank && mostRecentGuess.rank > 0 ? (
-                      <div className="flex items-center gap-1 justify-center">
-                        <div className="relative w-16 h-3 bg-muted rounded-sm flex-shrink-0">
-                          <div className="absolute top-0 left-0 h-full bg-green-500 rounded-sm min-w-[2px]" style={{ width: getProgressBarWidth(mostRecentGuess.rank) }} />
-                        </div>
-                        <span className="text-xs text-primary-700 dark:text-primary-300 font-heebo whitespace-nowrap">{mostRecentGuess.rank}/1000</span>
-                      </div>
-                    ) : (<span className="text-xs text-primary-700 dark:text-primary-300 font-heebo">רחוק</span>)}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
-
-      {/* ✨ UPDATED: Main Guesses Table Card ✨ */}
-      {sortedGuessesForTable.length > 0 && (
-          <div className="space-y-2">
-              <h3 className="text-lg font-bold font-heebo">
-                  {gameState.isComplete ? `כל הניחושים (${sortedGuesses.length})` : "ניחושים קודמים"}
-              </h3>
-              <GuessTable guesses={sortedGuessesForTable} />
-          </div>
-      )}
+      {gameState.guesses.length > 0 && <div className="guess-results">
+        <h3 className="sr-only">{gameState.isComplete ? `כל הניחושים (${sortedGuesses.length})` : "ניחושים קודמים"}</h3>
+        <span className="sr-only" role="status" aria-live="polite">{mostRecentGuess && `הניחוש האחרון: ${mostRecentGuess.guess_word}, ${(mostRecentGuess.similarity * 100).toFixed(2)}%`}</span>
+        <GuessTable
+          guesses={(gameState.isComplete || !mostRecentGuess ? sortedGuessesForTable : [mostRecentGuess, ...sortedGuessesForTable]).map(guess => ({id: guess.id, word: guess.guess_word, similarity: guess.similarity, rank: guess.rank, isCorrect: guess.is_correct, playerName: guess.player_nickname, order: guess.guess_order} satisfies DisplayGuess))}
+          originalGuesses={gameState.guesses.map(guess => ({word: guess.guess_word, similarity: guess.similarity, isCorrect: guess.is_correct}))}
+          recentWord={!gameState.isComplete ? mostRecentGuess?.guess_word : undefined}
+        />
+      </div>}
 
       {gameState.guesses.length === 0 && !gameState.isComplete && (
           <div className="text-center py-8 text-muted-foreground">
